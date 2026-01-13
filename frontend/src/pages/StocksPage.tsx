@@ -142,9 +142,8 @@ export default function StocksPage() {
     const [newSymbol, setNewSymbol] = useState("");
     const [newName, setNewName] = useState("");
     const [newQuantity, setNewQuantity] = useState("");
-    const [newBuyPrice, setNewBuyPrice] = useState("");
-    const [newBuyDate, setNewBuyDate] = useState(new Date().toISOString().split('T')[0]);
-    const [newNotes, setNewNotes] = useState("");
+    const [newInvestedValue, setNewInvestedValue] = useState("");
+    const [newCurrentValue, setNewCurrentValue] = useState("");
 
     // Crypto search state
     const [cryptoSuggestions, setCryptoSuggestions] = useState<Array<{ id: string; symbol: string; name: string }>>([]);
@@ -155,9 +154,8 @@ export default function StocksPage() {
     const [editSymbol, setEditSymbol] = useState("");
     const [editName, setEditName] = useState("");
     const [editQuantity, setEditQuantity] = useState("");
-    const [editBuyPrice, setEditBuyPrice] = useState("");
-    const [editBuyDate, setEditBuyDate] = useState("");
-    const [editNotes, setEditNotes] = useState("");
+    const [editInvestedValue, setEditInvestedValue] = useState("");
+    const [editCurrentValue, setEditCurrentValue] = useState("");
 
     // Sell modal state
     const [sellingItem, setSellingItem] = useState<Stock | null>(null);
@@ -220,12 +218,6 @@ export default function StocksPage() {
         setNewName(coin.name);
         setShowCryptoSuggestions(false);
         setCryptoSuggestions([]);
-
-        // Fetch current price
-        const price = await fetchCryptoPrice(coin.symbol);
-        if (price) {
-            setNewBuyPrice(price.toString());
-        }
     };
 
     // Refresh price for crypto
@@ -272,25 +264,30 @@ export default function StocksPage() {
             alert("Please enter a valid quantity");
             return;
         }
-        if (!newBuyPrice || parseFloat(newBuyPrice) <= 0) {
-            alert("Please enter a valid buy price");
+        if (!newInvestedValue || parseFloat(newInvestedValue) <= 0) {
+            alert("Please enter a valid invested value");
             return;
         }
-        if (!newBuyDate) {
-            alert("Please select a buy date");
+        if (!newCurrentValue || parseFloat(newCurrentValue) <= 0) {
+            alert("Please enter a valid current value");
             return;
         }
 
         try {
+            // Calculate current_price from current_value and quantity
+            const currentPriceValue = parseFloat(newCurrentValue) / parseFloat(newQuantity);
+            // Use today's date as buy_date
+            const buyDate = new Date().toISOString().split('T')[0];
+            
             await createStock(
                 validMarket,
                 newSymbol.trim(),
                 newName.trim(),
                 parseFloat(newQuantity),
-                parseFloat(newBuyPrice),
-                newBuyDate,
-                parseFloat(newBuyPrice), // current_price = buy_price initially
-                newNotes || undefined,
+                parseFloat(newInvestedValue),
+                buyDate,
+                currentPriceValue,
+                undefined, // No notes
                 tileId // Pass tile_id for custom tiles
             );
             resetCreateForm();
@@ -305,9 +302,8 @@ export default function StocksPage() {
         setNewSymbol("");
         setNewName("");
         setNewQuantity("");
-        setNewBuyPrice("");
-        setNewBuyDate(new Date().toISOString().split('T')[0]);
-        setNewNotes("");
+        setNewInvestedValue("");
+        setNewCurrentValue("");
         setCryptoSuggestions([]);
         setShowCryptoSuggestions(false);
     };
@@ -317,9 +313,8 @@ export default function StocksPage() {
         setEditSymbol(item.symbol);
         setEditName(item.name);
         setEditQuantity(item.quantity.toString());
-        setEditBuyPrice(item.buy_price.toString());
-        setEditBuyDate(item.buy_date);
-        setEditNotes(item.notes || "");
+        setEditInvestedValue(item.invested_value.toString());
+        setEditCurrentValue(item.current_value.toString());
     };
 
     const handleUpdate = async (e: React.FormEvent) => {
@@ -327,14 +322,18 @@ export default function StocksPage() {
         if (!editingItem) return;
 
         try {
+            // Calculate current_price from current_value and quantity
+            const currentPriceValue = parseFloat(editCurrentValue) / parseFloat(editQuantity);
+            
             await updateStock(
                 editingItem.id,
                 editSymbol,
                 editName,
                 parseFloat(editQuantity),
-                parseFloat(editBuyPrice),
-                editBuyDate,
-                editNotes || undefined
+                parseFloat(editInvestedValue),
+                editingItem.buy_date, // Keep existing buy_date
+                undefined, // No notes
+                currentPriceValue
             );
             setEditingItem(null);
             loadData();
@@ -592,20 +591,16 @@ export default function StocksPage() {
                                 <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Full name" />
                             </div>
                             <div>
-                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Quantity</label>
+                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Units</label>
                                 <input type="number" step="any" value={newQuantity} onChange={e => setNewQuantity(e.target.value)} placeholder="10" />
                             </div>
                             <div>
-                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>{config.priceLabel}</label>
-                                <input type="number" step="any" value={newBuyPrice} onChange={e => setNewBuyPrice(e.target.value)} placeholder="100.00" />
+                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Invested Value</label>
+                                <input type="number" step="any" value={newInvestedValue} onChange={e => setNewInvestedValue(e.target.value)} placeholder="10000.00" />
                             </div>
                             <div>
-                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Buy Date</label>
-                                <input type="date" value={newBuyDate} onChange={e => setNewBuyDate(e.target.value)} />
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Notes</label>
-                                <input type="text" value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="Optional" />
+                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Current Value</label>
+                                <input type="number" step="any" value={newCurrentValue} onChange={e => setNewCurrentValue(e.target.value)} placeholder="12000.00" />
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '8px' }}>
@@ -909,20 +904,16 @@ export default function StocksPage() {
                                     <input type="text" value={editName} onChange={e => setEditName(e.target.value)} />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', color: 'var(--text-secondary)' }}>Quantity</label>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', color: 'var(--text-secondary)' }}>Units</label>
                                     <input type="number" step="any" value={editQuantity} onChange={e => setEditQuantity(e.target.value)} />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', color: 'var(--text-secondary)' }}>Buy Price</label>
-                                    <input type="number" step="any" value={editBuyPrice} onChange={e => setEditBuyPrice(e.target.value)} />
+                                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', color: 'var(--text-secondary)' }}>Invested Value</label>
+                                    <input type="number" step="any" value={editInvestedValue} onChange={e => setEditInvestedValue(e.target.value)} />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', color: 'var(--text-secondary)' }}>Buy Date</label>
-                                    <input type="date" value={editBuyDate} onChange={e => setEditBuyDate(e.target.value)} />
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', color: 'var(--text-secondary)' }}>Notes</label>
-                                    <input type="text" value={editNotes} onChange={e => setEditNotes(e.target.value)} />
+                                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', color: 'var(--text-secondary)' }}>Current Value</label>
+                                    <input type="number" step="any" value={editCurrentValue} onChange={e => setEditCurrentValue(e.target.value)} />
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>

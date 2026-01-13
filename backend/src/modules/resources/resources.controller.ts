@@ -149,11 +149,12 @@ export async function createAsset(req: Request, res: Response) {
 export async function updateAsset(req: Request, res: Response) {
     try {
         const { id } = req.params;
-        const { value, notes } = req.body;
+        const { name, value, notes } = req.body;
 
+        if (!name) return res.status(400).json({ error: "Name is required" });
         if (value === undefined) return res.status(400).json({ error: "Value is required" });
 
-        const asset = await repo.updateAssetWithHistory(getUserId(), Number(id), Number(value), notes);
+        const asset = await repo.updateAssetWithHistory(getUserId(), Number(id), name, Number(value), notes);
         if (!asset) return res.status(404).json({ error: "Asset not found" });
 
         res.json(asset);
@@ -273,13 +274,15 @@ export async function createPlan(req: Request, res: Response) {
 export async function updatePlan(req: Request, res: Response) {
     try {
         const { id } = req.params;
-        const { cover_amount, premium_amount, premium_frequency, expiry_date, next_premium_date, notes, custom_frequency_days } = req.body;
+        const { name, cover_amount, premium_amount, premium_frequency, expiry_date, next_premium_date, notes, custom_frequency_days } = req.body;
 
+        if (!name) return res.status(400).json({ error: "Name is required" });
         if (cover_amount === undefined) return res.status(400).json({ error: "Cover amount is required" });
 
         const plan = await repo.updatePlan(
             getUserId(),
             Number(id),
+            name,
             Number(cover_amount),
             Number(premium_amount || 0),
             premium_frequency || 'yearly',
@@ -402,13 +405,15 @@ export async function createLifeXpBucket(req: Request, res: Response) {
 export async function updateLifeXpBucket(req: Request, res: Response) {
     try {
         const { id } = req.params;
-        const { target_amount, is_repetitive, contribution_frequency, next_contribution_date, notes, custom_frequency_days } = req.body;
+        const { name, target_amount, is_repetitive, contribution_frequency, next_contribution_date, notes, custom_frequency_days } = req.body;
 
+        if (!name) return res.status(400).json({ error: "Name is required" });
         if (target_amount === undefined) return res.status(400).json({ error: "Target amount is required" });
 
         const bucket = await repo.updateLifeXpBucket(
             getUserId(),
             Number(id),
+            name,
             Number(target_amount),
             is_repetitive || false,
             contribution_frequency,
@@ -690,7 +695,7 @@ export async function getSIPSummary(req: Request, res: Response) {
 
 export async function createSIP(req: Request, res: Response) {
     try {
-        const { name, sip_amount, start_date, current_nav, notes, scheme_code } = req.body;
+        const { name, sip_amount, start_date, current_nav, notes, scheme_code, total_units, invested_amount, investment_type } = req.body;
 
         if (!name || sip_amount === undefined || !start_date || current_nav === undefined) {
             return res.status(400).json({ error: "Name, SIP amount, start date, and current NAV are required" });
@@ -703,7 +708,10 @@ export async function createSIP(req: Request, res: Response) {
             start_date,
             Number(current_nav),
             notes,
-            scheme_code ? Number(scheme_code) : undefined
+            scheme_code ? Number(scheme_code) : undefined,
+            total_units !== undefined ? Number(total_units) : undefined,
+            invested_amount !== undefined ? Number(invested_amount) : undefined,
+            investment_type
         );
         res.status(201).json(item);
     } catch (e) {
@@ -752,6 +760,29 @@ export async function updateSIPNav(req: Request, res: Response) {
             getUserId(),
             Number(id),
             Number(current_nav)
+        );
+        if (!item) return res.status(404).json({ error: "SIP not found" });
+
+        res.json(item);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+
+export async function updateSIPTotalUnits(req: Request, res: Response) {
+    try {
+        const { id } = req.params;
+        const { total_units } = req.body;
+
+        if (total_units === undefined) {
+            return res.status(400).json({ error: "Total units is required" });
+        }
+
+        const item = await repo.updateSIPTotalUnits(
+            getUserId(),
+            Number(id),
+            Number(total_units)
         );
         if (!item) return res.status(404).json({ error: "SIP not found" });
 
@@ -1021,14 +1052,17 @@ export async function getStocksSummary(req: Request, res: Response) {
 export async function createStock(req: Request, res: Response) {
     try {
         const { market } = req.params;
-        const { symbol, name, quantity, buy_price, buy_date, current_price, notes, tile_id } = req.body;
+        const { symbol, name, quantity, invested_value, buy_date, current_price, notes, tile_id } = req.body;
 
         if (!['indian', 'us', 'crypto'].includes(market)) {
             return res.status(400).json({ error: "Invalid market" });
         }
-        if (!symbol || !name || quantity === undefined || buy_price === undefined || !buy_date) {
-            return res.status(400).json({ error: "Symbol, name, quantity, buy price, and buy date are required" });
+        if (!symbol || !name || quantity === undefined || invested_value === undefined) {
+            return res.status(400).json({ error: "Symbol, name, quantity, and invested value are required" });
         }
+
+        // Use provided buy_date or default to today
+        const buyDate = buy_date || new Date().toISOString().split('T')[0];
 
         const item = await repo.createStock(
             getUserId(),
@@ -1036,8 +1070,8 @@ export async function createStock(req: Request, res: Response) {
             symbol,
             name,
             Number(quantity),
-            Number(buy_price),
-            buy_date,
+            Number(invested_value),
+            buyDate,
             current_price !== undefined ? Number(current_price) : undefined,
             notes,
             tile_id
@@ -1052,11 +1086,15 @@ export async function createStock(req: Request, res: Response) {
 export async function updateStock(req: Request, res: Response) {
     try {
         const { id } = req.params;
-        const { symbol, name, quantity, buy_price, buy_date, notes } = req.body;
+        const { symbol, name, quantity, invested_value, buy_date, notes, current_price } = req.body;
 
-        if (!symbol || !name || quantity === undefined || buy_price === undefined || !buy_date) {
-            return res.status(400).json({ error: "Symbol, name, quantity, buy price, and buy date are required" });
+        if (!symbol || !name || quantity === undefined || invested_value === undefined) {
+            return res.status(400).json({ error: "Symbol, name, quantity, and invested value are required" });
         }
+
+        // Get existing stock to preserve buy_date if not provided
+        const existingStock = await repo.getStockById(getUserId(), Number(id));
+        const buyDate = buy_date || existingStock?.buy_date || new Date().toISOString().split('T')[0];
 
         const item = await repo.updateStock(
             getUserId(),
@@ -1064,9 +1102,10 @@ export async function updateStock(req: Request, res: Response) {
             symbol,
             name,
             Number(quantity),
-            Number(buy_price),
-            buy_date,
-            notes
+            Number(invested_value),
+            buyDate,
+            notes,
+            current_price !== undefined ? Number(current_price) : undefined
         );
         if (!item) return res.status(404).json({ error: "Stock not found or already sold" });
 

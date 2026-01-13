@@ -5,7 +5,9 @@ import Overview from "./pages/Overview";
 import ExpensesOverview from "./pages/expenses/ExpensesOverview";
 import ExpensesYear from "./pages/expenses/ExpensesYear";
 import ExpensesMonth from "./pages/expenses/ExpensesMonth";
-import BudgetPage from "./pages/budget/BudgetPage";
+import BudgetOverview from "./pages/budget/BudgetOverview";
+import BudgetYear from "./pages/budget/BudgetYear";
+import BudgetMonth from "./pages/budget/BudgetMonth";
 import TagsPage from "./pages/tags/TagsPage";
 import AccountsPage from "./pages/AccountsPage";
 import AssetsPage from "./pages/AssetsPage";
@@ -32,7 +34,11 @@ function App() {
             <Route path=":year/:month" element={<ExpensesMonth />} />
           </Route>
 
-          <Route path="budget" element={<BudgetPage />} />
+          <Route path="budget">
+            <Route index element={<BudgetOverview />} />
+            <Route path=":year" element={<BudgetYear />} />
+            <Route path=":year/:month" element={<BudgetMonth />} />
+          </Route>
 
           <Route path="accounts" element={<AccountsPage />} />
           <Route path="assets" element={<AssetsPage title="Assets" type="asset" />} />

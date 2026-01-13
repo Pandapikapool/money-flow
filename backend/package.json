@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node dist/server.js",
     "dev": "nodemon src/server.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "setup-db": "ts-node setup_db.ts",
+    "clean-expenses": "ts-node ../utils/clean_expenses.ts"
   },
   "keywords": ["personal-finance", "expense-tracker", "budget", "finance"],
   "author": "Raviraj <25raviraje@gmail.com>",

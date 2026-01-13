@@ -47,6 +47,91 @@ const notifyLifeXpUpdated = () => {
     window.dispatchEvent(new Event('lifeXpUpdated'));
 };
 
+// Activity Log Entry
+interface ActivityLogEntry {
+    id: string;
+    date: string;
+    timestamp: string;
+    bucketName: string;
+    bucketId: number;
+    amount?: number;
+    action: 'bucket_created' | 'bucket_updated' | 'bucket_deleted' | 'bucket_achieved' | 'bucket_reactivated' | 'contribution_added' | 'contribution_marked_done' | 'history_updated' | 'history_deleted';
+    details?: string;
+}
+
+// Get activity log from localStorage
+const getLifeXpLog = (): ActivityLogEntry[] => {
+    try {
+        const saved = localStorage.getItem('lifexp_activity_log');
+        if (saved) return JSON.parse(saved);
+        return [];
+    } catch {
+        return [];
+    }
+};
+
+// Save activity log to localStorage
+const saveLifeXpLog = (log: ActivityLogEntry[]) => {
+    localStorage.setItem('lifexp_activity_log', JSON.stringify(log));
+};
+
+// Add entry to activity log
+const addToLifeXpLog = (entry: Omit<ActivityLogEntry, 'id' | 'timestamp'>) => {
+    const log = getLifeXpLog();
+    const now = new Date();
+    log.unshift({
+        ...entry,
+        id: Date.now().toString(),
+        timestamp: now.toISOString()
+    });
+    // Keep only last 500 entries
+    if (log.length > 500) log.splice(500);
+    saveLifeXpLog(log);
+};
+
+// Get action label for display
+const getLifeXpActionLabel = (action: ActivityLogEntry['action']): string => {
+    switch (action) {
+        case 'bucket_created': return 'Bucket Created';
+        case 'bucket_updated': return 'Bucket Updated';
+        case 'bucket_deleted': return 'Bucket Deleted';
+        case 'bucket_achieved': return 'Bucket Achieved';
+        case 'bucket_reactivated': return 'Bucket Reactivated';
+        case 'contribution_added': return 'Contribution Added';
+        case 'contribution_marked_done': return 'Contribution Marked Done';
+        case 'history_updated': return 'History Updated';
+        case 'history_deleted': return 'History Deleted';
+        default: return action;
+    }
+};
+
+// Export log as CSV
+const exportLifeXpLogAsCSV = (log: ActivityLogEntry[]) => {
+    const headers = ['Date', 'Time', 'Bucket', 'Action', 'Amount', 'Details'];
+    const rows = log.map(entry => [
+        entry.date,
+        entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString() : '',
+        entry.bucketName,
+        getLifeXpActionLabel(entry.action),
+        entry.amount ? entry.amount.toString() : '',
+        entry.details || ''
+    ]);
+
+    const csvContent = [headers, ...rows]
+        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `lifexp_activity_log_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
 // Load notes from localStorage
 function getLifeXpNotes(): Record<string, string> {
     try {
@@ -92,6 +177,7 @@ export default function LifeXpPage() {
     const [loadingHistory, setLoadingHistory] = useState(false);
 
     // Edit State
+    const [editName, setEditName] = useState("");
     const [editTarget, setEditTarget] = useState("");
     const [editIsRepetitive, setEditIsRepetitive] = useState(false);
     const [editFrequency, setEditFrequency] = useState("monthly");
@@ -118,8 +204,13 @@ export default function LifeXpPage() {
     const [noteValue, setNoteValue] = useState("");
     const currentYear = new Date().getFullYear().toString();
 
+    // Activity Log State
+    const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
+    const [showActivityLog, setShowActivityLog] = useState(false);
+
     useEffect(() => {
         loadBuckets();
+        setActivityLog(getLifeXpLog());
     }, []);
 
     const loadBuckets = () => {
@@ -136,7 +227,7 @@ export default function LifeXpPage() {
 
         try {
             const customDays = newFrequency === 'custom' ? parseInt(newCustomDays) || undefined : undefined;
-            await createLifeXpBucket(
+            const created = await createLifeXpBucket(
                 newName,
                 parseFloat(newTarget) || 0,
                 newIsRepetitive,
@@ -145,6 +236,16 @@ export default function LifeXpPage() {
                 newNotes || undefined,
                 customDays
             );
+            // Log the creation
+            addToLifeXpLog({
+                date: new Date().toISOString().split('T')[0],
+                bucketName: newName,
+                bucketId: created.id,
+                amount: parseFloat(newTarget) || 0,
+                action: 'bucket_created',
+                details: `Target: ${formatCurrency(parseFloat(newTarget) || 0)}${newIsRepetitive ? `, Frequency: ${getFrequencyLabel(newFrequency, customDays)}` : ''}`
+            });
+            setActivityLog(getLifeXpLog());
             setNewName("");
             setNewTarget("");
             setNewIsRepetitive(false);
@@ -162,6 +263,7 @@ export default function LifeXpPage() {
 
     const openBucketDetails = async (bucket: LifeXpBucket) => {
         setSelectedBucket(bucket);
+        setEditName(bucket.name);
         setEditTarget(bucket.target_amount.toString());
         setEditIsRepetitive(bucket.is_repetitive);
         setEditFrequency(bucket.contribution_frequency || "monthly");
@@ -187,13 +289,14 @@ export default function LifeXpPage() {
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedBucket) return;
+        if (!selectedBucket || !editName) return;
 
         setSaving(true);
         try {
             const customDays = editFrequency === 'custom' ? parseInt(editCustomDays) || undefined : undefined;
             const updated = await updateLifeXpBucket(
                 selectedBucket.id,
+                editName,
                 parseFloat(editTarget) || 0,
                 editIsRepetitive,
                 editIsRepetitive ? editFrequency : undefined,
@@ -201,6 +304,21 @@ export default function LifeXpPage() {
                 editNotes,
                 customDays
             );
+            // Log the update
+            const changes: string[] = [];
+            if (selectedBucket.name !== updated.name) changes.push(`Name: ${updated.name}`);
+            if (selectedBucket.target_amount !== updated.target_amount) changes.push(`Target: ${formatCurrency(updated.target_amount)}`);
+            if (selectedBucket.is_repetitive !== updated.is_repetitive) changes.push(`Repetitive: ${updated.is_repetitive}`);
+            if (selectedBucket.contribution_frequency !== updated.contribution_frequency) changes.push(`Frequency: ${getFrequencyLabel(updated.contribution_frequency, updated.custom_frequency_days)}`);
+            addToLifeXpLog({
+                date: new Date().toISOString().split('T')[0],
+                bucketName: updated.name,
+                bucketId: updated.id,
+                amount: updated.target_amount,
+                action: 'bucket_updated',
+                details: changes.length > 0 ? changes.join(', ') : 'Settings updated'
+            });
+            setActivityLog(getLifeXpLog());
             setBuckets(prev => prev.map(b => b.id === updated.id ? updated : b));
             setSelectedBucket(updated);
             notifyLifeXpUpdated();
@@ -214,6 +332,16 @@ export default function LifeXpPage() {
     const handleDelete = async () => {
         if (!selectedBucket) return;
         try {
+            // Log the deletion before it happens
+            addToLifeXpLog({
+                date: new Date().toISOString().split('T')[0],
+                bucketName: selectedBucket.name,
+                bucketId: selectedBucket.id,
+                amount: selectedBucket.target_amount,
+                action: 'bucket_deleted',
+                details: `Target: ${formatCurrency(selectedBucket.target_amount)}, Saved: ${formatCurrency(selectedBucket.saved_amount)}`
+            });
+            setActivityLog(getLifeXpLog());
             await deleteLifeXpBucket(selectedBucket.id);
             setBuckets(prev => prev.filter(b => b.id !== selectedBucket.id));
             closeDetails();
@@ -233,6 +361,16 @@ export default function LifeXpPage() {
                 parseFloat(contributeAmount) || 0,
                 contributeNotes || undefined
             );
+            // Log the contribution
+            addToLifeXpLog({
+                date: new Date().toISOString().split('T')[0],
+                bucketName: selectedBucket.name,
+                bucketId: selectedBucket.id,
+                amount: parseFloat(contributeAmount) || 0,
+                action: 'contribution_added',
+                details: `New total: ${formatCurrency(result.bucket.saved_amount)}`
+            });
+            setActivityLog(getLifeXpLog());
             setBuckets(prev => prev.map(b => b.id === result.bucket.id ? result.bucket : b));
             setSelectedBucket(result.bucket);
             setHistory(prev => [...prev, result.history]);
@@ -249,6 +387,16 @@ export default function LifeXpPage() {
         const contributionAmount = amount ?? (bucket.target_amount / 12); // Default to monthly target
         try {
             const result = await markContributionDone(bucket.id, contributionAmount);
+            // Log the contribution
+            addToLifeXpLog({
+                date: new Date().toISOString().split('T')[0],
+                bucketName: bucket.name,
+                bucketId: bucket.id,
+                amount: contributionAmount,
+                action: 'contribution_marked_done',
+                details: `New total: ${formatCurrency(result.bucket.saved_amount)}`
+            });
+            setActivityLog(getLifeXpLog());
             setBuckets(prev => prev.map(b => b.id === result.bucket.id ? result.bucket : b));
             if (selectedBucket && selectedBucket.id === result.bucket.id) {
                 setSelectedBucket(result.bucket);
@@ -264,6 +412,16 @@ export default function LifeXpPage() {
     const handleAchieved = async (bucket: LifeXpBucket) => {
         try {
             const updated = await markBucketAchieved(bucket.id);
+            // Log the achievement
+            addToLifeXpLog({
+                date: new Date().toISOString().split('T')[0],
+                bucketName: bucket.name,
+                bucketId: bucket.id,
+                amount: bucket.saved_amount,
+                action: 'bucket_achieved',
+                details: `Target: ${formatCurrency(bucket.target_amount)}, Saved: ${formatCurrency(bucket.saved_amount)}`
+            });
+            setActivityLog(getLifeXpLog());
             setBuckets(prev => prev.map(b => b.id === updated.id ? updated : b));
             if (selectedBucket && selectedBucket.id === updated.id) {
                 setSelectedBucket(updated);
@@ -277,6 +435,16 @@ export default function LifeXpPage() {
     const handleReactivate = async (bucket: LifeXpBucket) => {
         try {
             const updated = await reactivateBucket(bucket.id);
+            // Log the reactivation
+            addToLifeXpLog({
+                date: new Date().toISOString().split('T')[0],
+                bucketName: bucket.name,
+                bucketId: bucket.id,
+                amount: bucket.saved_amount,
+                action: 'bucket_reactivated',
+                details: `Target: ${formatCurrency(bucket.target_amount)}`
+            });
+            setActivityLog(getLifeXpLog());
             setBuckets(prev => prev.map(b => b.id === updated.id ? updated : b));
             if (selectedBucket && selectedBucket.id === updated.id) {
                 setSelectedBucket(updated);
@@ -285,6 +453,13 @@ export default function LifeXpPage() {
         } catch (err) {
             alert("Failed to reactivate");
         }
+    };
+
+    // Delete activity log entry
+    const handleDeleteLogEntry = (id: string) => {
+        const log = getLifeXpLog().filter(entry => entry.id !== id);
+        saveLifeXpLog(log);
+        setActivityLog(log);
     };
 
     // Calculate totals
@@ -885,6 +1060,116 @@ export default function LifeXpPage() {
                 )}
             </div>
 
+            {/* Activity Log Section */}
+            <div style={{ marginTop: '40px', borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Activity Log</h3>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        {showActivityLog && activityLog.length > 0 && (
+                            <button
+                                onClick={() => exportLifeXpLogAsCSV(activityLog)}
+                                style={{
+                                    padding: '6px 12px',
+                                    background: 'var(--accent-success)',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.8rem',
+                                    color: 'white',
+                                    fontWeight: '500'
+                                }}
+                            >
+                                Export CSV
+                            </button>
+                        )}
+                        <button
+                            onClick={() => setShowActivityLog(!showActivityLog)}
+                            style={{
+                                padding: '6px 12px',
+                                background: 'transparent',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                color: 'var(--text-primary)'
+                            }}
+                        >
+                            {showActivityLog ? 'Hide' : 'Show'} ({activityLog.length} entries)
+                        </button>
+                    </div>
+                </div>
+                {showActivityLog && (
+                    <div className="glass-panel" style={{ padding: '16px', maxHeight: '400px', overflowY: 'auto' }}>
+                        {activityLog.length === 0 ? (
+                            <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>
+                                No activity records yet. Records will appear here when you perform actions on buckets.
+                            </div>
+                        ) : (
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                        <th style={{ textAlign: 'left', padding: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Date</th>
+                                        <th style={{ textAlign: 'left', padding: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Bucket</th>
+                                        <th style={{ textAlign: 'left', padding: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Action</th>
+                                        <th style={{ textAlign: 'right', padding: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Amount</th>
+                                        <th style={{ textAlign: 'left', padding: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Details</th>
+                                        <th style={{ width: '60px' }}></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {activityLog.map(entry => {
+                                        const actionColor =
+                                            entry.action === 'contribution_added' || entry.action === 'contribution_marked_done' ? 'var(--accent-success)' :
+                                            entry.action === 'bucket_created' ? 'var(--accent-primary)' :
+                                            entry.action === 'bucket_updated' ? 'var(--accent-warning)' :
+                                            entry.action === 'bucket_deleted' || entry.action === 'history_deleted' ? 'var(--accent-danger)' :
+                                            entry.action === 'bucket_achieved' ? 'var(--accent-success)' :
+                                            'var(--text-secondary)';
+
+                                        return (
+                                            <tr key={entry.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                                <td style={{ padding: '8px', fontSize: '0.85rem' }}>
+                                                    {new Date(entry.date).toLocaleDateString()}
+                                                </td>
+                                                <td style={{ padding: '8px', fontSize: '0.85rem', fontWeight: '500' }}>
+                                                    {entry.bucketName}
+                                                </td>
+                                                <td style={{ padding: '8px' }}>
+                                                    <span style={{
+                                                        fontSize: '0.7rem',
+                                                        padding: '2px 8px',
+                                                        borderRadius: '10px',
+                                                        background: actionColor,
+                                                        color: 'white'
+                                                    }}>
+                                                        {getLifeXpActionLabel(entry.action)}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '8px', textAlign: 'right', fontSize: '0.85rem', fontWeight: '500', color: 'var(--accent-warning)' }}>
+                                                    {entry.amount && entry.amount > 0 ? formatCurrency(entry.amount) : '-'}
+                                                </td>
+                                                <td style={{ padding: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={entry.details || ''}>
+                                                    {entry.details || '-'}
+                                                </td>
+                                                <td style={{ padding: '8px' }}>
+                                                    <button
+                                                        onClick={() => handleDeleteLogEntry(entry.id)}
+                                                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--accent-danger)', fontSize: '0.75rem' }}
+                                                        title="Delete entry"
+                                                    >
+                                                        Del
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                )}
+            </div>
+
             {/* Bucket Details Modal */}
             {selectedBucket && (
                 <div
@@ -1027,6 +1312,16 @@ export default function LifeXpPage() {
                         {/* Settings Form */}
                         <form onSubmit={handleUpdate}>
                             <h3 style={{ fontSize: '1rem', margin: '0 0 16px 0' }}>Settings</h3>
+                            <div style={{ marginBottom: '16px' }}>
+                                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Name</label>
+                                <input
+                                    type="text"
+                                    value={editName}
+                                    onChange={e => setEditName(e.target.value)}
+                                    style={{ width: '100%', fontSize: '1.1rem', fontWeight: '600' }}
+                                    required
+                                />
+                            </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                                 <div>
                                     <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Target Amount</label>

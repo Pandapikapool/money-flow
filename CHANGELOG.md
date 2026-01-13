@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Budget year and month views with navigation
+- Expense editing with tag and special tag support
+- Expense date editing capability
+- Expense deletion by month selection (year view)
+- Activity logs for Accounts, Assets, and Life XP pages
+- Editable names/titles for Life XP buckets, Assets, and Insurance plans
+- SIP total units inline editing
+- SIP investment type selection (SIP or Lumpsum) with invested amount
+- Stocks invested value and current value fields (replaces buy price calculation)
+- Stocks current price editing for Indian stocks
+- Overview page USD invested amount display
+- Expense distribution by category chart with month filtering
+- Insurance plan total premium paid graph
+- Insurance plan total premium paid display on tiles
+- Insurance expired plan deletion functionality
+- Clean expenses utility script for data management
+
+### Changed
+- Budget page restructured into year overview and month detail views
+- Expense edit form now includes category tag and special tags selection
+- Insurance graph now shows cumulative total premium paid instead of cover/premium
+- Stocks form simplified to invested value, units, and current value
+- SIP create form includes invested amount and investment type selection
+- Currency formatting now always shows 2 decimal places
+- Overview page spending trend chart replaced with expense distribution by category
+- Plan history graph updated to show cumulative premium payments
+
+### Fixed
+- Mark Paid button now correctly creates plan history entries
+- Date inputs allow direct typing (not just calendar picker)
+- Asset page notes display now shows full text (multi-line support)
+- Currency decimal display fixed (always shows 2 decimal places)
+
 ### Planned
 - Multi-user authentication
 - Mobile responsive design

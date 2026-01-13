@@ -154,10 +154,10 @@ export async function createAsset(userId: string, name: string, value: number, t
     return { ...row, value: Number(row.value) };
 }
 
-export async function updateAsset(userId: string, id: number, value: number, notes?: string): Promise<Asset | null> {
+export async function updateAsset(userId: string, id: number, name: string, value: number, notes?: string): Promise<Asset | null> {
     const res = await pool.query(
-        "UPDATE assets SET value = $1, notes = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4 RETURNING *",
-        [value, notes, id, userId]
+        "UPDATE assets SET name = $1, value = $2, notes = $3, updated_at = NOW() WHERE id = $4 AND user_id = $5 RETURNING *",
+        [name, value, notes, id, userId]
     );
     if (res.rows.length === 0) return null;
     const row = res.rows[0];
@@ -226,14 +226,14 @@ export async function deleteAssetHistory(id: number): Promise<boolean> {
 }
 
 // Update asset with history tracking
-export async function updateAssetWithHistory(userId: string, id: number, value: number, notes?: string): Promise<Asset | null> {
+export async function updateAssetWithHistory(userId: string, id: number, name: string, value: number, notes?: string): Promise<Asset | null> {
     const client = await pool.connect();
     try {
         await client.query("BEGIN");
 
         const res = await client.query(
-            "UPDATE assets SET value = $1, notes = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4 RETURNING *",
-            [value, notes, id, userId]
+            "UPDATE assets SET name = $1, value = $2, notes = $3, updated_at = NOW() WHERE id = $4 AND user_id = $5 RETURNING *",
+            [name, value, notes, id, userId]
         );
 
         if (res.rows.length === 0) {
@@ -327,6 +327,7 @@ export async function createPlan(
 export async function updatePlan(
     userId: string,
     id: number,
+    name: string,
     coverAmount: number,
     premiumAmount: number,
     premiumFrequency: string,
@@ -340,10 +341,10 @@ export async function updatePlan(
         await client.query("BEGIN");
 
         const res = await client.query(
-            `UPDATE plans SET cover_amount = $1, premium_amount = $2, premium_frequency = $3,
-             custom_frequency_days = $4, expiry_date = $5, next_premium_date = $6, notes = $7, updated_at = NOW()
-             WHERE id = $8 AND user_id = $9 RETURNING *`,
-            [coverAmount, premiumAmount, premiumFrequency, customFrequencyDays || null, expiryDate || null, nextPremiumDate || null, notes, id, userId]
+            `UPDATE plans SET name = $1, cover_amount = $2, premium_amount = $3, premium_frequency = $4,
+             custom_frequency_days = $5, expiry_date = $6, next_premium_date = $7, notes = $8, updated_at = NOW()
+             WHERE id = $9 AND user_id = $10 RETURNING *`,
+            [name, coverAmount, premiumAmount, premiumFrequency, customFrequencyDays || null, expiryDate || null, nextPremiumDate || null, notes, id, userId]
         );
 
         if (res.rows.length === 0) {
@@ -526,6 +527,7 @@ export async function createLifeXpBucket(
 export async function updateLifeXpBucket(
     userId: string,
     id: number,
+    name: string,
     targetAmount: number,
     isRepetitive: boolean,
     contributionFrequency?: string,
@@ -534,10 +536,10 @@ export async function updateLifeXpBucket(
     customFrequencyDays?: number
 ): Promise<LifeXpBucket | null> {
     const res = await pool.query(
-        `UPDATE life_xp_buckets SET target_amount = $1, is_repetitive = $2, contribution_frequency = $3,
-         custom_frequency_days = $4, next_contribution_date = $5, notes = $6, updated_at = NOW()
-         WHERE id = $7 AND user_id = $8 RETURNING *`,
-        [targetAmount, isRepetitive, contributionFrequency || null, customFrequencyDays || null, nextContributionDate || null, notes, id, userId]
+        `UPDATE life_xp_buckets SET name = $1, target_amount = $2, is_repetitive = $3, contribution_frequency = $4,
+         custom_frequency_days = $5, next_contribution_date = $6, notes = $7, updated_at = NOW()
+         WHERE id = $8 AND user_id = $9 RETURNING *`,
+        [name, targetAmount, isRepetitive, contributionFrequency || null, customFrequencyDays || null, nextContributionDate || null, notes, id, userId]
     );
     if (res.rows.length === 0) return null;
     const row = res.rows[0];
@@ -1086,20 +1088,28 @@ export async function createSIP(
     startDate: string,
     currentNav: number,
     notes?: string,
-    schemeCode?: number
+    schemeCode?: number,
+    totalUnits?: number,
+    investedAmount?: number,
+    investmentType?: 'sip' | 'lumpsum'
 ): Promise<SIP> {
     const client = await pool.connect();
     try {
         await client.query("BEGIN");
 
-        // Calculate initial units from first installment
-        const initialUnits = sipAmount / currentNav;
+        // Use provided invested_amount or default to sipAmount for backward compatibility
+        const actualInvestedAmount = investedAmount !== undefined ? investedAmount : sipAmount;
+        // Use provided total_units or calculate initial units from invested amount
+        const initialUnits = totalUnits !== undefined ? totalUnits : (actualInvestedAmount / currentNav);
+        // Determine transaction type
+        const transactionType = investmentType || 'sip';
+        const transactionNotes = transactionType === 'lumpsum' ? 'Initial lumpsum investment' : 'Initial SIP installment';
 
         // Create SIP with first installment already invested
         const res = await client.query(
             `INSERT INTO sips (user_id, name, scheme_code, sip_amount, start_date, current_nav, total_units, total_invested, notes)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-            [userId, name, schemeCode || null, sipAmount, startDate, currentNav, initialUnits, sipAmount, notes]
+            [userId, name, schemeCode || null, sipAmount, startDate, currentNav, initialUnits, actualInvestedAmount, notes]
         );
 
         const sipId = res.rows[0].id;
@@ -1107,8 +1117,8 @@ export async function createSIP(
         // Record the first installment transaction
         await client.query(
             `INSERT INTO sip_transactions (sip_id, date, type, amount, nav, units, notes)
-             VALUES ($1, $2, 'sip', $3, $4, $5, 'Initial SIP installment')`,
-            [sipId, startDate, sipAmount, currentNav, initialUnits]
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [sipId, startDate, transactionType, actualInvestedAmount, currentNav, initialUnits, transactionNotes]
         );
 
         await client.query("COMMIT");
@@ -1176,6 +1186,43 @@ export async function updateSIPNav(
             `INSERT INTO sip_transactions (sip_id, date, type, nav, notes)
              VALUES ($1, CURRENT_DATE, 'nav_update', $2, 'NAV updated')`,
             [id, currentNav]
+        );
+
+        await client.query("COMMIT");
+        return mapSIPRow(res.rows[0]);
+    } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+    } finally {
+        client.release();
+    }
+}
+
+export async function updateSIPTotalUnits(
+    userId: string,
+    id: number,
+    totalUnits: number
+): Promise<SIP | null> {
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+
+        const res = await client.query(
+            `UPDATE sips SET total_units = $1, updated_at = NOW()
+             WHERE id = $2 AND user_id = $3 RETURNING *`,
+            [totalUnits, id, userId]
+        );
+        if (res.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return null;
+        }
+
+        // Record the units update
+        const row = res.rows[0];
+        await client.query(
+            `INSERT INTO sip_transactions (sip_id, date, type, nav, units, notes)
+             VALUES ($1, CURRENT_DATE, 'nav_update', $2, $3, 'Total units updated')`,
+            [id, Number(row.current_nav), totalUnits]
         );
 
         await client.query("COMMIT");
@@ -1649,23 +1696,37 @@ export async function listStocks(userId: string, market: StockMarket, tileId?: s
     return res.rows.map(mapStockRow);
 }
 
+export async function getStockById(userId: string, id: number): Promise<Stock | null> {
+    const res = await pool.query(
+        "SELECT * FROM stocks WHERE id = $1 AND user_id = $2",
+        [id, userId]
+    );
+    if (res.rows.length === 0) return null;
+    return mapStockRow(res.rows[0]);
+}
+
 export async function createStock(
     userId: string,
     market: StockMarket,
     symbol: string,
     name: string,
     quantity: number,
-    buyPrice: number,
+    investedValue: number,
     buyDate: string,
     currentPrice?: number,
     notes?: string,
     tileId?: string
 ): Promise<Stock> {
+    // Calculate buy_price from invested_value and quantity
+    const buyPrice = quantity > 0 ? investedValue / quantity : 0;
+    // Use provided current_price or default to buy_price
     const price = currentPrice !== undefined ? currentPrice : buyPrice;
+    // Use provided buyDate or default to today
+    const actualBuyDate = buyDate || new Date().toISOString().split('T')[0];
     const res = await pool.query(
         `INSERT INTO stocks (user_id, market, tile_id, symbol, name, quantity, buy_price, buy_date, current_price, price_updated_at, notes)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), $10) RETURNING *`,
-        [userId, market, tileId || null, symbol.toUpperCase(), name, quantity, buyPrice, buyDate, price, notes]
+        [userId, market, tileId || null, symbol.toUpperCase(), name, quantity, buyPrice, actualBuyDate, price, notes || null]
     );
     return mapStockRow(res.rows[0]);
 }
@@ -1676,14 +1737,17 @@ export async function updateStock(
     symbol: string,
     name: string,
     quantity: number,
-    buyPrice: number,
+    investedValue: number,
     buyDate: string,
-    notes?: string
+    notes?: string,
+    currentPrice?: number
 ): Promise<Stock | null> {
+    // Calculate buy_price from invested_value and quantity
+    const buyPrice = quantity > 0 ? investedValue / quantity : 0;
     const res = await pool.query(
-        `UPDATE stocks SET symbol = $1, name = $2, quantity = $3, buy_price = $4, buy_date = $5, notes = $6, updated_at = NOW()
-         WHERE id = $7 AND user_id = $8 AND status = 'holding' RETURNING *`,
-        [symbol.toUpperCase(), name, quantity, buyPrice, buyDate, notes, id, userId]
+        `UPDATE stocks SET symbol = $1, name = $2, quantity = $3, buy_price = $4, buy_date = $5, notes = $6, current_price = $7, price_updated_at = NOW(), updated_at = NOW()
+         WHERE id = $8 AND user_id = $9 AND status = 'holding' RETURNING *`,
+        [symbol.toUpperCase(), name, quantity, buyPrice, buyDate, notes, currentPrice !== undefined ? currentPrice : buyPrice, id, userId]
     );
     if (res.rows.length === 0) return null;
     return mapStockRow(res.rows[0]);

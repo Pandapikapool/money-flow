@@ -10,10 +10,21 @@ interface Props {
 export default function PlanHistoryGraph({ data, onPointClick }: Props) {
     if (!data || data.length === 0) return <div style={{ padding: '20px', textAlign: 'center', opacity: 0.5 }}>No history data</div>;
 
+    // Sort data by date and calculate cumulative premium paid
+    const sortedData = [...data].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    let cumulativePremium = 0;
+    const chartData = sortedData.map(entry => {
+        cumulativePremium += entry.premium_amount;
+        return {
+            ...entry,
+            cumulative_premium: cumulativePremium
+        };
+    });
+
     return (
         <div style={{ width: '100%', height: 300, marginTop: '20px' }}>
             <ResponsiveContainer>
-                <LineChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
                     <XAxis
                         dataKey="date"
@@ -34,24 +45,15 @@ export default function PlanHistoryGraph({ data, onPointClick }: Props) {
                         itemStyle={{ color: 'var(--text-primary)' }}
                         formatter={(value: any, name?: string) => [
                             `${SETTINGS.CURRENCY}${Number(value).toLocaleString()}`,
-                            name === 'cover_amount' ? 'Cover' : 'Premium'
+                            'Total Premium Paid'
                         ]}
                         labelFormatter={(label) => new Date(label).toLocaleDateString()}
                     />
                     <Legend />
                     <Line
                         type="monotone"
-                        dataKey="cover_amount"
-                        name="Cover"
-                        stroke="var(--accent-success)"
-                        strokeWidth={2}
-                        dot={{ r: 4, fill: 'var(--accent-success)', cursor: 'pointer' }}
-                        activeDot={{ r: 6, onClick: (_e: any, payload: any) => onPointClick(payload.payload) }}
-                    />
-                    <Line
-                        type="monotone"
-                        dataKey="premium_amount"
-                        name="Premium"
+                        dataKey="cumulative_premium"
+                        name="Total Premium Paid"
                         stroke="var(--accent-warning)"
                         strokeWidth={2}
                         dot={{ r: 4, fill: 'var(--accent-warning)', cursor: 'pointer' }}

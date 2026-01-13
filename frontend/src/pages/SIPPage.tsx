@@ -5,6 +5,7 @@ import {
     createSIP,
     updateSIP,
     updateSIPNav,
+    updateSIPTotalUnits,
     addSIPInstallment,
     pauseSIP,
     resumeSIP,
@@ -70,13 +71,20 @@ export default function SIPPage() {
     const [editingNavId, setEditingNavId] = useState<number | null>(null);
     const [inlineNavValue, setInlineNavValue] = useState("");
 
+    // Inline Units editing state
+    const [editingUnitsId, setEditingUnitsId] = useState<number | null>(null);
+    const [inlineUnitsValue, setInlineUnitsValue] = useState("");
+
 
     // Create State
     const [isCreating, setIsCreating] = useState(false);
     const [newName, setNewName] = useState("");
+    const [newInvestmentType, setNewInvestmentType] = useState<'sip' | 'lumpsum'>('sip');
     const [newSipAmount, setNewSipAmount] = useState("");
+    const [newInvestedAmount, setNewInvestedAmount] = useState("");
     const [newStartDate, setNewStartDate] = useState(new Date().toISOString().split('T')[0]);
     const [newNav, setNewNav] = useState("");
+    const [newUnits, setNewUnits] = useState("");
     const [newNotes, setNewNotes] = useState("");
 
     // Fund Autocomplete State
@@ -424,6 +432,35 @@ export default function SIPPage() {
         }
     };
 
+    const startEditUnits = (item: SIP) => {
+        setEditingUnitsId(item.id);
+        setInlineUnitsValue(item.total_units.toFixed(4));
+    };
+
+    const saveInlineUnits = async (itemId: number) => {
+        const unitsValue = parseFloat(inlineUnitsValue);
+        if (isNaN(unitsValue) || unitsValue < 0) {
+            setEditingUnitsId(null);
+            return;
+        }
+
+        try {
+            await updateSIPTotalUnits(itemId, unitsValue);
+            setEditingUnitsId(null);
+            loadData();
+        } catch (err) {
+            alert('Failed to update total units');
+        }
+    };
+
+    const handleInlineUnitsKeyDown = (e: React.KeyboardEvent, itemId: number) => {
+        if (e.key === 'Enter') {
+            saveInlineUnits(itemId);
+        } else if (e.key === 'Escape') {
+            setEditingUnitsId(null);
+        }
+    };
+
     const ongoingItems = items.filter(i => i.status === 'ongoing' || i.status === 'paused').sort((a, b) => a.name.localeCompare(b.name));
     const redeemedItems = items.filter(i => i.status === 'redeemed').sort((a, b) =>
         new Date(b.redeemed_date || 0).getTime() - new Date(a.redeemed_date || 0).getTime()
@@ -441,8 +478,12 @@ export default function SIPPage() {
             alert("Please enter a fund name");
             return;
         }
-        if (!newSipAmount || parseFloat(newSipAmount) <= 0) {
+        if (newInvestmentType === 'sip' && (!newSipAmount || parseFloat(newSipAmount) <= 0)) {
             alert("Please enter a valid SIP amount");
+            return;
+        }
+        if (!newInvestedAmount || parseFloat(newInvestedAmount) <= 0) {
+            alert("Please enter a valid invested amount");
             return;
         }
         if (!newStartDate) {
@@ -452,20 +493,31 @@ export default function SIPPage() {
 
         // NAV is optional - default to 1 if not provided (user can update later)
         const navValue = newNav && parseFloat(newNav) > 0 ? parseFloat(newNav) : 1;
+        // Total units is optional - if not provided, will be calculated as invested_amount / nav
+        const unitsValue = newUnits && parseFloat(newUnits) > 0 ? parseFloat(newUnits) : undefined;
+        // SIP amount: use provided value for SIP, or 0 for lumpsum
+        const sipAmountValue = newInvestmentType === 'sip' ? (parseFloat(newSipAmount) || 0) : 0;
+        const investedAmountValue = parseFloat(newInvestedAmount);
 
         try {
             await createSIP(
                 newName.trim(),
-                parseFloat(newSipAmount),
+                sipAmountValue,
                 newStartDate,
                 navValue,
                 newNotes || undefined,
-                selectedSchemeCode || undefined  // Pass scheme_code for reliable NAV lookups
+                selectedSchemeCode || undefined,  // Pass scheme_code for reliable NAV lookups
+                unitsValue,
+                investedAmountValue,
+                newInvestmentType
             );
             setNewName("");
+            setNewInvestmentType('sip');
             setNewSipAmount("");
+            setNewInvestedAmount("");
             setNewStartDate(new Date().toISOString().split('T')[0]);
             setNewNav("");
+            setNewUnits("");
             setNewNotes("");
             setFundSuggestions([]);
             setShowSuggestions(false);
@@ -836,8 +888,45 @@ export default function SIPPage() {
                                 <td style={{ padding: '14px 12px', textAlign: 'right', fontSize: '0.9rem', borderBottom: '1px solid var(--border-color)' }}>
                                     {formatCurrency(item.sip_amount)}
                                 </td>
-                                <td style={{ padding: '14px 12px', textAlign: 'right', fontFamily: 'monospace', fontSize: '0.85rem', borderBottom: '1px solid var(--border-color)' }}>
-                                    {item.total_units.toFixed(3)}
+                                <td style={{ padding: '14px 12px', textAlign: 'right', fontSize: '0.9rem', borderBottom: '1px solid var(--border-color)' }}>
+                                    {editingUnitsId === item.id ? (
+                                        <input
+                                            type="number"
+                                            step="0.0001"
+                                            value={inlineUnitsValue}
+                                            onChange={e => setInlineUnitsValue(e.target.value)}
+                                            onBlur={() => saveInlineUnits(item.id)}
+                                            onKeyDown={e => handleInlineUnitsKeyDown(e, item.id)}
+                                            autoFocus
+                                            style={{
+                                                width: '90px',
+                                                padding: '4px 6px',
+                                                fontSize: '0.85rem',
+                                                textAlign: 'right',
+                                                fontFamily: 'monospace',
+                                                border: '1px solid var(--accent-primary)',
+                                                borderRadius: '4px',
+                                                background: 'var(--bg-app)'
+                                            }}
+                                        />
+                                    ) : (
+                                        <span
+                                            onClick={() => startEditUnits(item)}
+                                            style={{
+                                                cursor: 'pointer',
+                                                padding: '2px 4px',
+                                                borderRadius: '4px',
+                                                transition: 'background 0.15s',
+                                                fontFamily: 'monospace',
+                                                display: 'inline-block'
+                                            }}
+                                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                                            title="Click to edit total units"
+                                        >
+                                            {item.total_units.toFixed(3)}
+                                        </span>
+                                    )}
                                 </td>
                                 <td style={{ padding: '14px 12px', textAlign: 'right', fontSize: '0.9rem', borderBottom: '1px solid var(--border-color)' }}>
                                     {editingNavId === item.id ? (
@@ -1071,7 +1160,7 @@ export default function SIPPage() {
                     </div>
                 ) : (
                     <form onSubmit={handleCreate} style={{ padding: '16px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-panel)' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 120px 100px 1fr auto', gap: '12px', alignItems: 'flex-end' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 120px 100px 100px 1fr auto', gap: '12px', alignItems: 'flex-end' }}>
                             <div style={{ position: 'relative' }}>
                                 <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
                                     Fund Name {searchingFunds && <span style={{ marginLeft: '8px', fontSize: '0.65rem' }}>searching...</span>}
@@ -1160,8 +1249,43 @@ export default function SIPPage() {
                                 )}
                             </div>
                             <div>
-                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>SIP Amount</label>
-                                <input type="number" value={newSipAmount} onChange={e => setNewSipAmount(e.target.value)} placeholder="5000" />
+                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Type</label>
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '8px', background: 'var(--input-bg)', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>
+                                        <input 
+                                            type="radio" 
+                                            checked={newInvestmentType === 'sip'} 
+                                            onChange={() => setNewInvestmentType('sip')}
+                                            style={{ cursor: 'pointer' }}
+                                        />
+                                        SIP
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>
+                                        <input 
+                                            type="radio" 
+                                            checked={newInvestmentType === 'lumpsum'} 
+                                            onChange={() => setNewInvestmentType('lumpsum')}
+                                            style={{ cursor: 'pointer' }}
+                                        />
+                                        Lumpsum
+                                    </label>
+                                </div>
+                            </div>
+                            {newInvestmentType === 'sip' && (
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>SIP Amount</label>
+                                    <input type="number" value={newSipAmount} onChange={e => setNewSipAmount(e.target.value)} placeholder="5000" />
+                                </div>
+                            )}
+                            {newInvestmentType === 'lumpsum' && (
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>SIP Amount</label>
+                                    <input type="number" value="0" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }} />
+                                </div>
+                            )}
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Invested Amount</label>
+                                <input type="number" value={newInvestedAmount} onChange={e => setNewInvestedAmount(e.target.value)} placeholder="5000" />
                             </div>
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Start Date</label>
@@ -1172,11 +1296,15 @@ export default function SIPPage() {
                                 <input type="number" step="0.01" value={newNav} onChange={e => setNewNav(e.target.value)} placeholder="Auto or 1" />
                             </div>
                             <div>
+                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Total Units <span style={{ opacity: 0.6 }}>(optional)</span></label>
+                                <input type="number" step="0.0001" value={newUnits} onChange={e => setNewUnits(e.target.value)} placeholder="Auto calc" />
+                            </div>
+                            <div>
                                 <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Notes</label>
                                 <input type="text" value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="Optional" />
                             </div>
                             <div style={{ display: 'flex', gap: '8px' }}>
-                                <button type="button" onClick={() => { setIsCreating(false); setNewName(""); setNewSipAmount(""); setNewStartDate(new Date().toISOString().split('T')[0]); setNewNav(""); setNewNotes(""); setFundSuggestions([]); setShowSuggestions(false); setSelectedSchemeCode(null); }} style={{ padding: '8px 12px', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer', color: 'var(--text-primary)' }}>Cancel</button>
+                                <button type="button" onClick={() => { setIsCreating(false); setNewName(""); setNewInvestmentType('sip'); setNewSipAmount(""); setNewInvestedAmount(""); setNewStartDate(new Date().toISOString().split('T')[0]); setNewNav(""); setNewUnits(""); setNewNotes(""); setFundSuggestions([]); setShowSuggestions(false); setSelectedSchemeCode(null); }} style={{ padding: '8px 12px', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer', color: 'var(--text-primary)' }}>Cancel</button>
                                 <button type="submit" style={{ padding: '8px 16px', background: 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Add</button>
                             </div>
                         </div>

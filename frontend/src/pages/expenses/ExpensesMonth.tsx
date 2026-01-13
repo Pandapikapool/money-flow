@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { fetchExpenses, fetchTags, getBudget, updateExpense, deleteExpense, type Expense, type Tag } from "../../lib/api";
+import { fetchExpenses, fetchTags, fetchSpecialTags, getBudget, updateExpense, deleteExpense, getExpenseSpecialTags, createTag, type Expense, type Tag, type SpecialTag } from "../../lib/api";
 import { formatCurrency } from "../../lib/format";
 
 export default function ExpensesMonth() {
     const { year, month } = useParams();
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [tags, setTags] = useState<Tag[]>([]);
+    const [specialTags, setSpecialTags] = useState<SpecialTag[]>([]);
+    const [expenseSpecialTags, setExpenseSpecialTags] = useState<Record<number, number[]>>({});
     const [budget, setBudget] = useState(0);
     const [loading, setLoading] = useState(true);
 
@@ -14,6 +16,10 @@ export default function ExpensesMonth() {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editAmount, setEditAmount] = useState("");
     const [editStatement, setEditStatement] = useState("");
+    const [editDate, setEditDate] = useState("");
+    const [editTagId, setEditTagId] = useState<number | null>(null);
+    const [editTagName, setEditTagName] = useState("");
+    const [editSelectedSpecialTagIds, setEditSelectedSpecialTagIds] = useState<number[]>([]);
     const [editNotes, setEditNotes] = useState("");
 
     // Delete confirmation
@@ -29,14 +35,31 @@ export default function ExpensesMonth() {
         if (!year || !month) return;
         setLoading(true);
         try {
-            const [expensesData, tagsData, budgetData] = await Promise.all([
+            const [expensesData, tagsData, specialTagsData, budgetData] = await Promise.all([
                 fetchExpenses(parseInt(year), parseInt(month)),
                 fetchTags(),
+                fetchSpecialTags(),
                 getBudget(parseInt(year), parseInt(month))
             ]);
             setExpenses(expensesData);
             setTags(tagsData);
+            setSpecialTags(specialTagsData);
             setBudget(budgetData.amount);
+            
+            // Fetch special tags for all expenses
+            const specialTagsMap: Record<number, number[]> = {};
+            await Promise.all(
+                expensesData.map(async (expense) => {
+                    try {
+                        const specialTagIds = await getExpenseSpecialTags(expense.id);
+                        specialTagsMap[expense.id] = specialTagIds;
+                    } catch (err) {
+                        console.error(`Failed to fetch special tags for expense ${expense.id}:`, err);
+                        specialTagsMap[expense.id] = [];
+                    }
+                })
+            );
+            setExpenseSpecialTags(specialTagsMap);
         } catch (err) {
             console.error(err);
         } finally {
@@ -64,26 +87,73 @@ export default function ExpensesMonth() {
     const budgetStatus = getBudgetStatus();
 
     // Edit handlers
-    const startEdit = (expense: Expense) => {
+    const startEdit = async (expense: Expense) => {
         setEditingId(expense.id);
         setEditAmount(expense.amount.toString());
         setEditStatement(expense.statement);
+        // Format date as YYYY-MM-DD for input
+        const dateStr = new Date(expense.date).toISOString().split('T')[0];
+        setEditDate(dateStr);
+        setEditTagId(expense.tag_id);
+        const tag = tags.find(t => t.id === expense.tag_id);
+        setEditTagName(tag?.name || "");
         setEditNotes(expense.notes || "");
+        
+        // Fetch special tags for this expense
+        try {
+            const specialTagIds = await getExpenseSpecialTags(expense.id);
+            setEditSelectedSpecialTagIds(specialTagIds);
+        } catch (err) {
+            console.error("Failed to fetch special tags:", err);
+            setEditSelectedSpecialTagIds([]);
+        }
     };
 
     const cancelEdit = () => {
         setEditingId(null);
         setEditAmount("");
         setEditStatement("");
+        setEditDate("");
+        setEditTagId(null);
+        setEditTagName("");
+        setEditSelectedSpecialTagIds([]);
         setEditNotes("");
+    };
+
+    const toggleSpecialTag = (id: number) => {
+        setEditSelectedSpecialTagIds(prev =>
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+        );
     };
 
     const saveEdit = async () => {
         if (!editingId) return;
+        if (!editTagName.trim()) {
+            alert("Please select or enter a tag");
+            return;
+        }
+        
         try {
+            // Resolve tag ID (find existing or create new)
+            let finalTagId: number;
+            const normalizedTagName = editTagName.trim();
+            const existingTag = tags.find(t => t.name.toLowerCase() === normalizedTagName.toLowerCase());
+            
+            if (existingTag) {
+                finalTagId = existingTag.id;
+            } else {
+                // Create new tag
+                const newTag = await createTag(normalizedTagName);
+                setTags(prev => [...prev, newTag]);
+                finalTagId = newTag.id;
+            }
+            
             await updateExpense(editingId, {
                 amount: parseFloat(editAmount),
                 statement: editStatement,
+                date: editDate,
+                tag_id: finalTagId,
+                special_tag_ids: editSelectedSpecialTagIds,
                 notes: editNotes || undefined
             });
             cancelEdit();
@@ -161,33 +231,92 @@ export default function ExpensesMonth() {
                             {editingId === e.id ? (
                                 // Edit mode
                                 <div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: '12px', marginBottom: '12px' }}>
-                                        <div>
-                                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Amount</label>
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                value={editAmount}
-                                                onChange={e => setEditAmount(e.target.value)}
-                                                style={{ marginTop: '4px' }}
-                                            />
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                            <div>
+                                                <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Amount</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={editAmount}
+                                                    onChange={e => setEditAmount(e.target.value)}
+                                                    style={{ marginTop: '4px', width: '100%' }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Statement</label>
+                                                <input
+                                                    type="text"
+                                                    value={editStatement}
+                                                    onChange={e => setEditStatement(e.target.value)}
+                                                    style={{ marginTop: '4px', width: '100%' }}
+                                                />
+                                            </div>
                                         </div>
                                         <div>
-                                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Statement</label>
+                                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Date</label>
                                             <input
                                                 type="text"
-                                                value={editStatement}
-                                                onChange={e => setEditStatement(e.target.value)}
-                                                style={{ marginTop: '4px' }}
+                                                value={editDate}
+                                                onChange={e => setEditDate(e.target.value)}
+                                                pattern="\d{4}-\d{2}-\d{2}"
+                                                placeholder="YYYY-MM-DD"
+                                                style={{ marginTop: '4px', width: '100%' }}
                                             />
                                         </div>
+                                        <div>
+                                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                                Category <span style={{ opacity: 0.6 }}>(type to create new)</span>
+                                            </label>
+                                            <input
+                                                list="edit-tags-list"
+                                                value={editTagName}
+                                                onChange={e => setEditTagName(e.target.value)}
+                                                placeholder="Food, Transport, Bills..."
+                                                style={{ marginTop: '4px', width: '100%' }}
+                                            />
+                                            <datalist id="edit-tags-list">
+                                                {tags.map(t => <option key={t.id} value={t.name} />)}
+                                            </datalist>
+                                        </div>
+                                        {specialTags.length > 0 && (
+                                            <div>
+                                                <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '8px', display: 'block' }}>
+                                                    Special Tags <span style={{ opacity: 0.6 }}>(optional)</span>
+                                                </label>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                    {specialTags.map(st => {
+                                                        const isSelected = editSelectedSpecialTagIds.includes(st.id);
+                                                        return (
+                                                            <div
+                                                                key={st.id}
+                                                                onClick={() => toggleSpecialTag(st.id)}
+                                                                style={{
+                                                                    padding: '6px 14px',
+                                                                    borderRadius: '16px',
+                                                                    cursor: 'pointer',
+                                                                    fontSize: '0.85rem',
+                                                                    border: '1px solid var(--accent-primary)',
+                                                                    background: isSelected ? 'var(--accent-primary)' : 'transparent',
+                                                                    color: isSelected ? '#fff' : 'var(--accent-primary)',
+                                                                    transition: 'all 0.15s'
+                                                                }}
+                                                            >
+                                                                {st.name}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
                                         <div>
                                             <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Notes</label>
                                             <input
                                                 type="text"
                                                 value={editNotes}
                                                 onChange={e => setEditNotes(e.target.value)}
-                                                style={{ marginTop: '4px' }}
+                                                placeholder="Optional"
+                                                style={{ marginTop: '4px', width: '100%' }}
                                             />
                                         </div>
                                     </div>
@@ -200,7 +329,7 @@ export default function ExpensesMonth() {
                                 // View mode
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                                             <span style={{ fontWeight: '600', fontSize: '1.05rem' }}>{e.statement}</span>
                                             <span style={{
                                                 padding: '2px 8px',
@@ -212,6 +341,28 @@ export default function ExpensesMonth() {
                                             }}>
                                                 {getTagName(e.tag_id)}
                                             </span>
+                                            {expenseSpecialTags[e.id] && expenseSpecialTags[e.id].length > 0 && (
+                                                <>
+                                                    {expenseSpecialTags[e.id].map(stId => {
+                                                        const st = specialTags.find(t => t.id === stId);
+                                                        return st ? (
+                                                            <span
+                                                                key={stId}
+                                                                style={{
+                                                                    padding: '2px 8px',
+                                                                    background: 'var(--accent-warning)',
+                                                                    color: '#fff',
+                                                                    borderRadius: '10px',
+                                                                    fontSize: '0.7rem',
+                                                                    fontWeight: '500'
+                                                                }}
+                                                            >
+                                                                {st.name}
+                                                            </span>
+                                                        ) : null;
+                                                    })}
+                                                </>
+                                            )}
                                         </div>
                                         <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
                                             {new Date(e.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}

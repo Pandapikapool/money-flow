@@ -117,20 +117,30 @@ money_flow/
 ├── frontend/
 │   ├── src/
 │   │   ├── main.tsx             # React entry point
-│   │   ├── App.tsx              # Root component
+│   │   ├── App.tsx              # Root component with routing
 │   │   ├── pages/               # Page components
 │   │   │   ├── Daily.tsx        # Homepage (expense entry)
-│   │   │   ├── Overview.tsx     # Dashboard
-│   │   │   ├── expenses/
-│   │   │   ├── budget/
-│   │   │   └── ...
+│   │   │   ├── Overview.tsx     # Dashboard with charts
+│   │   │   ├── expenses/        # Expense pages
+│   │   │   │   ├── ExpensesYear.tsx    # Year overview
+│   │   │   │   └── ExpensesMonth.tsx  # Month detail
+│   │   │   ├── budget/          # Budget pages
+│   │   │   │   ├── BudgetOverview.tsx # Redirect to current year
+│   │   │   │   ├── BudgetYear.tsx     # Year overview
+│   │   │   │   └── BudgetMonth.tsx    # Month detail
+│   │   │   └── ...              # Other pages
 │   │   ├── components/          # Reusable components
+│   │   │   └── PlanHistoryGraph.tsx   # Plan history chart
 │   │   ├── layouts/             # Layout components
 │   │   └── lib/                 # Utilities
 │   │       ├── api.ts           # API client
 │   │       ├── format.ts        # Formatting helpers
 │   │       └── settings.ts      # App settings
 │   └── package.json
+│
+├── utils/                       # Utility scripts
+│   ├── clean_expenses.ts        # Data cleanup utility
+│   └── README.md                # Utility documentation
 │
 └── start.sh                     # Development startup script
 ```
@@ -235,20 +245,23 @@ See `backend/database/schema.sql` for full schema.
 
 ### Expenses
 - `GET /expenses` - List expenses (with year/month filters)
-- `POST /expenses` - Create expense
-- `PUT /expenses/:id` - Update expense
+- `GET /expenses/:id/special-tags` - Get special tags for an expense
+- `POST /expenses` - Create expense (with tag_id and special_tag_ids)
+- `PUT /expenses/:id` - Update expense (supports tag_id, special_tag_ids, date)
 - `DELETE /expenses/:id` - Delete expense
+- `DELETE /expenses/year/:year/months` - Delete expenses by year and months array
 
 ### Budgets
-- `GET /budgets` - List budgets
-- `POST /budgets` - Create/update budget
 - `GET /budgets/:year/:month` - Get specific month budget
+- `POST /budgets` - Create/update budget
+- `GET /budgets/summary/:year` - Get yearly budget summary
 
-### Resources (Accounts, Assets, etc.)
-- `GET /resources` - List all resources
-- `POST /resources` - Create resource
-- `PUT /resources/:id` - Update resource
-- `DELETE /resources/:id` - Delete resource
+### Resources (Accounts, Assets, Plans, SIPs, Stocks)
+- `GET /resources/*` - List resources by type
+- `POST /resources/*` - Create resource
+- `PUT /resources/*/:id` - Update resource (supports name editing for assets, plans, life_xp)
+- `PUT /resources/sips/:id/units` - Update SIP total units
+- `DELETE /resources/*/:id` - Delete resource
 
 See individual route files in `backend/src/modules/` for complete API documentation.
 

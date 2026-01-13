@@ -85,3 +85,50 @@ export async function getYearSummary(req: Request, res: Response) {
         res.status(500).json({ error: "Internal Server Error" });
     }
 }
+
+export async function getExpenseSpecialTags(req: Request, res: Response) {
+    try {
+        const userId = getUserId();
+        const id = parseInt(req.params.id);
+
+        if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+
+        // Verify expense belongs to user
+        const expense = await repo.list(userId);
+        const expenseExists = expense.some(e => e.id === id);
+        if (!expenseExists) {
+            return res.status(404).json({ error: "Expense not found" });
+        }
+
+        const specialTagIds = await repo.getExpenseSpecialTags(id);
+        res.json(specialTagIds);
+    } catch (error) {
+        console.error("Get expense special tags error:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+
+export async function deleteExpensesByMonths(req: Request, res: Response) {
+    try {
+        const userId = getUserId();
+        const year = parseInt(req.params.year);
+        const { months } = req.body;
+
+        if (isNaN(year)) return res.status(400).json({ error: "Invalid Year" });
+        if (!Array.isArray(months) || months.length === 0) {
+            return res.status(400).json({ error: "Months array is required and must not be empty" });
+        }
+
+        // Validate months are between 1-12
+        const validMonths = months.filter((m: number) => m >= 1 && m <= 12);
+        if (validMonths.length === 0) {
+            return res.status(400).json({ error: "Invalid months. Must be between 1-12" });
+        }
+
+        const deletedCount = await repo.removeByMonths(userId, year, validMonths);
+        res.json({ deletedCount });
+    } catch (error) {
+        console.error("Delete by months error:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}

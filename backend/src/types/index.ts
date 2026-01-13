@@ -51,5 +51,6 @@ export interface UpdateExpenseParams {
     amount?: number;
     statement?: string;
     tag_id?: number;
+    special_tag_ids?: number[];
     notes?: string;
 }

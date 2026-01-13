@@ -61,6 +61,7 @@ router.get("/sips/summary", controller.getSIPSummary);
 router.post("/sips", controller.createSIP);
 router.put("/sips/:id", controller.updateSIP);
 router.put("/sips/:id/nav", controller.updateSIPNav);
+router.put("/sips/:id/units", controller.updateSIPTotalUnits);
 router.post("/sips/:id/installment", controller.addSIPInstallment);
 router.post("/sips/:id/pause", controller.pauseSIP);
 router.post("/sips/:id/resume", controller.resumeSIP);

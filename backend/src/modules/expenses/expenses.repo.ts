@@ -58,49 +58,147 @@ export async function create(userId: string, params: CreateExpenseParams): Promi
 }
 
 export async function update(userId: string, id: number, params: UpdateExpenseParams): Promise<Expense | null> {
-    // Build dynamic update query
-    const fields: string[] = [];
-    const values: any[] = [userId, id];
-    let paramIdx = 3;
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
 
-    if (params.date !== undefined) {
-        fields.push(`date = $${paramIdx++}`);
-        values.push(params.date);
-    }
-    if (params.amount !== undefined) {
-        fields.push(`amount = $${paramIdx++}`);
-        values.push(params.amount);
-    }
-    if (params.statement !== undefined) {
-        fields.push(`statement = $${paramIdx++}`);
-        values.push(params.statement);
-    }
-    if (params.tag_id !== undefined) {
-        fields.push(`tag_id = $${paramIdx++}`);
-        values.push(params.tag_id);
-    }
-    if (params.notes !== undefined) {
-        fields.push(`notes = $${paramIdx++}`);
-        values.push(params.notes);
-    }
+        // Build dynamic update query
+        const fields: string[] = [];
+        const values: any[] = [userId, id];
+        let paramIdx = 3;
 
-    if (fields.length === 0) return null; // Nothing to update
+        if (params.date !== undefined) {
+            fields.push(`date = $${paramIdx++}`);
+            values.push(params.date);
+        }
+        if (params.amount !== undefined) {
+            fields.push(`amount = $${paramIdx++}`);
+            values.push(params.amount);
+        }
+        if (params.statement !== undefined) {
+            fields.push(`statement = $${paramIdx++}`);
+            values.push(params.statement);
+        }
+        if (params.tag_id !== undefined) {
+            fields.push(`tag_id = $${paramIdx++}`);
+            values.push(params.tag_id);
+        }
+        if (params.notes !== undefined) {
+            fields.push(`notes = $${paramIdx++}`);
+            values.push(params.notes);
+        }
 
-    const query = `
-    UPDATE expenses
-    SET ${fields.join(", ")}
-    WHERE user_id = $1 AND id = $2
-    RETURNING *
-  `;
+        if (fields.length === 0 && !params.special_tag_ids) {
+            await client.query("ROLLBACK");
+            return null; // Nothing to update
+        }
 
-    const result = await pool.query(query, values);
-    return result.rows[0] || null;
+        // Update expense fields if any
+        if (fields.length > 0) {
+            const query = `
+                UPDATE expenses
+                SET ${fields.join(", ")}
+                WHERE user_id = $1 AND id = $2
+                RETURNING *
+            `;
+            await client.query(query, values);
+        }
+
+        // Handle special tags update if provided
+        if (params.special_tag_ids !== undefined) {
+            // Delete existing special tags
+            await client.query(
+                "DELETE FROM expense_special_tags WHERE expense_id = $1",
+                [id]
+            );
+
+            // Insert new special tags if any
+            if (params.special_tag_ids.length > 0) {
+                const linkValues = params.special_tag_ids.map((stId) => `(${id}, ${stId})`).join(", ");
+                await client.query(`
+                    INSERT INTO expense_special_tags (expense_id, special_tag_id)
+                    VALUES ${linkValues}
+                `);
+            }
+        }
+
+        await client.query("COMMIT");
+
+        // Fetch and return updated expense
+        const result = await client.query(
+            "SELECT * FROM expenses WHERE user_id = $1 AND id = $2",
+            [userId, id]
+        );
+        return result.rows[0] || null;
+    } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+    } finally {
+        client.release();
+    }
+}
+
+export async function getExpenseSpecialTags(expenseId: number): Promise<number[]> {
+    const result = await pool.query(
+        "SELECT special_tag_id FROM expense_special_tags WHERE expense_id = $1",
+        [expenseId]
+    );
+    return result.rows.map((row: any) => row.special_tag_id);
 }
 
 export async function remove(userId: string, id: number): Promise<boolean> {
     const query = "DELETE FROM expenses WHERE user_id = $1 AND id = $2";
     const result = await pool.query(query, [userId, id]);
     return (result.rowCount || 0) > 0;
+}
+
+export async function removeByMonths(userId: string, year: number, months: number[]): Promise<number> {
+    if (months.length === 0) return 0;
+
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+
+        // First, get expense IDs that match the criteria
+        const monthPlaceholders = months.map((_, i) => `$${i + 3}`).join(',');
+        const getIdsQuery = `
+            SELECT id FROM expenses 
+            WHERE user_id = $1 
+            AND EXTRACT(YEAR FROM date) = $2 
+            AND EXTRACT(MONTH FROM date) IN (${monthPlaceholders})
+        `;
+        const idsResult = await client.query(getIdsQuery, [userId, year, ...months]);
+        const expenseIds = idsResult.rows.map((row: any) => row.id);
+
+        if (expenseIds.length === 0) {
+            await client.query("COMMIT");
+            return 0;
+        }
+
+        // Delete from expense_special_tags first (foreign key constraint)
+        const tagPlaceholders = expenseIds.map((_, i) => `$${i + 1}`).join(',');
+        await client.query(
+            `DELETE FROM expense_special_tags WHERE expense_id IN (${tagPlaceholders})`,
+            expenseIds
+        );
+
+        // Delete expenses
+        const deleteQuery = `
+            DELETE FROM expenses 
+            WHERE user_id = $1 
+            AND EXTRACT(YEAR FROM date) = $2 
+            AND EXTRACT(MONTH FROM date) IN (${monthPlaceholders})
+        `;
+        const result = await client.query(deleteQuery, [userId, year, ...months]);
+
+        await client.query("COMMIT");
+        return result.rowCount || 0;
+    } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+    } finally {
+        client.release();
+    }
 }
 
 export interface MonthlyAggregate {

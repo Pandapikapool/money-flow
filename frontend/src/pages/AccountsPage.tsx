@@ -28,6 +28,88 @@ const ACCOUNTS_REFLECTION_PROMPTS = [
     "What's my liquidity strategy for the coming year?"
 ];
 
+// Activity Log Entry
+interface ActivityLogEntry {
+    id: string;
+    date: string;
+    timestamp: string;
+    accountName: string;
+    accountId: number;
+    amount?: number;
+    action: 'account_created' | 'account_updated' | 'account_deleted' | 'history_added' | 'history_updated' | 'history_deleted';
+    details?: string;
+}
+
+// Get activity log from localStorage
+const getAccountsLog = (): ActivityLogEntry[] => {
+    try {
+        const saved = localStorage.getItem('accounts_activity_log');
+        if (saved) return JSON.parse(saved);
+        return [];
+    } catch {
+        return [];
+    }
+};
+
+// Save activity log to localStorage
+const saveAccountsLog = (log: ActivityLogEntry[]) => {
+    localStorage.setItem('accounts_activity_log', JSON.stringify(log));
+};
+
+// Add entry to activity log
+const addToAccountsLog = (entry: Omit<ActivityLogEntry, 'id' | 'timestamp'>) => {
+    const log = getAccountsLog();
+    const now = new Date();
+    log.unshift({
+        ...entry,
+        id: Date.now().toString(),
+        timestamp: now.toISOString()
+    });
+    // Keep only last 500 entries
+    if (log.length > 500) log.splice(500);
+    saveAccountsLog(log);
+};
+
+// Get action label for display
+const getAccountsActionLabel = (action: ActivityLogEntry['action']): string => {
+    switch (action) {
+        case 'account_created': return 'Account Created';
+        case 'account_updated': return 'Account Updated';
+        case 'account_deleted': return 'Account Deleted';
+        case 'history_added': return 'History Added';
+        case 'history_updated': return 'History Updated';
+        case 'history_deleted': return 'History Deleted';
+        default: return action;
+    }
+};
+
+// Export log as CSV
+const exportAccountsLogAsCSV = (log: ActivityLogEntry[]) => {
+    const headers = ['Date', 'Time', 'Account', 'Action', 'Amount', 'Details'];
+    const rows = log.map(entry => [
+        entry.date,
+        entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString() : '',
+        entry.accountName,
+        getAccountsActionLabel(entry.action),
+        entry.amount ? entry.amount.toString() : '',
+        entry.details || ''
+    ]);
+
+    const csvContent = [headers, ...rows]
+        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `accounts_activity_log_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
 export default function AccountsPage() {
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [loading, setLoading] = useState(true);
@@ -83,8 +165,13 @@ export default function AccountsPage() {
     const [noteValue, setNoteValue] = useState("");
     const currentYear = new Date().getFullYear().toString();
 
+    // Activity Log State
+    const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
+    const [showActivityLog, setShowActivityLog] = useState(false);
+
     useEffect(() => {
         loadAccounts();
+        setActivityLog(getAccountsLog());
     }, []);
 
     const loadAccounts = () => {
@@ -99,7 +186,17 @@ export default function AccountsPage() {
         if (!newName) return;
 
         try {
-            await createAccount(newName, parseFloat(newBalance) || 0);
+            const created = await createAccount(newName, parseFloat(newBalance) || 0);
+            // Log the creation
+            addToAccountsLog({
+                date: new Date().toISOString().split('T')[0],
+                accountName: newName,
+                accountId: created.id,
+                amount: parseFloat(newBalance) || 0,
+                action: 'account_created',
+                details: `Initial balance: ${formatCurrency(parseFloat(newBalance) || 0)}`
+            });
+            setActivityLog(getAccountsLog());
             setNewName("");
             setNewBalance("");
             setIsCreating(false);
@@ -145,6 +242,20 @@ export default function AccountsPage() {
         try {
             const updated = await updateAccount(selectedAccount.id, parseFloat(editBalance) || 0, editNotes);
 
+            // Log the update
+            const changes: string[] = [];
+            if (selectedAccount.balance !== updated.balance) changes.push(`Balance: ${formatCurrency(updated.balance)}`);
+            if (selectedAccount.notes !== updated.notes) changes.push('Notes updated');
+            addToAccountsLog({
+                date: new Date().toISOString().split('T')[0],
+                accountName: updated.name,
+                accountId: updated.id,
+                amount: updated.balance,
+                action: 'account_updated',
+                details: changes.length > 0 ? changes.join(', ') : 'Settings updated'
+            });
+            setActivityLog(getAccountsLog());
+
             // Update local list
             setAccounts(prev => prev.map(a => a.id === updated.id ? updated : a));
 
@@ -163,6 +274,16 @@ export default function AccountsPage() {
     const handleDelete = async () => {
         if (!selectedAccount) return;
         try {
+            // Log the deletion before it happens
+            addToAccountsLog({
+                date: new Date().toISOString().split('T')[0],
+                accountName: selectedAccount.name,
+                accountId: selectedAccount.id,
+                amount: selectedAccount.balance,
+                action: 'account_deleted',
+                details: `Balance: ${formatCurrency(selectedAccount.balance)}`
+            });
+            setActivityLog(getAccountsLog());
             await deleteAccount(selectedAccount.id);
             setAccounts(prev => prev.filter(a => a.id !== selectedAccount.id));
             closeDetails();
@@ -184,10 +305,20 @@ export default function AccountsPage() {
     };
 
     const handleDeleteHistory = async () => {
-        if (!editHistoryEntry) return;
+        if (!editHistoryEntry || !selectedAccount) return;
         if (!confirm("Delete this history entry?")) return;
 
         try {
+            // Log before deletion
+            addToAccountsLog({
+                date: new Date().toISOString().split('T')[0],
+                accountName: selectedAccount.name,
+                accountId: selectedAccount.id,
+                amount: editHistoryEntry.balance,
+                action: 'history_deleted',
+                details: `Deleted entry: ${editHistoryEntry.date}, Balance: ${formatCurrency(editHistoryEntry.balance)}`
+            });
+            setActivityLog(getAccountsLog());
             await deleteHistoryEntry(editHistoryEntry.id);
             setHistory(prev => prev.filter(h => h.id !== editHistoryEntry.id));
             setEditHistoryEntry(null);
@@ -198,7 +329,7 @@ export default function AccountsPage() {
 
     const handleUpdateHistory = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!editHistoryEntry) return;
+        if (!editHistoryEntry || !selectedAccount) return;
 
         try {
             const dateChanged = editHistDate !== editHistoryEntry.date;
@@ -208,6 +339,19 @@ export default function AccountsPage() {
                 editHistNotes,
                 dateChanged ? editHistDate : undefined
             );
+            // Log the update
+            const changes: string[] = [];
+            if (dateChanged) changes.push(`Date: ${editHistDate}`);
+            if (editHistoryEntry.balance !== updated.balance) changes.push(`Balance: ${formatCurrency(updated.balance)}`);
+            addToAccountsLog({
+                date: new Date().toISOString().split('T')[0],
+                accountName: selectedAccount.name,
+                accountId: selectedAccount.id,
+                amount: updated.balance,
+                action: 'history_updated',
+                details: changes.length > 0 ? changes.join(', ') : 'Entry updated'
+            });
+            setActivityLog(getAccountsLog());
             setHistory(prev => prev.map(h => h.id === updated.id ? updated : h).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
             setEditHistoryEntry(null);
         } catch (err) {
@@ -262,6 +406,19 @@ export default function AccountsPage() {
 
         try {
             await Promise.all([...updates, ...creates]);
+            // Log bulk operations
+            const updateCount = updates.filter(u => u !== null).length;
+            const createCount = creates.length;
+            if (updateCount > 0 || createCount > 0) {
+                addToAccountsLog({
+                    date: new Date().toISOString().split('T')[0],
+                    accountName: selectedAccount.name,
+                    accountId: selectedAccount.id,
+                    action: updateCount > 0 && createCount > 0 ? 'history_updated' : createCount > 0 ? 'history_added' : 'history_updated',
+                    details: `Bulk: ${updateCount} updated, ${createCount} created`
+                });
+                setActivityLog(getAccountsLog());
+            }
             // Reload history
             const newHistory = await fetchAccountHistory(selectedAccount.id);
             setHistory(newHistory);
@@ -327,6 +484,16 @@ export default function AccountsPage() {
                 await createHistoryEntry(selectedAccount.id, entry.date, entry.balance, entry.notes);
             }
 
+            // Log the import
+            addToAccountsLog({
+                date: new Date().toISOString().split('T')[0],
+                accountName: selectedAccount.name,
+                accountId: selectedAccount.id,
+                action: 'history_added',
+                details: `CSV Import: ${entries.length} entries imported`
+            });
+            setActivityLog(getAccountsLog());
+
             // Reload history
             const newHistory = await fetchAccountHistory(selectedAccount.id);
             setHistory(newHistory);
@@ -361,6 +528,16 @@ export default function AccountsPage() {
 
         try {
             const entry = await createHistoryEntry(selectedAccount.id, newHistDate, parseFloat(newHistBalance) || 0, newHistNotes);
+            // Log the addition
+            addToAccountsLog({
+                date: new Date().toISOString().split('T')[0],
+                accountName: selectedAccount.name,
+                accountId: selectedAccount.id,
+                amount: entry.balance,
+                action: 'history_added',
+                details: `Added: ${newHistDate}, Balance: ${formatCurrency(entry.balance)}`
+            });
+            setActivityLog(getAccountsLog());
             setHistory(prev => [...prev, entry].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
             setNewHistDate("");
             setNewHistBalance("");
@@ -369,6 +546,13 @@ export default function AccountsPage() {
         } catch (err) {
             alert("Failed to add history entry");
         }
+    };
+
+    // Delete activity log entry
+    const handleDeleteLogEntry = (id: string) => {
+        const log = getAccountsLog().filter(entry => entry.id !== id);
+        saveAccountsLog(log);
+        setActivityLog(log);
     };
 
     const total = accounts.reduce((sum, a) => sum + a.balance, 0);
@@ -636,6 +820,116 @@ export default function AccountsPage() {
                                 </div>
                             ))}
                         </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Activity Log Section */}
+            <div style={{ marginTop: '40px', borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Activity Log</h3>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        {showActivityLog && activityLog.length > 0 && (
+                            <button
+                                onClick={() => exportAccountsLogAsCSV(activityLog)}
+                                style={{
+                                    padding: '6px 12px',
+                                    background: 'var(--accent-success)',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.8rem',
+                                    color: 'white',
+                                    fontWeight: '500'
+                                }}
+                            >
+                                Export CSV
+                            </button>
+                        )}
+                        <button
+                            onClick={() => setShowActivityLog(!showActivityLog)}
+                            style={{
+                                padding: '6px 12px',
+                                background: 'transparent',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                color: 'var(--text-primary)'
+                            }}
+                        >
+                            {showActivityLog ? 'Hide' : 'Show'} ({activityLog.length} entries)
+                        </button>
+                    </div>
+                </div>
+                {showActivityLog && (
+                    <div className="glass-panel" style={{ padding: '16px', maxHeight: '400px', overflowY: 'auto' }}>
+                        {activityLog.length === 0 ? (
+                            <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>
+                                No activity records yet. Records will appear here when you perform actions on accounts.
+                            </div>
+                        ) : (
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                        <th style={{ textAlign: 'left', padding: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Date</th>
+                                        <th style={{ textAlign: 'left', padding: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Account</th>
+                                        <th style={{ textAlign: 'left', padding: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Action</th>
+                                        <th style={{ textAlign: 'right', padding: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Amount</th>
+                                        <th style={{ textAlign: 'left', padding: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Details</th>
+                                        <th style={{ width: '60px' }}></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {activityLog.map(entry => {
+                                        const actionColor =
+                                            entry.action === 'account_created' ? 'var(--accent-primary)' :
+                                            entry.action === 'account_updated' ? 'var(--accent-warning)' :
+                                            entry.action === 'account_deleted' || entry.action === 'history_deleted' ? 'var(--accent-danger)' :
+                                            entry.action === 'history_added' ? 'var(--accent-primary)' :
+                                            entry.action === 'history_updated' ? 'var(--accent-warning)' :
+                                            'var(--text-secondary)';
+
+                                        return (
+                                            <tr key={entry.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                                <td style={{ padding: '8px', fontSize: '0.85rem' }}>
+                                                    {new Date(entry.date).toLocaleDateString()}
+                                                </td>
+                                                <td style={{ padding: '8px', fontSize: '0.85rem', fontWeight: '500' }}>
+                                                    {entry.accountName}
+                                                </td>
+                                                <td style={{ padding: '8px' }}>
+                                                    <span style={{
+                                                        fontSize: '0.7rem',
+                                                        padding: '2px 8px',
+                                                        borderRadius: '10px',
+                                                        background: actionColor,
+                                                        color: 'white'
+                                                    }}>
+                                                        {getAccountsActionLabel(entry.action)}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '8px', textAlign: 'right', fontSize: '0.85rem', fontWeight: '500', color: 'var(--accent-warning)' }}>
+                                                    {entry.amount && entry.amount > 0 ? formatCurrency(entry.amount) : '-'}
+                                                </td>
+                                                <td style={{ padding: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={entry.details || ''}>
+                                                    {entry.details || '-'}
+                                                </td>
+                                                <td style={{ padding: '8px' }}>
+                                                    <button
+                                                        onClick={() => handleDeleteLogEntry(entry.id)}
+                                                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--accent-danger)', fontSize: '0.75rem' }}
+                                                        title="Delete entry"
+                                                    >
+                                                        Del
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
                 )}
             </div>

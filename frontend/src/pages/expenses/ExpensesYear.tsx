@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { getYearSummary, type MonthlyAggregate } from "../../lib/api";
+import { getYearSummary, deleteExpensesByMonths, type MonthlyAggregate } from "../../lib/api";
 import { formatCurrency } from "../../lib/format";
 
 export default function ExpensesYear() {
@@ -8,6 +8,9 @@ export default function ExpensesYear() {
     const navigate = useNavigate();
     const [data, setData] = useState<MonthlyAggregate[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [selectedMonths, setSelectedMonths] = useState<number[]>([]);
+    const [deleting, setDeleting] = useState(false);
 
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;
@@ -30,6 +33,48 @@ export default function ExpensesYear() {
     const monthsOverBudget = data.filter(m => m.budget > 0 && m.spent > m.budget).length;
     const monthsUnderBudget = data.filter(m => m.budget > 0 && m.spent <= m.budget && m.spent > 0).length;
 
+    const handleDeleteClick = () => {
+        setSelectedMonths([]);
+        setShowDeleteModal(true);
+    };
+
+    const toggleMonth = (month: number) => {
+        setSelectedMonths(prev => 
+            prev.includes(month) 
+                ? prev.filter(m => m !== month)
+                : [...prev, month]
+        );
+    };
+
+    const handleDelete = async () => {
+        if (selectedMonths.length === 0) {
+            alert("Please select at least one month to delete");
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to delete expenses for ${selectedMonths.length} month(s)? This cannot be undone.`)) {
+            return;
+        }
+
+        if (!year) return;
+
+        setDeleting(true);
+        try {
+            await deleteExpensesByMonths(parseInt(year), selectedMonths);
+            setShowDeleteModal(false);
+            setSelectedMonths([]);
+            // Reload data
+            getYearSummary(parseInt(year))
+                .then(setData)
+                .catch(console.error);
+        } catch (err) {
+            alert("Failed to delete expenses");
+            console.error(err);
+        } finally {
+            setDeleting(false);
+        }
+    };
+
     if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>;
 
     return (
@@ -49,7 +94,24 @@ export default function ExpensesYear() {
                 >
                     &larr; {Number(year) - 1}
                 </button>
-                <h1 style={{ fontSize: '1.75rem', fontWeight: '600' }}>{year} Expenses</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <h1 style={{ fontSize: '1.75rem', fontWeight: '600', margin: 0 }}>{year} Expenses</h1>
+                    <button
+                        onClick={handleDeleteClick}
+                        style={{
+                            background: 'var(--accent-danger)',
+                            border: 'none',
+                            color: '#fff',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            fontWeight: '500'
+                        }}
+                    >
+                        Delete
+                    </button>
+                </div>
                 <button
                     onClick={() => navigate(`/expenses/${Number(year) + 1}`)}
                     style={{
@@ -222,6 +284,116 @@ export default function ExpensesYear() {
                     &larr; Back to all years
                 </Link>
             </div>
+
+            {/* Delete Modal */}
+            {showDeleteModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }}>
+                    <div className="glass-panel" style={{
+                        padding: '24px',
+                        maxWidth: '500px',
+                        width: '90%',
+                        maxHeight: '80vh',
+                        overflow: 'auto'
+                    }}>
+                        <h2 style={{ marginTop: 0, marginBottom: '20px' }}>Delete Expenses</h2>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                            Select the months you want to delete expenses for:
+                        </p>
+                        
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(3, 1fr)',
+                            gap: '12px',
+                            marginBottom: '24px'
+                        }}>
+                            {data.map(item => {
+                                const monthName = new Date(0, item.month - 1).toLocaleString('default', { month: 'short' });
+                                const hasData = item.spent > 0;
+                                const isSelected = selectedMonths.includes(item.month);
+                                
+                                return (
+                                    <label
+                                        key={item.month}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            padding: '12px',
+                                            background: isSelected ? 'var(--accent-primary)' : 'var(--bg-card)',
+                                            border: `1px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            opacity: hasData ? 1 : 0.5
+                                        }}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            onChange={() => toggleMonth(item.month)}
+                                            disabled={!hasData}
+                                            style={{ cursor: 'pointer' }}
+                                        />
+                                        <div>
+                                            <div style={{ fontWeight: '500' }}>{monthName}</div>
+                                            {hasData && (
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                                    {formatCurrency(item.spent)}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </label>
+                                );
+                            })}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => {
+                                    setShowDeleteModal(false);
+                                    setSelectedMonths([]);
+                                }}
+                                disabled={deleting}
+                                style={{
+                                    background: 'var(--bg-panel)',
+                                    border: '1px solid var(--border-color)',
+                                    color: 'var(--text-primary)',
+                                    padding: '10px 20px',
+                                    borderRadius: '6px',
+                                    cursor: deleting ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                disabled={deleting || selectedMonths.length === 0}
+                                style={{
+                                    background: deleting || selectedMonths.length === 0 ? 'var(--text-secondary)' : 'var(--accent-danger)',
+                                    border: 'none',
+                                    color: '#fff',
+                                    padding: '10px 20px',
+                                    borderRadius: '6px',
+                                    cursor: deleting || selectedMonths.length === 0 ? 'not-allowed' : 'pointer',
+                                    fontWeight: '500'
+                                }}
+                            >
+                                {deleting ? 'Deleting...' : `Delete ${selectedMonths.length} Month(s)`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -223,8 +223,10 @@ export default function PlansPage() {
     const [history, setHistory] = useState<PlanHistory[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
     const [showGraph, setShowGraph] = useState(false);
+    const [planPremiumTotals, setPlanPremiumTotals] = useState<Record<number, number>>({});
 
     // Edit Current State
+    const [editName, setEditName] = useState("");
     const [editCover, setEditCover] = useState("");
     const [editPremium, setEditPremium] = useState("");
     const [editFrequency, setEditFrequency] = useState("yearly");
@@ -291,12 +293,34 @@ export default function PlansPage() {
         setPaymentLog(getPaymentLog());
     }, []);
 
-    const loadPlans = () => {
+    const updatePremiumTotal = (planId: number, historyData: PlanHistory[]) => {
+        const total = historyData.reduce((sum, entry) => sum + entry.premium_amount, 0);
+        setPlanPremiumTotals(prev => ({ ...prev, [planId]: total }));
+    };
+
+    const loadPlans = async () => {
         setLoading(true);
-        fetchPlans()
-            .then(setPlans)
-            .catch(console.error)
-            .finally(() => setLoading(false));
+        try {
+            const plansData = await fetchPlans();
+            setPlans(plansData);
+            
+            // Load history for all plans to calculate total premium paid
+            const totals: Record<number, number> = {};
+            await Promise.all(plansData.map(async (plan) => {
+                try {
+                    const planHistory = await fetchPlanHistory(plan.id);
+                    const total = planHistory.reduce((sum, entry) => sum + entry.premium_amount, 0);
+                    totals[plan.id] = total;
+                } catch (err) {
+                    totals[plan.id] = 0;
+                }
+            }));
+            setPlanPremiumTotals(totals);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleCreate = async (e: React.FormEvent) => {
@@ -343,6 +367,7 @@ export default function PlansPage() {
 
     const openPlanDetails = async (plan: Plan) => {
         setSelectedPlan(plan);
+        setEditName(plan.name);
         setEditCover(plan.cover_amount.toString());
         setEditPremium(plan.premium_amount.toString());
         setEditFrequency(plan.premium_frequency);
@@ -359,7 +384,10 @@ export default function PlansPage() {
         // Load History
         setLoadingHistory(true);
         fetchPlanHistory(plan.id)
-            .then(setHistory)
+            .then(hist => {
+                setHistory(hist);
+                updatePremiumTotal(plan.id, hist);
+            })
             .catch(console.error)
             .finally(() => setLoadingHistory(false));
     };
@@ -376,13 +404,14 @@ export default function PlansPage() {
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedPlan) return;
+        if (!selectedPlan || !editName) return;
 
         setSaving(true);
         try {
             const customDays = editFrequency === 'custom' ? parseInt(editCustomDays) || undefined : undefined;
             const updated = await updatePlan(
                 selectedPlan.id,
+                editName,
                 parseFloat(editCover) || 0,
                 parseFloat(editPremium) || 0,
                 editFrequency,
@@ -395,6 +424,7 @@ export default function PlansPage() {
             setSelectedPlan(updated);
             // Log the update
             const changes: string[] = [];
+            if (selectedPlan.name !== updated.name) changes.push(`Name: ${updated.name}`);
             if (selectedPlan.cover_amount !== updated.cover_amount) changes.push(`Cover: ${formatCurrency(updated.cover_amount)}`);
             if (selectedPlan.premium_amount !== updated.premium_amount) changes.push(`Premium: ${formatCurrency(updated.premium_amount)}`);
             if (selectedPlan.premium_frequency !== updated.premium_frequency) changes.push(`Freq: ${getFrequencyLabel(updated.premium_frequency, updated.custom_frequency_days)}`);
@@ -470,7 +500,11 @@ export default function PlansPage() {
             });
             setPaymentLog(getPaymentLog());
             await deletePlanHistoryEntry(editHistoryEntry.id);
-            setHistory(prev => prev.filter(h => h.id !== editHistoryEntry.id));
+            const updatedHistory = history.filter(h => h.id !== editHistoryEntry.id);
+            setHistory(updatedHistory);
+            if (selectedPlan) {
+                updatePremiumTotal(selectedPlan.id, updatedHistory);
+            }
             setEditHistoryEntry(null);
         } catch (err) {
             alert("Failed to delete history entry");
@@ -504,7 +538,11 @@ export default function PlansPage() {
                 details: changes.length > 0 ? changes.join(', ') : 'Entry updated'
             });
             setPaymentLog(getPaymentLog());
-            setHistory(prev => prev.map(h => h.id === updated.id ? updated : h).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+            const updatedHistory = history.map(h => h.id === updated.id ? updated : h).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            setHistory(updatedHistory);
+            if (selectedPlan) {
+                updatePremiumTotal(selectedPlan.id, updatedHistory);
+            }
             setEditHistoryEntry(null);
         } catch (err) {
             alert("Failed to update history entry");
@@ -569,6 +607,7 @@ export default function PlansPage() {
             await Promise.all([...updates, ...creates]);
             const newHistory = await fetchPlanHistory(selectedPlan.id);
             setHistory(newHistory);
+            updatePremiumTotal(selectedPlan.id, newHistory);
             setBulkEditMode(false);
             setBulkEdits({});
             setNewBulkRows([]);
@@ -626,8 +665,10 @@ export default function PlansPage() {
 
         const plan = markPaidPlan;
         const nextPremiumStr = markPaidNextDate;
+        const paymentDate = new Date().toISOString().split('T')[0]; // Today's date for the history entry
 
         try {
+            // Update plan with next premium date
             const updated = await updatePlan(
                 plan.id,
                 plan.cover_amount,
@@ -642,9 +683,24 @@ export default function PlansPage() {
                 setSelectedPlan(updated);
                 setEditNextPremium(nextPremiumStr);
             }
+
+            // Create history entry for this payment
+            try {
+                await createPlanHistoryEntry(
+                    plan.id,
+                    paymentDate,
+                    plan.cover_amount,
+                    plan.premium_amount,
+                    `Premium paid (${getFrequencyLabel(plan.premium_frequency, plan.custom_frequency_days)})`
+                );
+            } catch (historyErr) {
+                console.error("Failed to create history entry:", historyErr);
+                alert("Plan updated but failed to add history entry. Please add it manually.");
+            }
+
             // Log the payment
             addToPaymentLog({
-                date: new Date().toISOString().split('T')[0],
+                date: paymentDate,
                 planName: plan.name,
                 planId: plan.id,
                 amount: plan.premium_amount,
@@ -652,10 +708,18 @@ export default function PlansPage() {
                 details: `Premium: ${formatCurrency(plan.premium_amount)} (${getFrequencyLabel(plan.premium_frequency, plan.custom_frequency_days)}). Next due: ${new Date(nextPremiumStr).toLocaleDateString()}`
             });
             setPaymentLog(getPaymentLog());
-            // Reload history if modal open
-            if (selectedPlan && selectedPlan.id === updated.id) {
-                fetchPlanHistory(updated.id).then(setHistory);
+
+            // Always refresh history and update premium total
+            try {
+                const newHistory = await fetchPlanHistory(updated.id);
+                if (selectedPlan && selectedPlan.id === updated.id) {
+                    setHistory(newHistory);
+                }
+                updatePremiumTotal(updated.id, newHistory);
+            } catch (historyFetchErr) {
+                console.error("Failed to refresh history:", historyFetchErr);
             }
+
             notifyPlansUpdated();
             // Close modal
             setMarkPaidPlan(null);
@@ -687,6 +751,34 @@ export default function PlansPage() {
         });
         setPaymentLog(getPaymentLog());
         notifyPlansUpdated();
+    };
+
+    // Delete expired plan
+    const handleDeleteExpired = async (plan: Plan, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!confirm(`Are you sure you want to delete "${plan.name}"? This cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            // Log the deletion before it happens
+            addToPaymentLog({
+                date: new Date().toISOString().split('T')[0],
+                planName: plan.name,
+                planId: plan.id,
+                amount: plan.cover_amount,
+                action: 'plan_deleted',
+                details: `Expired plan deleted. Cover: ${formatCurrency(plan.cover_amount)}, Premium: ${formatCurrency(plan.premium_amount)}`
+            });
+            setPaymentLog(getPaymentLog());
+            await deletePlan(plan.id);
+            setPlans(prev => prev.filter(p => p.id !== plan.id));
+            // Remove from acknowledged list if it was there
+            setAcknowledgedExpired(prev => prev.filter(id => id !== plan.id));
+            notifyPlansUpdated();
+        } catch (err) {
+            alert("Failed to delete plan");
+        }
     };
 
     // Delete activity log entry
@@ -797,7 +889,11 @@ export default function PlansPage() {
                 details: `Added: ${newHistDate}, Cover: ${formatCurrency(entry.cover_amount)}, Premium: ${formatCurrency(entry.premium_amount)}`
             });
             setPaymentLog(getPaymentLog());
-            setHistory(prev => [...prev, entry].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+            const updatedHistory = [...history, entry].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            setHistory(updatedHistory);
+            if (selectedPlan) {
+                updatePremiumTotal(selectedPlan.id, updatedHistory);
+            }
             setNewHistDate("");
             setNewHistCover("");
             setNewHistPremium("");
@@ -1106,6 +1202,10 @@ export default function PlansPage() {
                     const premiumOverdue = isPremiumOverdue(plan.next_premium_date, plan.expiry_date);
                     const premiumDue = isPremiumDue(plan.next_premium_date, 15, plan.expiry_date);
                     const premiumDays = getDaysUntil(plan.next_premium_date);
+                    
+                    // Calculate total premium paid from history (will be loaded when plan is opened)
+                    // For now, we'll need to fetch it or calculate it when plan details are opened
+                    // Since history is only loaded when plan is selected, we'll add a state to track totals
 
                     return (
                         <div
@@ -1170,6 +1270,14 @@ export default function PlansPage() {
                                     </div>
                                 </div>
                             </div>
+                            
+                            {/* Total Premium Paid */}
+                            <div style={{ marginBottom: '12px', padding: '8px', background: 'var(--bg-panel)', borderRadius: '6px' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>Total Premium Paid</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--accent-warning)' }}>
+                                    {formatCurrency(planPremiumTotals[plan.id] || 0)}
+                                </div>
+                            </div>
 
                             {/* Next Premium Due */}
                             {plan.next_premium_date && (
@@ -1205,28 +1313,6 @@ export default function PlansPage() {
                                 }}>
                                     {plan.notes.split('\n')[0]}
                                 </div>
-                            )}
-
-                            {/* Mark Paid Button - hidden if next premium would exceed expiry */}
-                            {!wouldNextPremiumExceedExpiry(plan) && (
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); openMarkPaidModal(plan); }}
-                                    style={{
-                                        marginTop: '12px',
-                                        width: '100%',
-                                        padding: '8px 12px',
-                                        background: premiumOverdue || premiumDue ? 'var(--accent-success)' : 'transparent',
-                                        color: premiumOverdue || premiumDue ? '#fff' : 'var(--text-secondary)',
-                                        border: premiumOverdue || premiumDue ? 'none' : '1px solid var(--border-color)',
-                                        borderRadius: '6px',
-                                        cursor: 'pointer',
-                                        fontSize: '0.8rem',
-                                        fontWeight: '500',
-                                        transition: 'all 0.15s'
-                                    }}
-                                >
-                                    Mark Paid
-                                </button>
                             )}
                         </div>
                     );
@@ -1306,18 +1392,22 @@ export default function PlansPage() {
                                     />
                                 )}
                                 <input
-                                    type="date"
+                                    type="text"
                                     value={newExpiry}
                                     onChange={e => setNewExpiry(e.target.value)}
+                                    placeholder="YYYY-MM-DD"
+                                    pattern="\d{4}-\d{2}-\d{2}"
                                     title="Expiry Date"
                                 />
                             </div>
                             <div style={{ marginBottom: '8px' }}>
                                 <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Next Premium Date</label>
                                 <input
-                                    type="date"
+                                    type="text"
                                     value={newNextPremium}
                                     onChange={e => setNewNextPremium(e.target.value)}
+                                    placeholder="YYYY-MM-DD"
+                                    pattern="\d{4}-\d{2}-\d{2}"
                                     title="Next Premium Date"
                                 />
                             </div>
@@ -1428,25 +1518,42 @@ export default function PlansPage() {
                                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Cover</div>
                                                 <div style={{ fontWeight: '600', color: 'var(--text-secondary)' }}>{formatCurrency(plan.cover_amount)}</div>
                                             </div>
-                                            {!isAcknowledged && (
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                {!isAcknowledged && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleAcknowledgeExpired(plan);
+                                                        }}
+                                                        style={{
+                                                            padding: '6px 12px',
+                                                            background: 'transparent',
+                                                            border: '1px solid var(--border-color)',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            fontSize: '0.75rem',
+                                                            color: 'var(--text-secondary)'
+                                                        }}
+                                                    >
+                                                        Acknowledge
+                                                    </button>
+                                                )}
                                                 <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleAcknowledgeExpired(plan);
-                                                    }}
+                                                    onClick={(e) => handleDeleteExpired(plan, e)}
                                                     style={{
                                                         padding: '6px 12px',
-                                                        background: 'transparent',
-                                                        border: '1px solid var(--border-color)',
+                                                        background: 'var(--accent-danger)',
+                                                        border: 'none',
                                                         borderRadius: '4px',
                                                         cursor: 'pointer',
                                                         fontSize: '0.75rem',
-                                                        color: 'var(--text-secondary)'
+                                                        color: '#fff',
+                                                        fontWeight: '500'
                                                     }}
                                                 >
-                                                    Acknowledge
+                                                    Delete
                                                 </button>
-                                            )}
+                                            </div>
                                         </div>
                                     </div>
                                 );
@@ -1732,6 +1839,16 @@ export default function PlansPage() {
 
                         {/* Update Form */}
                         <form onSubmit={handleUpdate} style={{ marginBottom: '24px' }}>
+                            <div style={{ marginBottom: '16px' }}>
+                                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Name</label>
+                                <input
+                                    type="text"
+                                    value={editName}
+                                    onChange={e => setEditName(e.target.value)}
+                                    style={{ width: '100%', fontSize: '1.1rem', fontWeight: '600' }}
+                                    required
+                                />
+                            </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                                 <div>
                                     <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Cover Amount</label>
@@ -1792,9 +1909,11 @@ export default function PlansPage() {
                                     <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Expiry Date</label>
                                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                         <input
-                                            type="date"
+                                            type="text"
                                             value={editExpiry}
                                             onChange={e => setEditExpiry(e.target.value)}
+                                            placeholder="YYYY-MM-DD"
+                                            pattern="\d{4}-\d{2}-\d{2}"
                                             style={{ flex: 1 }}
                                         />
                                         {editExpiry !== (selectedPlan.expiry_date || '') && (
@@ -1828,9 +1947,11 @@ export default function PlansPage() {
                                         </label>
                                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                             <input
-                                                type="date"
+                                                type="text"
                                                 value={editNextPremium}
                                                 onChange={e => setEditNextPremium(e.target.value)}
+                                                placeholder="YYYY-MM-DD"
+                                                pattern="\d{4}-\d{2}-\d{2}"
                                                 style={{
                                                     flex: 1,
                                                     borderColor: isPremiumOverdue(selectedPlan.next_premium_date, selectedPlan.expiry_date) ? 'var(--accent-danger)' : undefined
@@ -2074,9 +2195,11 @@ export default function PlansPage() {
                                             <div>
                                                 <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Date</label>
                                                 <input
-                                                    type="date"
+                                                    type="text"
                                                     value={newHistDate}
                                                     onChange={e => setNewHistDate(e.target.value)}
+                                                    placeholder="YYYY-MM-DD"
+                                                    pattern="\d{4}-\d{2}-\d{2}"
                                                     required
                                                     style={{ padding: '8px' }}
                                                 />
@@ -2149,9 +2272,11 @@ export default function PlansPage() {
                                                                 <tr key={h.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                                                     <td style={{ padding: '8px' }}>
                                                                         <input
-                                                                            type="date"
-                                                                            value={bulkEdits[h.id]?.date || ''}
-                                                                            onChange={e => setBulkEdits(prev => ({ ...prev, [h.id]: { ...prev[h.id], date: e.target.value } }))}
+                                                                            type="text"
+                                                                            value={bulkEdits[h.id]?.date || h.date}
+                                                                            onChange={e => setBulkEdits(prev => ({ ...prev, [h.id]: { ...prev[h.id], date: e.target.value, cover_amount: prev[h.id]?.cover_amount || h.cover_amount.toString(), premium_amount: prev[h.id]?.premium_amount || h.premium_amount.toString(), notes: prev[h.id]?.notes || h.notes || '' } }))}
+                                                                            placeholder="YYYY-MM-DD"
+                                                                            pattern="\d{4}-\d{2}-\d{2}"
                                                                             style={{ padding: '6px' }}
                                                                         />
                                                                     </td>
@@ -2189,9 +2314,11 @@ export default function PlansPage() {
                                                                 <tr key={`new-${index}`} style={{ borderBottom: '1px solid var(--border-color)', background: 'rgba(99, 102, 241, 0.05)' }}>
                                                                     <td style={{ padding: '8px' }}>
                                                                         <input
-                                                                            type="date"
+                                                                            type="text"
                                                                             value={row.date}
                                                                             onChange={e => updateNewBulkRow(index, 'date', e.target.value)}
+                                                                            placeholder="YYYY-MM-DD"
+                                                                            pattern="\d{4}-\d{2}-\d{2}"
                                                                             style={{ padding: '6px' }}
                                                                         />
                                                                     </td>
@@ -2258,12 +2385,14 @@ export default function PlansPage() {
                                                 <form onSubmit={handleUpdateHistory} style={{ display: 'grid', gridTemplateColumns: '120px 120px 120px 1fr auto', gap: '12px', alignItems: 'flex-end' }}>
                                                     <div>
                                                         <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Date</label>
-                                                        <input
-                                                            type="date"
-                                                            value={editHistDate}
-                                                            onChange={e => setEditHistDate(e.target.value)}
-                                                            style={{ padding: '8px' }}
-                                                        />
+                                        <input
+                                            type="text"
+                                            value={editHistDate}
+                                            onChange={e => setEditHistDate(e.target.value)}
+                                            placeholder="YYYY-MM-DD"
+                                            pattern="\d{4}-\d{2}-\d{2}"
+                                            style={{ padding: '8px' }}
+                                        />
                                                     </div>
                                                     <div>
                                                         <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Cover</label>
@@ -2350,9 +2479,11 @@ export default function PlansPage() {
                                 Next Payment Due Date
                             </label>
                             <input
-                                type="date"
+                                type="text"
                                 value={markPaidNextDate}
                                 onChange={e => setMarkPaidNextDate(e.target.value)}
+                                placeholder="YYYY-MM-DD"
+                                pattern="\d{4}-\d{2}-\d{2}"
                                 style={{
                                     width: '100%',
                                     padding: '12px',

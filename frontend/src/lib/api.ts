@@ -103,7 +103,7 @@ export async function fetchExpenses(year: number, month: number): Promise<Expens
     return res.json();
 }
 
-export async function updateExpense(id: number, data: { amount?: number; statement?: string; notes?: string }): Promise<Expense> {
+export async function updateExpense(id: number, data: { amount?: number; statement?: string; date?: string; tag_id?: number; special_tag_ids?: number[]; notes?: string }): Promise<Expense> {
     const res = await fetch(`${API_BASE}/expenses/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -113,11 +113,27 @@ export async function updateExpense(id: number, data: { amount?: number; stateme
     return res.json();
 }
 
+export async function getExpenseSpecialTags(expenseId: number): Promise<number[]> {
+    const res = await fetch(`${API_BASE}/expenses/${expenseId}/special-tags`);
+    if (!res.ok) throw new Error("Failed to fetch expense special tags");
+    return res.json();
+}
+
 export async function deleteExpense(id: number): Promise<void> {
     const res = await fetch(`${API_BASE}/expenses/${id}`, {
         method: "DELETE",
     });
     if (!res.ok) throw new Error("Failed to delete expense");
+}
+
+export async function deleteExpensesByMonths(year: number, months: number[]): Promise<{ deletedCount: number }> {
+    const res = await fetch(`${API_BASE}/expenses/year/${year}/months`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ months }),
+    });
+    if (!res.ok) throw new Error("Failed to delete expenses");
+    return res.json();
 }
 
 export interface Account {
@@ -247,11 +263,11 @@ export async function createAsset(name: string, value: number, type: string, not
     return res.json();
 }
 
-export async function updateAsset(id: number, value: number, notes: string): Promise<Asset> {
+export async function updateAsset(id: number, name: string, value: number, notes: string): Promise<Asset> {
     const res = await fetch(`${API_BASE}/resources/assets/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ value, notes }),
+        body: JSON.stringify({ name, value, notes }),
     });
     if (!res.ok) throw new Error("Failed to update asset");
     return res.json();
@@ -362,6 +378,7 @@ export async function createPlan(
 
 export async function updatePlan(
     id: number,
+    name: string,
     cover_amount: number,
     premium_amount: number,
     premium_frequency: string,
@@ -373,7 +390,7 @@ export async function updatePlan(
     const res = await fetch(`${API_BASE}/resources/plans/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cover_amount, premium_amount, premium_frequency, expiry_date, next_premium_date, notes, custom_frequency_days }),
+        body: JSON.stringify({ name, cover_amount, premium_amount, premium_frequency, expiry_date, next_premium_date, notes, custom_frequency_days }),
     });
     if (!res.ok) throw new Error("Failed to update plan");
     return res.json();
@@ -481,6 +498,7 @@ export async function createLifeXpBucket(
 
 export async function updateLifeXpBucket(
     id: number,
+    name: string,
     target_amount: number,
     is_repetitive?: boolean,
     contribution_frequency?: string,
@@ -491,7 +509,7 @@ export async function updateLifeXpBucket(
     const res = await fetch(`${API_BASE}/resources/life-xp/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ target_amount, is_repetitive, contribution_frequency, next_contribution_date, notes, custom_frequency_days }),
+        body: JSON.stringify({ name, target_amount, is_repetitive, contribution_frequency, next_contribution_date, notes, custom_frequency_days }),
     });
     if (!res.ok) throw new Error("Failed to update bucket");
     return res.json();
@@ -728,12 +746,15 @@ export async function createSIP(
     start_date: string,
     current_nav: number,
     notes?: string,
-    scheme_code?: number
+    scheme_code?: number,
+    total_units?: number,
+    invested_amount?: number,
+    investment_type?: 'sip' | 'lumpsum'
 ): Promise<SIP> {
     const res = await fetch(`${API_BASE}/resources/sips`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, sip_amount, start_date, current_nav, notes, scheme_code }),
+        body: JSON.stringify({ name, sip_amount, start_date, current_nav, notes, scheme_code, total_units, invested_amount, investment_type }),
     });
     if (!res.ok) throw new Error("Failed to create SIP");
     return res.json();
@@ -763,6 +784,16 @@ export async function updateSIPNav(id: number, current_nav: number): Promise<SIP
         body: JSON.stringify({ current_nav }),
     });
     if (!res.ok) throw new Error("Failed to update NAV");
+    return res.json();
+}
+
+export async function updateSIPTotalUnits(id: number, total_units: number): Promise<SIP> {
+    const res = await fetch(`${API_BASE}/resources/sips/${id}/units`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ total_units }),
+    });
+    if (!res.ok) throw new Error("Failed to update total units");
     return res.json();
 }
 
@@ -989,8 +1020,8 @@ export async function createStock(
     symbol: string,
     name: string,
     quantity: number,
-    buy_price: number,
-    buy_date: string,
+    invested_value: number,
+    buy_date?: string,
     current_price?: number,
     notes?: string,
     tileId?: string
@@ -998,7 +1029,7 @@ export async function createStock(
     const res = await fetch(`${API_BASE}/resources/stocks/${market}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbol, name, quantity, buy_price, buy_date, current_price, notes, tile_id: tileId }),
+        body: JSON.stringify({ symbol, name, quantity, invested_value, buy_date, current_price, notes, tile_id: tileId }),
     });
     if (!res.ok) throw new Error("Failed to create stock");
     return res.json();
@@ -1009,14 +1040,15 @@ export async function updateStock(
     symbol: string,
     name: string,
     quantity: number,
-    buy_price: number,
+    invested_value: number,
     buy_date: string,
-    notes?: string
+    notes?: string,
+    current_price?: number
 ): Promise<Stock> {
     const res = await fetch(`${API_BASE}/resources/stocks/item/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbol, name, quantity, buy_price, buy_date, notes }),
+        body: JSON.stringify({ symbol, name, quantity, invested_value, buy_date, notes, current_price }),
     });
     if (!res.ok) throw new Error("Failed to update stock");
     return res.json();
