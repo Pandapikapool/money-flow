@@ -141,6 +141,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For questions, issues, or suggestions, please open an issue on GitHub.
 
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
 ---
 
 **Note**: This is currently a single-user application. Multi-user support may be added in future versions.

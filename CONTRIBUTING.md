@@ -97,3 +97,7 @@ We welcome contributions in many forms:
 ---
 
 Thank you for helping make Money Flow better! 🙏
+
+---
+
+**Note**: Make sure to push your branch to your fork before opening a pull request.
