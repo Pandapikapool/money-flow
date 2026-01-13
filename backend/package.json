@@ -1,6 +1,6 @@
 {
   "name": "money-flow-backend",
-  "version": "1.0.0",
+  "version": "1.0",
   "description": "Backend for Money Flow application",
   "main": "dist/server.js",
   "scripts": {
