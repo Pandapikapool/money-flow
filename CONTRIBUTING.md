@@ -95,9 +95,7 @@ We welcome contributions in many forms:
 - Review [USER_GUIDE.md](USER_GUIDE.md) to understand the application
 
 ---
-
 Thank you for helping make Money Flow better! 🙏
-
 ---
 
 **Note**: Make sure to push your branch to your fork before opening a pull request.
