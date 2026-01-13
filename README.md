@@ -1,5 +1,9 @@
 # Money Flow
 
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Node](https://img.shields.io/badge/node-%3E%3D18-green.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)
+
 A simple, manual-first personal finance application to track your expenses, budgets, and financial resources with clarity and control.
 
 ## What is Money Flow?
