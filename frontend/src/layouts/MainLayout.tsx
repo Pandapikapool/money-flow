@@ -4,7 +4,7 @@ import { fetchPlans, fetchLifeXpBuckets, type Plan, type LifeXpBucket } from "..
 
 const navItems = [
     { to: "/overview", label: "Overview" },
-    { to: "/daily", label: "Daily" },
+    { to: "/daily", label: "Add expense" },
     { to: "/expenses", label: "Expenses" },
     { to: "/budget", label: "Budget" },
     { to: "/accounts", label: "Accounts" },

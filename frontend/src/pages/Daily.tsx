@@ -48,7 +48,7 @@ export default function Daily() {
 
     return (
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <h1 style={{ marginBottom: '24px', textAlign: 'center' }}>Daily Tracker</h1>
+            <h1 style={{ marginBottom: '24px', textAlign: 'center' }}>Add Expense</h1>
 
             {/* Budget Summary Card */}
             <div className="glass-panel" style={{ padding: '20px', marginBottom: '24px' }}>

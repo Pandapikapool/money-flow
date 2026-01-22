@@ -5,6 +5,7 @@ import {
     fetchLifeXpHistory, type LifeXpBucket, type LifeXpHistory
 } from "../lib/api";
 import { formatCurrency } from "../lib/format";
+import LifeXpGuide from "../components/LifeXpGuide";
 
 const CONTRIBUTION_FREQUENCIES = [
     { value: 'monthly', label: 'Monthly' },
@@ -207,6 +208,9 @@ export default function LifeXpPage() {
     // Activity Log State
     const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
     const [showActivityLog, setShowActivityLog] = useState(false);
+
+    // Guide State
+    const [showGuide, setShowGuide] = useState(false);
 
     useEffect(() => {
         loadBuckets();
@@ -535,7 +539,7 @@ export default function LifeXpPage() {
 
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                     <h1 style={{ fontSize: '1.75rem', fontWeight: '600', margin: 0 }}>Life XP</h1>
                     {actionNeededBuckets.length > 0 && (
                         <span style={{
@@ -554,6 +558,37 @@ export default function LifeXpPage() {
                             {actionNeededBuckets.length}
                         </span>
                     )}
+                    <button
+                        onClick={() => setShowGuide(true)}
+                        style={{
+                            padding: '6px 12px',
+                            background: 'var(--bg-panel)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                            fontWeight: '500',
+                            color: 'var(--text-primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'var(--accent-primary)';
+                            e.currentTarget.style.color = 'white';
+                            e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'var(--bg-panel)';
+                            e.currentTarget.style.color = 'var(--text-primary)';
+                            e.currentTarget.style.borderColor = 'var(--border-color)';
+                        }}
+                        title="View Life XP Guide"
+                    >
+                        <span>📖</span>
+                        <span>Guide</span>
+                    </button>
                 </div>
                 <div style={{ display: 'flex', gap: '32px' }}>
                     <div style={{ textAlign: 'right' }}>
@@ -1503,6 +1538,9 @@ export default function LifeXpPage() {
                     50% { opacity: 0.5; }
                 }
             `}</style>
+
+            {/* Life XP Guide Sidebar */}
+            <LifeXpGuide isOpen={showGuide} onClose={() => setShowGuide(false)} />
         </div>
     );
 }
