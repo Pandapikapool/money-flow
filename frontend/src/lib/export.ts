@@ -547,3 +547,147 @@ export async function exportYearData(year: number): Promise<void> {
         throw error;
     }
 }
+
+/** Same sheet/column structure as export; empty sheet = header only (0 / no data). */
+export function downloadSampleTemplate(): void {
+    const workbook = XLSX.utils.book_new();
+    const year = 2024;
+
+    // 1. Summary
+    const summaryData = [
+        ['Year', year],
+        ['Total Expenses', 12000],
+        ['Total Budget', 15000],
+        ['Average Monthly Expense', 1000],
+        ['Average Monthly Budget', 1250],
+        [''],
+        ['Month', 'Spent', 'Budget', 'Remaining'],
+        ['January', 900, 1250, 350],
+        ['February', 1100, 1250, 150],
+        ['March', 1000, 1250, 250]
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(summaryData), 'Summary');
+
+    // 2. Expenses
+    const expensesData = [
+        ['Date', 'Amount', 'Statement', 'Tag', 'Special Tags', 'Notes'],
+        ['2024-01-15', 500, 'Groceries', 'Food', 'Personal', ''],
+        ['2024-01-20', 200, 'Fuel', 'Transport', '', ''],
+        ['2024-02-01', 300, 'Internet', 'Bills', 'Recurring', '']
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(expensesData), 'Expenses');
+
+    // 3. Budgets
+    const budgetsData = [
+        ['Month', 'Amount'],
+        ['January', 1250],
+        ['February', 1250],
+        ['March', 1250]
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(budgetsData), 'Budgets');
+
+    // 4. Accounts
+    const accountsData = [
+        ['ID', 'Name', 'Balance', 'Notes'],
+        [1, 'Savings', 50000, ''],
+        [2, 'Wallet', 2000, '']
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(accountsData), 'Accounts');
+
+    // 5. Account History (empty = no data)
+    const accountHistoryData = [
+        ['Account ID', 'Account Name', 'Date', 'Balance', 'Notes']
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(accountHistoryData), 'Account History');
+
+    // 6. Assets
+    const assetsData = [
+        ['ID', 'Name', 'Type', 'Value', 'Notes'],
+        [1, 'Laptop', 'asset', 60000, '']
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(assetsData), 'Assets');
+
+    // 7. Asset History (empty)
+    const assetHistoryData = [
+        ['Asset ID', 'Asset Name', 'Date', 'Value', 'Notes']
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(assetHistoryData), 'Asset History');
+
+    // 8. Plans
+    const plansData = [
+        ['ID', 'Name', 'Cover Amount', 'Premium Amount', 'Premium Frequency', 'Expiry Date', 'Next Premium Date', 'Notes'],
+        [1, 'Health Insurance', 500000, 12000, 'yearly', '2025-12-31', '2024-12-31', '']
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(plansData), 'Plans');
+
+    // 9. Plan History (empty)
+    const planHistoryData = [
+        ['Plan ID', 'Plan Name', 'Date', 'Cover Amount', 'Premium Amount', 'Notes']
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(planHistoryData), 'Plan History');
+
+    // 10. Life XP
+    const lifeXpData = [
+        ['ID', 'Name', 'Target Amount', 'Saved Amount', 'Is Repetitive', 'Frequency', 'Next Contribution Date', 'Status', 'Notes'],
+        [1, 'Vacation', 50000, 10000, 'Yes', 'monthly', '', 'active', '']
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(lifeXpData), 'Life XP');
+
+    // 11. Life XP History (empty)
+    const lifeXpHistoryData = [
+        ['Bucket ID', 'Bucket Name', 'Date', 'Amount', 'Total Saved', 'Notes']
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(lifeXpHistoryData), 'Life XP History');
+
+    // 12. Fixed Returns
+    const fixedReturnsData = [
+        ['ID', 'Name', 'Invested Amount', 'Interest Rate (%)', 'Start Date', 'Maturity Date', 'Expected Withdrawal', 'Actual Withdrawal', 'Status', 'Closed Date', 'Notes'],
+        [1, 'FD Bank', 100000, 7, '2024-01-01', '2025-01-01', 107000, '', 'ongoing', '', '']
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(fixedReturnsData), 'Fixed Returns');
+
+    // 13. SIPs
+    const sipsData = [
+        ['ID', 'Name', 'Scheme Code', 'SIP Amount', 'Start Date', 'Total Units', 'Current NAV', 'Total Invested', 'Status', 'Paused Date', 'Redeemed Date', 'Redeemed Amount', 'Notes'],
+        [1, 'Index Fund', '', 5000, '2024-01-01', 100, 50, 5000, 'ongoing', '', '', '', '']
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(sipsData), 'SIPs');
+
+    // 14. SIP Transactions (empty)
+    const sipTransactionsData = [
+        ['SIP ID', 'SIP Name', 'Date', 'Type', 'Amount', 'NAV', 'Units', 'Notes']
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(sipTransactionsData), 'SIP Transactions');
+
+    // 15. Recurring Deposits
+    const rdsData = [
+        ['ID', 'Name', 'Installment Amount', 'Frequency', 'Interest Rate (%)', 'Start Date', 'Total Installments', 'Installments Paid', 'Next Due Date', 'Maturity Value', 'Status', 'Closed Date', 'Actual Withdrawal', 'Notes'],
+        [1, 'RD Bank', 5000, 'monthly', 6.5, '2024-01-01', 12, 0, '2024-02-01', 62000, 'ongoing', '', '', '']
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(rdsData), 'Recurring Deposits');
+
+    // 16–18. Stocks (minimal or empty)
+    const stocksCols = ['ID', 'Symbol', 'Name', 'Quantity', 'Buy Price', 'Buy Date', 'Current Price', 'Status', 'Sell Price', 'Sell Date', 'Notes'];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([stocksCols]), 'Stocks - Indian');
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([stocksCols]), 'Stocks - US');
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([stocksCols]), 'Stocks - Crypto');
+
+    // 19. Tags
+    const tagsData = [
+        ['ID', 'Name', 'Page Type'],
+        [1, 'Food', 'expense'],
+        [2, 'Transport', 'expense'],
+        [3, 'Bills', 'expense']
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(tagsData), 'Tags');
+
+    // 20. Special Tags
+    const specialTagsData = [
+        ['ID', 'Name'],
+        [1, 'Personal'],
+        [2, 'Recurring']
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(specialTagsData), 'Special Tags');
+
+    XLSX.writeFile(workbook, 'money-flow-sample.xlsx');
+}

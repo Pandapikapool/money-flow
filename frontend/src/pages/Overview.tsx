@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -13,7 +13,8 @@ import {
     type SIPSummary, type RDSummary, type StocksSummary, type Expense, type Tag, type SpecialTag
 } from "../lib/api";
 import { formatCurrency } from "../lib/format";
-import { exportYearData } from "../lib/export";
+import { exportYearData, downloadSampleTemplate } from "../lib/export";
+import { importFromFile } from "../lib/import";
 
 const COLORS = ['#4caf50', '#2196f3', '#ff9800', '#e91e63', '#9c27b0', '#00bcd4'];
 
@@ -41,6 +42,8 @@ export default function Overview() {
     const [selectedHeatmapMonth, setSelectedHeatmapMonth] = useState<number | null>(null); // null = show weekly, number = show daily for that month
     const [excludedSpecialTagIds, setExcludedSpecialTagIds] = useState<Set<number>>(new Set()); // Set of special tag IDs to exclude
     const [exporting, setExporting] = useState(false);
+    const [importing, setImporting] = useState(false);
+    const importInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const loadAll = async () => {
@@ -1086,6 +1089,20 @@ export default function Overview() {
                         {selectedYear} Expenses
                     </Link>
                     <button
+                        onClick={() => downloadSampleTemplate()}
+                        style={{
+                            padding: '10px 20px',
+                            background: 'var(--bg-panel)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            borderRadius: '8px',
+                            fontSize: '0.9rem',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        📄 Download sample template
+                    </button>
+                    <button
                         onClick={async () => {
                             const yearInput = prompt(`Enter year to export (default: ${selectedYear}):`, selectedYear.toString());
                             if (!yearInput) return;
@@ -1121,6 +1138,53 @@ export default function Overview() {
                         }}
                     >
                         {exporting ? 'Exporting...' : '📥 Export Data'}
+                    </button>
+                    <input
+                        ref={importInputRef}
+                        type="file"
+                        accept=".xlsx,.xls"
+                        style={{ display: 'none' }}
+                        onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setImporting(true);
+                            try {
+                                const result = await importFromFile(file);
+                                const countStr = Object.entries(result.counts)
+                                    .filter(([, n]) => n > 0)
+                                    .map(([k, n]) => `${k}: ${n}`)
+                                    .join(', ');
+                                if (result.errors.length > 0) {
+                                    alert(`Import finished with some errors.\n\nCreated: ${countStr || 'none'}\n\nErrors:\n${result.errors.slice(0, 5).join('\n')}${result.errors.length > 5 ? `\n... and ${result.errors.length - 5} more` : ''}`);
+                                } else {
+                                    alert(`Import completed for year ${result.year}.\n\nCreated: ${countStr || 'none'}`);
+                                }
+                                window.location.reload();
+                            } catch (error) {
+                                console.error('Import failed:', error);
+                                alert('Import failed. Please check the console for details.');
+                            } finally {
+                                setImporting(false);
+                                e.target.value = '';
+                            }
+                        }}
+                    />
+                    <button
+                        onClick={() => importInputRef.current?.click()}
+                        disabled={importing}
+                        style={{
+                            padding: '10px 20px',
+                            background: importing ? 'var(--text-secondary)' : 'var(--accent-primary)',
+                            border: 'none',
+                            color: '#fff',
+                            borderRadius: '8px',
+                            fontSize: '0.9rem',
+                            fontWeight: '500',
+                            cursor: importing ? 'not-allowed' : 'pointer',
+                            opacity: importing ? 0.6 : 1
+                        }}
+                    >
+                        {importing ? 'Importing...' : '📤 Import Data'}
                     </button>
                 </div>
             </div>
