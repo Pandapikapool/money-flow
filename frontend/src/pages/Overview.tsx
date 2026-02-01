@@ -13,6 +13,7 @@ import {
     type SIPSummary, type RDSummary, type StocksSummary, type Expense, type Tag, type SpecialTag
 } from "../lib/api";
 import { formatCurrency } from "../lib/format";
+import { exportYearData } from "../lib/export";
 
 const COLORS = ['#4caf50', '#2196f3', '#ff9800', '#e91e63', '#9c27b0', '#00bcd4'];
 
@@ -39,6 +40,7 @@ export default function Overview() {
     const [expenseSpecialTagsMap, setExpenseSpecialTagsMap] = useState<Record<number, number[]>>({});
     const [selectedHeatmapMonth, setSelectedHeatmapMonth] = useState<number | null>(null); // null = show weekly, number = show daily for that month
     const [excludedSpecialTagIds, setExcludedSpecialTagIds] = useState<Set<number>>(new Set()); // Set of special tag IDs to exclude
+    const [exporting, setExporting] = useState(false);
 
     useEffect(() => {
         const loadAll = async () => {
@@ -1083,6 +1085,43 @@ export default function Overview() {
                     }}>
                         {selectedYear} Expenses
                     </Link>
+                    <button
+                        onClick={async () => {
+                            const yearInput = prompt(`Enter year to export (default: ${selectedYear}):`, selectedYear.toString());
+                            if (!yearInput) return;
+                            
+                            const year = parseInt(yearInput, 10);
+                            if (isNaN(year) || year < 2000 || year > 2100) {
+                                alert('Please enter a valid year');
+                                return;
+                            }
+
+                            setExporting(true);
+                            try {
+                                await exportYearData(year);
+                                alert(`Export completed! File: money-flow-export-${year}.xlsx`);
+                            } catch (error) {
+                                console.error('Export failed:', error);
+                                alert('Export failed. Please check the console for details.');
+                            } finally {
+                                setExporting(false);
+                            }
+                        }}
+                        disabled={exporting}
+                        style={{
+                            padding: '10px 20px',
+                            background: exporting ? 'var(--text-secondary)' : 'var(--accent-success)',
+                            border: 'none',
+                            color: '#fff',
+                            borderRadius: '8px',
+                            fontSize: '0.9rem',
+                            fontWeight: '500',
+                            cursor: exporting ? 'not-allowed' : 'pointer',
+                            opacity: exporting ? 0.6 : 1
+                        }}
+                    >
+                        {exporting ? 'Exporting...' : '📥 Export Data'}
+                    </button>
                 </div>
             </div>
         </div>
