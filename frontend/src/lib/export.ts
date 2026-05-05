@@ -10,16 +10,15 @@ import {
     fetchSIPs, fetchSIPTransactions,
     fetchRecurringDeposits,
     fetchStocks,
-    type Expense, type Tag, type SpecialTag, type MonthlyAggregate,
-    type Account, type AccountHistory,
-    type Asset, type AssetHistory,
-    type Plan, type PlanHistory,
-    type LifeXpBucket, type LifeXpHistory,
-    type FixedReturn,
-    type SIP, type SIPTransaction,
-    type RecurringDeposit,
-    type Stock
+    type Expense,
+    type AccountHistory,
+    type AssetHistory,
+    type PlanHistory,
+    type LifeXpHistory,
+    type SIPTransaction,
 } from './api';
+
+type Row = (string | number | null | undefined)[];
 // Note: Using raw numbers for Excel, not formatted currency
 
 export async function exportYearData(year: number): Promise<void> {
@@ -144,7 +143,7 @@ export async function exportYearData(year: number): Promise<void> {
         // 1. Summary Sheet
         const totalSpent = yearSummary.reduce((sum, m) => sum + m.spent, 0);
         const totalBudget = yearSummary.reduce((sum, m) => sum + m.budget, 0);
-        const summaryData = [
+        const summaryData: Row[] = [
             ['Year', year],
             ['Total Expenses', totalSpent],
             ['Total Budget', totalBudget],
@@ -163,7 +162,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
 
         // 2. Expenses Sheet
-        const expensesData = [
+        const expensesData: Row[] = [
             ['Date', 'Amount', 'Statement', 'Tag', 'Special Tags', 'Notes']
         ];
         for (const expense of allExpenses) {
@@ -183,7 +182,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, expensesSheet, 'Expenses');
 
         // 3. Budgets Sheet
-        const budgetsData = [
+        const budgetsData: Row[] = [
             ['Month', 'Amount']
         ];
         for (const budget of budgets) {
@@ -196,7 +195,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, budgetsSheet, 'Budgets');
 
         // 4. Accounts Sheet
-        const accountsData = [
+        const accountsData: Row[] = [
             ['ID', 'Name', 'Balance', 'Notes']
         ];
         for (const account of accounts) {
@@ -211,7 +210,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, accountsSheet, 'Accounts');
 
         // 5. Account History Sheet
-        const accountHistoryData = [
+        const accountHistoryData: Row[] = [
             ['Account ID', 'Account Name', 'Date', 'Balance', 'Notes']
         ];
         for (const account of accounts) {
@@ -232,7 +231,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, accountHistorySheet, 'Account History');
 
         // 6. Assets Sheet
-        const assetsData = [
+        const assetsData: Row[] = [
             ['ID', 'Name', 'Type', 'Value', 'Notes']
         ];
         for (const asset of assets) {
@@ -248,7 +247,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, assetsSheet, 'Assets');
 
         // 7. Asset History Sheet
-        const assetHistoryData = [
+        const assetHistoryData: Row[] = [
             ['Asset ID', 'Asset Name', 'Date', 'Value', 'Notes']
         ];
         for (const asset of assets) {
@@ -269,7 +268,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, assetHistorySheet, 'Asset History');
 
         // 8. Plans Sheet
-        const plansData = [
+        const plansData: Row[] = [
             ['ID', 'Name', 'Cover Amount', 'Premium Amount', 'Premium Frequency', 'Expiry Date', 'Next Premium Date', 'Notes']
         ];
         for (const plan of plans) {
@@ -288,7 +287,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, plansSheet, 'Plans');
 
         // 9. Plan History Sheet
-        const planHistoryData = [
+        const planHistoryData: Row[] = [
             ['Plan ID', 'Plan Name', 'Date', 'Cover Amount', 'Premium Amount', 'Notes']
         ];
         for (const plan of plans) {
@@ -310,7 +309,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, planHistorySheet, 'Plan History');
 
         // 10. Life XP Sheet
-        const lifeXpData = [
+        const lifeXpData: Row[] = [
             ['ID', 'Name', 'Target Amount', 'Saved Amount', 'Is Repetitive', 'Frequency', 'Next Contribution Date', 'Status', 'Notes']
         ];
         for (const bucket of lifeXpBuckets) {
@@ -330,7 +329,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, lifeXpSheet, 'Life XP');
 
         // 11. Life XP History Sheet
-        const lifeXpHistoryData = [
+        const lifeXpHistoryData: Row[] = [
             ['Bucket ID', 'Bucket Name', 'Date', 'Amount', 'Total Saved', 'Notes']
         ];
         for (const bucket of lifeXpBuckets) {
@@ -352,7 +351,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, lifeXpHistorySheet, 'Life XP History');
 
         // 12. Fixed Returns Sheet
-        const fixedReturnsData = [
+        const fixedReturnsData: Row[] = [
             ['ID', 'Name', 'Invested Amount', 'Interest Rate (%)', 'Start Date', 'Maturity Date', 'Expected Withdrawal', 'Actual Withdrawal', 'Status', 'Closed Date', 'Notes']
         ];
         for (const fr of fixedReturns) {
@@ -374,7 +373,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, fixedReturnsSheet, 'Fixed Returns');
 
         // 13. SIPs Sheet
-        const sipsData = [
+        const sipsData: Row[] = [
             ['ID', 'Name', 'Scheme Code', 'SIP Amount', 'Start Date', 'Total Units', 'Current NAV', 'Total Invested', 'Status', 'Paused Date', 'Redeemed Date', 'Redeemed Amount', 'Notes']
         ];
         for (const sip of sips) {
@@ -398,7 +397,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, sipsSheet, 'SIPs');
 
         // 14. SIP Transactions Sheet
-        const sipTransactionsData = [
+        const sipTransactionsData: Row[] = [
             ['SIP ID', 'SIP Name', 'Date', 'Type', 'Amount', 'NAV', 'Units', 'Notes']
         ];
         for (const sip of sips) {
@@ -422,7 +421,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, sipTransactionsSheet, 'SIP Transactions');
 
         // 15. Recurring Deposits Sheet
-        const rdsData = [
+        const rdsData: Row[] = [
             ['ID', 'Name', 'Installment Amount', 'Frequency', 'Interest Rate (%)', 'Start Date', 'Total Installments', 'Installments Paid', 'Next Due Date', 'Maturity Value', 'Status', 'Closed Date', 'Actual Withdrawal', 'Notes']
         ];
         for (const rd of recurringDeposits) {
@@ -447,7 +446,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, rdsSheet, 'Recurring Deposits');
 
         // 16. Stocks Sheet (Indian)
-        const indianStocksData = [
+        const indianStocksData: Row[] = [
             ['ID', 'Symbol', 'Name', 'Quantity', 'Buy Price', 'Buy Date', 'Current Price', 'Status', 'Sell Price', 'Sell Date', 'Notes']
         ];
         for (const stock of indianStocks) {
@@ -469,7 +468,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, indianStocksSheet, 'Stocks - Indian');
 
         // 17. Stocks Sheet (US)
-        const usStocksData = [
+        const usStocksData: Row[] = [
             ['ID', 'Symbol', 'Name', 'Quantity', 'Buy Price', 'Buy Date', 'Current Price', 'Status', 'Sell Price', 'Sell Date', 'Notes']
         ];
         for (const stock of usStocks) {
@@ -491,7 +490,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, usStocksSheet, 'Stocks - US');
 
         // 18. Stocks Sheet (Crypto)
-        const cryptoStocksData = [
+        const cryptoStocksData: Row[] = [
             ['ID', 'Symbol', 'Name', 'Quantity', 'Buy Price', 'Buy Date', 'Current Price', 'Status', 'Sell Price', 'Sell Date', 'Notes']
         ];
         for (const stock of cryptoStocks) {
@@ -513,7 +512,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, cryptoStocksSheet, 'Stocks - Crypto');
 
         // 19. Tags Sheet
-        const tagsData = [
+        const tagsData: Row[] = [
             ['ID', 'Name', 'Page Type']
         ];
         for (const tag of tags) {
@@ -527,7 +526,7 @@ export async function exportYearData(year: number): Promise<void> {
         XLSX.utils.book_append_sheet(workbook, tagsSheet, 'Tags');
 
         // 20. Special Tags Sheet
-        const specialTagsData = [
+        const specialTagsData: Row[] = [
             ['ID', 'Name']
         ];
         for (const tag of specialTags) {
@@ -554,7 +553,7 @@ export function downloadSampleTemplate(): void {
     const year = 2024;
 
     // 1. Summary
-    const summaryData = [
+    const summaryData: Row[] = [
         ['Year', year],
         ['Total Expenses', 12000],
         ['Total Budget', 15000],
@@ -569,7 +568,7 @@ export function downloadSampleTemplate(): void {
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(summaryData), 'Summary');
 
     // 2. Expenses
-    const expensesData = [
+    const expensesData: Row[] = [
         ['Date', 'Amount', 'Statement', 'Tag', 'Special Tags', 'Notes'],
         ['2024-01-15', 500, 'Groceries', 'Food', 'Personal', ''],
         ['2024-01-20', 200, 'Fuel', 'Transport', '', ''],
@@ -578,7 +577,7 @@ export function downloadSampleTemplate(): void {
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(expensesData), 'Expenses');
 
     // 3. Budgets
-    const budgetsData = [
+    const budgetsData: Row[] = [
         ['Month', 'Amount'],
         ['January', 1250],
         ['February', 1250],
@@ -587,7 +586,7 @@ export function downloadSampleTemplate(): void {
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(budgetsData), 'Budgets');
 
     // 4. Accounts
-    const accountsData = [
+    const accountsData: Row[] = [
         ['ID', 'Name', 'Balance', 'Notes'],
         [1, 'Savings', 50000, ''],
         [2, 'Wallet', 2000, '']
@@ -595,72 +594,72 @@ export function downloadSampleTemplate(): void {
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(accountsData), 'Accounts');
 
     // 5. Account History (empty = no data)
-    const accountHistoryData = [
+    const accountHistoryData: Row[] = [
         ['Account ID', 'Account Name', 'Date', 'Balance', 'Notes']
     ];
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(accountHistoryData), 'Account History');
 
     // 6. Assets
-    const assetsData = [
+    const assetsData: Row[] = [
         ['ID', 'Name', 'Type', 'Value', 'Notes'],
         [1, 'Laptop', 'asset', 60000, '']
     ];
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(assetsData), 'Assets');
 
     // 7. Asset History (empty)
-    const assetHistoryData = [
+    const assetHistoryData: Row[] = [
         ['Asset ID', 'Asset Name', 'Date', 'Value', 'Notes']
     ];
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(assetHistoryData), 'Asset History');
 
     // 8. Plans
-    const plansData = [
+    const plansData: Row[] = [
         ['ID', 'Name', 'Cover Amount', 'Premium Amount', 'Premium Frequency', 'Expiry Date', 'Next Premium Date', 'Notes'],
         [1, 'Health Insurance', 500000, 12000, 'yearly', '2025-12-31', '2024-12-31', '']
     ];
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(plansData), 'Plans');
 
     // 9. Plan History (empty)
-    const planHistoryData = [
+    const planHistoryData: Row[] = [
         ['Plan ID', 'Plan Name', 'Date', 'Cover Amount', 'Premium Amount', 'Notes']
     ];
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(planHistoryData), 'Plan History');
 
     // 10. Life XP
-    const lifeXpData = [
+    const lifeXpData: Row[] = [
         ['ID', 'Name', 'Target Amount', 'Saved Amount', 'Is Repetitive', 'Frequency', 'Next Contribution Date', 'Status', 'Notes'],
         [1, 'Vacation', 50000, 10000, 'Yes', 'monthly', '', 'active', '']
     ];
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(lifeXpData), 'Life XP');
 
     // 11. Life XP History (empty)
-    const lifeXpHistoryData = [
+    const lifeXpHistoryData: Row[] = [
         ['Bucket ID', 'Bucket Name', 'Date', 'Amount', 'Total Saved', 'Notes']
     ];
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(lifeXpHistoryData), 'Life XP History');
 
     // 12. Fixed Returns
-    const fixedReturnsData = [
+    const fixedReturnsData: Row[] = [
         ['ID', 'Name', 'Invested Amount', 'Interest Rate (%)', 'Start Date', 'Maturity Date', 'Expected Withdrawal', 'Actual Withdrawal', 'Status', 'Closed Date', 'Notes'],
         [1, 'FD Bank', 100000, 7, '2024-01-01', '2025-01-01', 107000, '', 'ongoing', '', '']
     ];
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(fixedReturnsData), 'Fixed Returns');
 
     // 13. SIPs
-    const sipsData = [
+    const sipsData: Row[] = [
         ['ID', 'Name', 'Scheme Code', 'SIP Amount', 'Start Date', 'Total Units', 'Current NAV', 'Total Invested', 'Status', 'Paused Date', 'Redeemed Date', 'Redeemed Amount', 'Notes'],
         [1, 'Index Fund', '', 5000, '2024-01-01', 100, 50, 5000, 'ongoing', '', '', '', '']
     ];
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(sipsData), 'SIPs');
 
     // 14. SIP Transactions (empty)
-    const sipTransactionsData = [
+    const sipTransactionsData: Row[] = [
         ['SIP ID', 'SIP Name', 'Date', 'Type', 'Amount', 'NAV', 'Units', 'Notes']
     ];
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(sipTransactionsData), 'SIP Transactions');
 
     // 15. Recurring Deposits
-    const rdsData = [
+    const rdsData: Row[] = [
         ['ID', 'Name', 'Installment Amount', 'Frequency', 'Interest Rate (%)', 'Start Date', 'Total Installments', 'Installments Paid', 'Next Due Date', 'Maturity Value', 'Status', 'Closed Date', 'Actual Withdrawal', 'Notes'],
         [1, 'RD Bank', 5000, 'monthly', 6.5, '2024-01-01', 12, 0, '2024-02-01', 62000, 'ongoing', '', '', '']
     ];
@@ -673,7 +672,7 @@ export function downloadSampleTemplate(): void {
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([stocksCols]), 'Stocks - Crypto');
 
     // 19. Tags
-    const tagsData = [
+    const tagsData: Row[] = [
         ['ID', 'Name', 'Page Type'],
         [1, 'Food', 'expense'],
         [2, 'Transport', 'expense'],
@@ -682,7 +681,7 @@ export function downloadSampleTemplate(): void {
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(tagsData), 'Tags');
 
     // 20. Special Tags
-    const specialTagsData = [
+    const specialTagsData: Row[] = [
         ['ID', 'Name'],
         [1, 'Personal'],
         [2, 'Recurring']

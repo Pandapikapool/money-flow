@@ -42,6 +42,15 @@ export default function Daily() {
     const remaining = budgetAmount - spent;
     const percentUsed = budgetAmount > 0 ? (spent / budgetAmount) * 100 : 0;
 
+    // Budget forecast calculations
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const daysRemaining = daysInMonth - dayOfMonth;
+    const dailyAvg = dayOfMonth > 0 ? spent / dayOfMonth : 0;
+    const projectedTotal = dailyAvg * daysInMonth;
+    const projectedOverSpend = budgetAmount > 0 ? projectedTotal - budgetAmount : 0;
+
     if (loading) {
         return <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>;
     }
@@ -79,13 +88,45 @@ export default function Daily() {
 
                 {/* Progress bar */}
                 {budgetAmount > 0 && (
-                    <div style={{ height: '8px', background: 'var(--bg-panel)', borderRadius: '4px', overflow: 'hidden', marginBottom: '12px' }}>
+                    <div style={{ height: '8px', background: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden', marginBottom: '12px' }}>
                         <div style={{
                             height: '100%',
                             width: `${Math.min(percentUsed, 100)}%`,
                             background: percentUsed > 100 ? 'var(--accent-danger)' : percentUsed > 90 ? '#ff9800' : 'var(--accent-success)',
-                            transition: 'width 0.3s'
+                            transition: 'width 0.5s ease'
                         }} />
+                    </div>
+                )}
+
+                {/* Budget Forecast */}
+                {budgetAmount > 0 && spent > 0 && (
+                    <div style={{
+                        marginTop: '4px',
+                        marginBottom: '12px',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        background: projectedOverSpend > 0
+                            ? 'rgba(248, 113, 113, 0.1)'
+                            : 'rgba(52, 211, 153, 0.1)',
+                        border: `1px solid ${projectedOverSpend > 0 ? 'rgba(248,113,113,0.3)' : 'rgba(52,211,153,0.3)'}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        flexWrap: 'wrap',
+                    }}>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                            📊 At {formatCurrency(Math.round(dailyAvg))}/day avg —{' '}
+                            <strong style={{ color: projectedOverSpend > 0 ? 'var(--accent-danger)' : 'var(--accent-success)' }}>
+                                projected {formatCurrency(Math.round(projectedTotal))} this month
+                            </strong>
+                            {projectedOverSpend > 0
+                                ? ` (${formatCurrency(Math.round(projectedOverSpend))} over budget)`
+                                : ` (${formatCurrency(Math.round(-projectedOverSpend))} under budget)`}
+                        </span>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                            {daysRemaining}d left
+                        </span>
                     </div>
                 )}
 

@@ -18,17 +18,21 @@ Money Flow helps you understand your finances by tracking:
 
 ## Key Features
 
-- ✅ **Fast Expense Entry**: Quick capture of daily expenses with tags and special tags
-- ✅ **Expense Editing**: Edit expenses including amount, date, category, and special tags
-- ✅ **Budget Management**: Year and month views for setting and tracking budgets
-- ✅ **Financial Overview**: Comprehensive dashboard with expense distribution and investment tracking
-- ✅ **Tag-Based Organization**: Categorize expenses your way with regular and special tags
-- ✅ **History Tracking**: View spending patterns over time with activity logs
-- ✅ **Investment Tracking**: Stocks, mutual funds (SIP), fixed deposits, and recurring deposits
-- ✅ **Resource Management**: Accounts, assets, insurance plans, and life experience buckets
-- ✅ **USD Support**: Track US stocks and crypto investments in USD
-- ✅ **Data Management**: Utility scripts for cleaning and managing data
-- ✅ **Dark Mode**: Comfortable viewing in any light
+- ✅ **Global Quick-Add** (`⌘K` from anywhere): add an expense without navigating away from your current page
+- ✅ **Net Worth Dashboard**: prominent hero card with total net worth, P&L, monthly budget status, and liquid cash
+- ✅ **Budget Forecast**: daily page shows "at current pace you'll spend X by month end" in real time
+- ✅ **Net Worth History**: area chart tracking wealth over time from account and asset snapshots
+- ✅ **Fast Expense Entry**: quick capture of daily expenses with tags and special tags
+- ✅ **Expense Editing**: edit expenses including amount, date, category, and special tags
+- ✅ **Budget Management**: year and month views for setting and tracking budgets
+- ✅ **Financial Overview**: comprehensive dashboard with expense distribution and investment tracking
+- ✅ **Tag-Based Organization**: categorize expenses your way with regular and special tags
+- ✅ **History Tracking**: view spending patterns over time with activity logs
+- ✅ **Investment Tracking**: stocks, mutual funds (SIP), fixed deposits, and recurring deposits
+- ✅ **Resource Management**: accounts, assets, insurance plans, and life experience buckets
+- ✅ **USD Support**: track US stocks and crypto investments in USD
+- ✅ **Data Management**: utility scripts for cleaning and managing data
+- ✅ **Dark Mode**: comfortable viewing in any light
 
 ## Philosophy
 
@@ -40,13 +44,13 @@ Money Flow follows a **manual-first** approach:
 
 ## Architecture
 
-**Standalone Pages**: Each page in Money Flow operates independently. Pages do not communicate with each other or share state. This design ensures:
-- Clear separation of concerns
-- No unexpected side effects
-- Predictable behavior
-- Easy to understand and maintain
+**Server State (TanStack Query)**: All API calls go through React Query hooks, giving automatic caching, background refresh, and deduplication with no extra code.
 
-**Future Integration**: Accounts may be linked to expenses in future versions, but this will be an explicit, opt-in feature that maintains the manual-first philosophy.
+**Global UI State (Zustand)**: Theme, notification badges, and the quick-add panel are managed in a single `appStore` — persisted to localStorage, no prop-drilling.
+
+**Page Components**: Each page fetches its own data independently via TanStack Query. Pages do not share local state with each other, maintaining clear separation of concerns and predictable behaviour.
+
+**Manual-First Philosophy**: You enter data yourself. No bank syncing, no AI auto-categorisation (yet). The system remembers exactly what you tell it.
 
 ## Quick Start
 
@@ -168,10 +172,12 @@ For more details, see [utils/README.md](utils/README.md).
 
 ## Tech Stack
 
-- **Frontend**: React + TypeScript + Vite
+- **Frontend**: React 19 + TypeScript + Vite
+- **State**: Zustand (global) + TanStack Query (server state / caching)
+- **Charts**: Recharts
 - **Backend**: Node.js + Express + TypeScript
 - **Database**: PostgreSQL
-- **Styling**: CSS Variables with Glassmorphism design
+- **Styling**: CSS Variables with Glassmorphism design (no Tailwind)
 
 ## Project Structure
 

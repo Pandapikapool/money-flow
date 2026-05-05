@@ -3,8 +3,9 @@ import * as controller from "./expenses.controller";
 
 const router = Router();
 
-// Aggregate
+// Aggregate / Search (must be before /:id routes)
 router.get("/summary/:year", controller.getYearSummary);
+router.get("/search", controller.searchExpenses);
 
 // CRUD
 router.get("/", controller.listExpenses);

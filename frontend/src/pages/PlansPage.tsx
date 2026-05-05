@@ -66,10 +66,7 @@ const isPremiumOverdue = (nextPremiumDate: string | null, expiryDate?: string | 
     return days !== null && days < 0;
 };
 
-// Notify MainLayout of plan changes
-const notifyPlansUpdated = () => {
-    window.dispatchEvent(new Event('plansUpdated'));
-};
+// Badge counts are refreshed automatically via TanStack Query refetchOnWindowFocus
 
 // Activity Log Entry - comprehensive logging
 interface ActivityLogEntry {
@@ -359,7 +356,7 @@ export default function PlansPage() {
             setNewNotes("");
             setIsCreating(false);
             loadPlans();
-            notifyPlansUpdated();
+            
         } catch (err) {
             alert("Failed to create plan");
         }
@@ -441,7 +438,7 @@ export default function PlansPage() {
             setPaymentLog(getPaymentLog());
             // Reload history to show new entry
             fetchPlanHistory(updated.id).then(setHistory);
-            notifyPlansUpdated();
+            
         } catch (err) {
             alert("Failed to update");
         } finally {
@@ -465,7 +462,7 @@ export default function PlansPage() {
             await deletePlan(selectedPlan.id);
             setPlans(prev => prev.filter(p => p.id !== selectedPlan.id));
             closeDetails();
-            notifyPlansUpdated();
+            
         } catch (err) {
             alert("Failed to delete");
         }
@@ -671,6 +668,7 @@ export default function PlansPage() {
             // Update plan with next premium date
             const updated = await updatePlan(
                 plan.id,
+                plan.name,
                 plan.cover_amount,
                 plan.premium_amount,
                 plan.premium_frequency,
@@ -720,7 +718,7 @@ export default function PlansPage() {
                 console.error("Failed to refresh history:", historyFetchErr);
             }
 
-            notifyPlansUpdated();
+            
             // Close modal
             setMarkPaidPlan(null);
             setMarkPaidNextDate("");
@@ -750,7 +748,7 @@ export default function PlansPage() {
             details: `Expired on: ${plan.expiry_date || 'N/A'}`
         });
         setPaymentLog(getPaymentLog());
-        notifyPlansUpdated();
+        
     };
 
     // Delete expired plan
@@ -775,7 +773,7 @@ export default function PlansPage() {
             setPlans(prev => prev.filter(p => p.id !== plan.id));
             // Remove from acknowledged list if it was there
             setAcknowledgedExpired(prev => prev.filter(id => id !== plan.id));
-            notifyPlansUpdated();
+            
         } catch (err) {
             alert("Failed to delete plan");
         }

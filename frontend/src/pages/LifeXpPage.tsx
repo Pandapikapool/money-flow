@@ -43,10 +43,7 @@ const isContributionOverdue = (bucket: LifeXpBucket): boolean => {
     return days !== null && days < 0;
 };
 
-// Notify MainLayout of updates for repetitive buckets
-const notifyLifeXpUpdated = () => {
-    window.dispatchEvent(new Event('lifeXpUpdated'));
-};
+// Badge counts are refreshed automatically via TanStack Query refetchOnWindowFocus
 
 // Activity Log Entry
 interface ActivityLogEntry {
@@ -259,7 +256,7 @@ export default function LifeXpPage() {
             setNewNotes("");
             setIsCreating(false);
             loadBuckets();
-            notifyLifeXpUpdated();
+            
         } catch (err) {
             alert("Failed to create bucket");
         }
@@ -325,7 +322,7 @@ export default function LifeXpPage() {
             setActivityLog(getLifeXpLog());
             setBuckets(prev => prev.map(b => b.id === updated.id ? updated : b));
             setSelectedBucket(updated);
-            notifyLifeXpUpdated();
+            
         } catch (err) {
             alert("Failed to update");
         } finally {
@@ -349,7 +346,7 @@ export default function LifeXpPage() {
             await deleteLifeXpBucket(selectedBucket.id);
             setBuckets(prev => prev.filter(b => b.id !== selectedBucket.id));
             closeDetails();
-            notifyLifeXpUpdated();
+            
         } catch (err) {
             alert("Failed to delete");
         }
@@ -381,7 +378,7 @@ export default function LifeXpPage() {
             setContributeAmount("");
             setContributeNotes("");
             setShowContribute(false);
-            notifyLifeXpUpdated();
+            
         } catch (err) {
             alert("Failed to add contribution");
         }
@@ -407,7 +404,7 @@ export default function LifeXpPage() {
                 setEditNextDate(result.bucket.next_contribution_date || "");
                 setHistory(prev => [...prev, result.history]);
             }
-            notifyLifeXpUpdated();
+            
         } catch (err) {
             alert("Failed to mark as done");
         }
@@ -430,7 +427,7 @@ export default function LifeXpPage() {
             if (selectedBucket && selectedBucket.id === updated.id) {
                 setSelectedBucket(updated);
             }
-            notifyLifeXpUpdated();
+            
         } catch (err) {
             alert("Failed to mark as achieved");
         }
@@ -453,7 +450,7 @@ export default function LifeXpPage() {
             if (selectedBucket && selectedBucket.id === updated.id) {
                 setSelectedBucket(updated);
             }
-            notifyLifeXpUpdated();
+            
         } catch (err) {
             alert("Failed to reactivate");
         }

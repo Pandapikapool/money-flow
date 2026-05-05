@@ -9,7 +9,6 @@ import {
     createSIP, addSIPInstallment,
     createRecurringDeposit,
     createStock,
-    fetchTags, fetchSpecialTags
 } from './api';
 
 export interface ImportResult {

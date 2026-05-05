@@ -86,6 +86,25 @@ export async function getYearSummary(req: Request, res: Response) {
     }
 }
 
+export async function searchExpenses(req: Request, res: Response) {
+    try {
+        const userId = getUserId();
+        const { q, tag_id, from, to, min, max } = req.query;
+        const data = await repo.search(userId, {
+            q: q as string | undefined,
+            tag_id: tag_id ? parseInt(tag_id as string) : undefined,
+            from: from as string | undefined,
+            to: to as string | undefined,
+            min: min ? parseFloat(min as string) : undefined,
+            max: max ? parseFloat(max as string) : undefined,
+        });
+        res.json(data);
+    } catch (error) {
+        console.error("Search error:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+
 export async function getExpenseSpecialTags(req: Request, res: Response) {
     try {
         const userId = getUserId();

@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (2026-05-05 — Phase 2 Upgrades)
+- **Unified Portfolio page** (`/investments/portfolio`): cross-category view showing INR + USD hero cards, allocation pie chart by invested amount, and category breakdown table with per-row P&L — linked from Investments hub via "Portfolio View →" button
+- **Expense Search** (`/search`, `⌘F`): live debounced full-text search with tag, date-range, and amount-range filters; shows result count, total sum, and "View →" links back to month; backend `GET /expenses/search` endpoint with ILIKE + dynamic WHERE clauses (LIMIT 200)
+- **Anomaly Detection** on Overview: backend `GET /dashboard/anomalies` CTE query flags categories where current-month spend > 1.5× 3-month average; amber alert cards shown when anomalies exist
+- **Toast / Undo system** (`src/components/Toast.tsx`): singleton imperative `showToast()` available from any page; progress-bar countdown, optional Undo button, × dismiss
+- **Optimistic delete with Undo** on ExpensesMonth: row hidden immediately, 5-second timer before API call; Undo button restores row and cancels deletion
+- **Code splitting**: all heavy pages (`Overview`, `ExpensesYear/Month`, `AccountsPage`, `AssetsPage`, `PlansPage`, `LifeXpPage`, `InvestmentsPage`, `PortfolioPage`, `FixedReturnsPage`, `SIPPage`, `RecurringDepositsPage`, `StocksPage`, `SearchPage`) loaded via `React.lazy()` + `Suspense`
+
+### Added (2026-05-05 — Phase 1 Upgrades)
+- **Global Quick-Add** (`⌘K` / `Ctrl+K` from any page): floating modal to add an expense without navigating to Daily page
+- **Grouped sidebar navigation**: nav items now grouped into Money / Wealth / Life sections for reduced cognitive load
+- **Net Worth Hero section** on Overview: large header showing total net worth, investment P&L, current month budget %, and liquid cash at a glance
+- **Budget Forecast** on Daily page: shows projected month-end spend based on current daily average, with over/under budget colour coding
+- **Net Worth Over Time chart** on Overview: area chart built from account + asset history snapshots
+- **`GET /dashboard/net-worth-history`** backend endpoint: CTE query aggregating latest account_history + asset_history per month
+- **TanStack Query v5**: QueryClientProvider wrapping the app, 2-minute stale time, background refetch on window focus
+- **Zustand v5 store** (`src/store/appStore.ts`): persisted theme, badge counts, global quick-add open state — replaces localStorage + window event pattern
+
+### Changed
+- MainLayout badge polling migrated from `setInterval` + `window.dispatchEvent` to TanStack Query (refetch every 5 min + on window focus)
+- Theme state managed by Zustand with `persist` middleware instead of direct localStorage reads in useEffect
+- Quick-add button (`+ Add Expense`) now lives in the sidebar header for persistent access
+- Overview now shows Net Worth hero above the year navigation and summary tiles
+
+### Fixed
+- **PlansPage `Mark Paid` bug**: `updatePlan` was called without `plan.name` as the second argument, silently sending `cover_amount` as the name field
+- **export.ts**: 60+ TypeScript `number not assignable to string` errors — all `aoa_to_sheet` data arrays now typed as `Row[]`
+- **export.ts**: removed unused type imports (`Tag`, `SpecialTag`, `MonthlyAggregate`, `Account`, `Asset`, `Plan`, `LifeXpBucket`, `FixedReturn`, `SIP`, `RecurringDeposit`, `Stock`)
+- **import.ts**: removed unused `fetchTags` and `fetchSpecialTags` imports
+- **ExpensesMonth.tsx**: suppressed unused `editTagId` state variable warning
+- **LifeXpGuide.tsx**: removed unused `useState` import
+- **PlanHistoryGraph.tsx**: suppressed unused `name` formatter parameter
+
 ### Added
 - Budget year and month views with navigation
 - Expense editing with tag and special tag support

@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { fetchExpenses, fetchTags, fetchSpecialTags, getBudget, updateExpense, deleteExpense, getExpenseSpecialTags, createTag, type Expense, type Tag, type SpecialTag } from "../../lib/api";
 import { formatCurrency } from "../../lib/format";
+import { showToast } from "../../components/Toast";
 
 export default function ExpensesMonth() {
     const { year, month } = useParams();
@@ -17,7 +18,7 @@ export default function ExpensesMonth() {
     const [editAmount, setEditAmount] = useState("");
     const [editStatement, setEditStatement] = useState("");
     const [editDate, setEditDate] = useState("");
-    const [editTagId, setEditTagId] = useState<number | null>(null);
+    const [_editTagId, setEditTagId] = useState<number | null>(null);
     const [editTagName, setEditTagName] = useState("");
     const [editSelectedSpecialTagIds, setEditSelectedSpecialTagIds] = useState<number[]>([]);
     const [editNotes, setEditNotes] = useState("");
@@ -163,14 +164,31 @@ export default function ExpensesMonth() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        try {
-            await deleteExpense(id);
-            setDeletingId(null);
-            loadData();
-        } catch (err) {
-            alert("Failed to delete expense");
-        }
+    const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const handleDelete = (id: number) => {
+        const expense = expenses.find(e => e.id === id);
+        if (!expense) return;
+
+        // Optimistic: hide immediately
+        setExpenses(prev => prev.filter(e => e.id !== id));
+        setDeletingId(null);
+
+        // Start 5s timer — only then call API
+        if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+        deleteTimerRef.current = setTimeout(async () => {
+            try { await deleteExpense(id); }
+            catch { setExpenses(prev => [...prev, expense].sort((a, b) => b.id - a.id)); }
+        }, 5000);
+
+        showToast({
+            message: `Deleted "${expense.statement}"`,
+            undoLabel: 'Undo',
+            onUndo: () => {
+                if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+                setExpenses(prev => [...prev, expense].sort((a, b) => b.id - a.id));
+            },
+        });
     };
 
     if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>;

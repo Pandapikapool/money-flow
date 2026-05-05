@@ -1,64 +1,110 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
+
+// Lightweight pages — load eagerly
 import Daily from "./pages/Daily";
-import Overview from "./pages/Overview";
 import ExpensesOverview from "./pages/expenses/ExpensesOverview";
-import ExpensesYear from "./pages/expenses/ExpensesYear";
-import ExpensesMonth from "./pages/expenses/ExpensesMonth";
 import BudgetOverview from "./pages/budget/BudgetOverview";
 import BudgetYear from "./pages/budget/BudgetYear";
 import BudgetMonth from "./pages/budget/BudgetMonth";
 import TagsPage from "./pages/tags/TagsPage";
-import AccountsPage from "./pages/AccountsPage";
-import AssetsPage from "./pages/AssetsPage";
-import PlansPage from "./pages/PlansPage";
-import LifeXpPage from "./pages/LifeXpPage";
-import InvestmentsPage from "./pages/InvestmentsPage";
-import FixedReturnsPage from "./pages/FixedReturnsPage";
-import SIPPage from "./pages/SIPPage";
-import RecurringDepositsPage from "./pages/RecurringDepositsPage";
-import StocksPage from "./pages/StocksPage";
+
+// Heavy pages — code-split
+const Overview             = lazy(() => import("./pages/Overview"));
+const ExpensesYear         = lazy(() => import("./pages/expenses/ExpensesYear"));
+const ExpensesMonth        = lazy(() => import("./pages/expenses/ExpensesMonth"));
+const AccountsPage         = lazy(() => import("./pages/AccountsPage"));
+const AssetsPage           = lazy(() => import("./pages/AssetsPage"));
+const PlansPage            = lazy(() => import("./pages/PlansPage"));
+const LifeXpPage           = lazy(() => import("./pages/LifeXpPage"));
+const InvestmentsPage      = lazy(() => import("./pages/InvestmentsPage"));
+const PortfolioPage        = lazy(() => import("./pages/PortfolioPage"));
+const FixedReturnsPage     = lazy(() => import("./pages/FixedReturnsPage"));
+const SIPPage              = lazy(() => import("./pages/SIPPage"));
+const RecurringDepositsPage = lazy(() => import("./pages/RecurringDepositsPage"));
+const StocksPage           = lazy(() => import("./pages/StocksPage"));
+const SearchPage           = lazy(() => import("./pages/SearchPage"));
+
+const PageLoader = () => (
+    <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+        Loading…
+    </div>
+);
 
 function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<MainLayout />}>
-          <Route index element={<Navigate to="/overview" replace />} />
-          <Route path="overview" element={<Overview />} />
-          <Route path="daily" element={<Daily />} />
+    return (
+        <BrowserRouter>
+            <Routes>
+                <Route path="/" element={<MainLayout />}>
+                    <Route index element={<Navigate to="/overview" replace />} />
 
-          <Route path="expenses">
-            <Route index element={<ExpensesOverview />} />
-            <Route path=":year" element={<ExpensesYear />} />
-            <Route path=":year/:month" element={<ExpensesMonth />} />
-          </Route>
+                    <Route path="overview" element={
+                        <Suspense fallback={<PageLoader />}><Overview /></Suspense>
+                    } />
 
-          <Route path="budget">
-            <Route index element={<BudgetOverview />} />
-            <Route path=":year" element={<BudgetYear />} />
-            <Route path=":year/:month" element={<BudgetMonth />} />
-          </Route>
+                    <Route path="daily" element={<Daily />} />
 
-          <Route path="accounts" element={<AccountsPage />} />
-          <Route path="assets" element={<AssetsPage title="Assets" type="asset" />} />
-          <Route path="plans" element={<PlansPage />} />
+                    <Route path="search" element={
+                        <Suspense fallback={<PageLoader />}><SearchPage /></Suspense>
+                    } />
 
-          <Route path="investments">
-            <Route index element={<InvestmentsPage />} />
-            <Route path="fixed" element={<FixedReturnsPage />} />
-            <Route path="sip" element={<SIPPage />} />
-            <Route path="rd" element={<RecurringDepositsPage />} />
-            <Route path="stocks/:market" element={<StocksPage />} />
-          </Route>
+                    <Route path="expenses">
+                        <Route index element={<ExpensesOverview />} />
+                        <Route path=":year" element={
+                            <Suspense fallback={<PageLoader />}><ExpensesYear /></Suspense>
+                        } />
+                        <Route path=":year/:month" element={
+                            <Suspense fallback={<PageLoader />}><ExpensesMonth /></Suspense>
+                        } />
+                    </Route>
 
-          <Route path="life-xp" element={<LifeXpPage />} />
+                    <Route path="budget">
+                        <Route index element={<BudgetOverview />} />
+                        <Route path=":year" element={<BudgetYear />} />
+                        <Route path=":year/:month" element={<BudgetMonth />} />
+                    </Route>
 
-          <Route path="tags" element={<TagsPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
-  );
+                    <Route path="accounts" element={
+                        <Suspense fallback={<PageLoader />}><AccountsPage /></Suspense>
+                    } />
+                    <Route path="assets" element={
+                        <Suspense fallback={<PageLoader />}><AssetsPage title="Assets" type="asset" /></Suspense>
+                    } />
+                    <Route path="plans" element={
+                        <Suspense fallback={<PageLoader />}><PlansPage /></Suspense>
+                    } />
+
+                    <Route path="investments">
+                        <Route index element={
+                            <Suspense fallback={<PageLoader />}><InvestmentsPage /></Suspense>
+                        } />
+                        <Route path="portfolio" element={
+                            <Suspense fallback={<PageLoader />}><PortfolioPage /></Suspense>
+                        } />
+                        <Route path="fixed" element={
+                            <Suspense fallback={<PageLoader />}><FixedReturnsPage /></Suspense>
+                        } />
+                        <Route path="sip" element={
+                            <Suspense fallback={<PageLoader />}><SIPPage /></Suspense>
+                        } />
+                        <Route path="rd" element={
+                            <Suspense fallback={<PageLoader />}><RecurringDepositsPage /></Suspense>
+                        } />
+                        <Route path="stocks/:market" element={
+                            <Suspense fallback={<PageLoader />}><StocksPage /></Suspense>
+                        } />
+                    </Route>
+
+                    <Route path="life-xp" element={
+                        <Suspense fallback={<PageLoader />}><LifeXpPage /></Suspense>
+                    } />
+
+                    <Route path="tags" element={<TagsPage />} />
+                </Route>
+            </Routes>
+        </BrowserRouter>
+    );
 }
 
 export default App;

@@ -159,15 +159,24 @@ money_flow/
 - **Framework**: React 19 with TypeScript
 - **Build Tool**: Vite
 - **Routing**: React Router v7
-- **State**: Component-level state (no global state management)
-- **Styling**: CSS with CSS Variables for theming
+- **Server State**: TanStack Query v5 — caching, background refresh, window-focus refetch
+- **Global UI State**: Zustand v5 — theme, notification badge counts, quick-add modal open/close
+- **Styling**: CSS with CSS Variables for theming (glassmorphism)
+
+### State Layers
+
+| Layer | Library | What lives here |
+|-------|---------|----------------|
+| Server data | TanStack Query | API responses — cached, background-refreshed |
+| Global UI | Zustand (`src/store/appStore.ts`) | Theme, badge counts, quick-add open state |
+| Local component | React `useState` | Form values, loading booleans, UI-only toggles |
 
 ### Data Flow
 
 ```
-User Action → React Component → API Client → Express Route → Controller → Repository → Database
-                                                                    ↓
-User sees result ← React Component ← API Response ← JSON Response
+User Action → React Component
+                 ├── TanStack Query (useQuery / useMutation) → API Client → Express → DB
+                 └── Zustand store (read/write for UI state)
 ```
 
 ## Code Organization
@@ -178,9 +187,9 @@ Each feature module follows this pattern:
 
 ```
 module-name/
-├── module-name.routes.ts    # Route definitions
+├── module-name.routes.ts     # Route definitions
 ├── module-name.controller.ts # Request/response handling
-└── module-name.repo.ts      # Database queries
+└── module-name.repo.ts       # Database queries
 ```
 
 **Example - Expenses Module**:
@@ -204,26 +213,50 @@ export async function list(userId: string, filters: any) {
 }
 ```
 
-### Frontend Pages
+### Frontend Pages & Store
 
-Each page:
-- Fetches its own data
-- Manages its own state
-- Uses shared components from `/components`
-- Calls API via `/lib/api.ts`
+Each page fetches its own data via TanStack Query hooks. Cross-page UI state goes through Zustand.
 
-**Example**:
+**Page example**:
 ```typescript
-// pages/Daily.tsx
+// pages/Daily.tsx — fetches own data, reads nothing from global store
 function Daily() {
-  const [expenses, setExpenses] = useState([]);
-  
-  useEffect(() => {
-    api.getExpenses().then(setExpenses);
-  }, []);
-  
+  const { data: expenses } = useQuery({
+    queryKey: ['expenses', year, month],
+    queryFn: () => fetchExpenses(year, month),
+  });
   return <ExpenseForm onSubmit={handleSubmit} />;
 }
+```
+
+**Global state example**:
+```typescript
+// Any component — open the quick-add modal
+import { useAppStore } from '../store/appStore';
+const { openQuickAdd } = useAppStore();
+<button onClick={openQuickAdd}>+ Add</button>
+```
+
+### Frontend Folder Structure
+
+```
+frontend/src/
+├── store/
+│   └── appStore.ts       # Zustand store (theme, badges, quick-add)
+├── components/
+│   ├── QuickAddModal.tsx  # Global ⌘K expense entry modal
+│   ├── ExpenseForm.tsx    # Shared expense creation form
+│   └── ...
+├── layouts/
+│   └── MainLayout.tsx     # Sidebar, theme toggle, TanStack Query badge polling
+├── lib/
+│   ├── api.ts             # All fetch functions + TypeScript interfaces
+│   ├── format.ts          # Currency formatting
+│   └── ...
+└── pages/
+    ├── Overview.tsx       # Dashboard: net worth hero, charts, heatmaps
+    ├── Daily.tsx          # Expense entry + budget forecast
+    └── ...
 ```
 
 ## Database Schema
@@ -255,6 +288,10 @@ See `backend/database/schema.sql` for full schema.
 - `GET /budgets/:year/:month` - Get specific month budget
 - `POST /budgets` - Create/update budget
 - `GET /budgets/summary/:year` - Get yearly budget summary
+
+### Dashboard
+- `GET /dashboard/summary` - Current month expenses + account/asset totals
+- `GET /dashboard/net-worth-history` - Monthly net worth timeline from account + asset history snapshots
 
 ### Resources (Accounts, Assets, Plans, SIPs, Stocks)
 - `GET /resources/*` - List resources by type

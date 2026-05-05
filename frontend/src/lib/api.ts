@@ -119,6 +119,32 @@ export async function getExpenseSpecialTags(expenseId: number): Promise<number[]
     return res.json();
 }
 
+export interface ExpenseSearchResult extends Expense {
+    tag_name?: string;
+}
+
+export interface SearchExpensesParams {
+    q?: string;
+    tag_id?: number;
+    from?: string;
+    to?: string;
+    min?: number;
+    max?: number;
+}
+
+export async function searchExpenses(params: SearchExpensesParams): Promise<ExpenseSearchResult[]> {
+    const qs = new URLSearchParams();
+    if (params.q) qs.set('q', params.q);
+    if (params.tag_id) qs.set('tag_id', String(params.tag_id));
+    if (params.from) qs.set('from', params.from);
+    if (params.to) qs.set('to', params.to);
+    if (params.min !== undefined) qs.set('min', String(params.min));
+    if (params.max !== undefined) qs.set('max', String(params.max));
+    const res = await fetch(`${API_BASE}/expenses/search?${qs}`);
+    if (!res.ok) throw new Error("Failed to search expenses");
+    return res.json();
+}
+
 export async function deleteExpense(id: number): Promise<void> {
     const res = await fetch(`${API_BASE}/expenses/${id}`, {
         method: "DELETE",
@@ -326,6 +352,32 @@ export async function deleteAssetHistoryEntry(id: number): Promise<void> {
 export async function fetchDashboardSummary(): Promise<DashboardSummary> {
     const res = await fetch(`${API_BASE}/dashboard/summary`);
     if (!res.ok) throw new Error("Failed to fetch dashboard summary");
+    return res.json();
+}
+
+export interface NetWorthPoint {
+    month: string; // 'YYYY-MM'
+    accounts: number;
+    assets: number;
+    net_worth: number;
+}
+
+export interface Anomaly {
+    tag_name: string;
+    current_month: number;
+    three_month_avg: number;
+    percent_above: number;
+}
+
+export async function fetchAnomalies(): Promise<Anomaly[]> {
+    const res = await fetch(`${API_BASE}/dashboard/anomalies`);
+    if (!res.ok) throw new Error("Failed to fetch anomalies");
+    return res.json();
+}
+
+export async function fetchNetWorthHistory(): Promise<NetWorthPoint[]> {
+    const res = await fetch(`${API_BASE}/dashboard/net-worth-history`);
+    if (!res.ok) throw new Error("Failed to fetch net worth history");
     return res.json();
 }
 

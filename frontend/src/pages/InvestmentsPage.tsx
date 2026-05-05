@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { fetchFixedReturnsSummary, fetchSIPSummary, fetchRDSummary, fetchStocksSummary } from "../lib/api";
 import type { StockMarket } from "../lib/api";
 import { formatCurrency } from "../lib/format";
@@ -352,20 +352,37 @@ export default function InvestmentsPage() {
             <div style={{ marginBottom: '32px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <h1 style={{ fontSize: '1.75rem', fontWeight: '600', margin: 0 }}>Investments</h1>
-                    <button
-                        onClick={() => setShowTemplateModal(true)}
-                        style={{
-                            padding: '8px 16px',
-                            background: 'var(--accent-primary)',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '0.85rem'
-                        }}
-                    >
-                        + Add Template
-                    </button>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <Link
+                            to="/investments/portfolio"
+                            style={{
+                                padding: '8px 16px',
+                                background: 'var(--bg-panel)',
+                                color: 'var(--accent-primary)',
+                                border: '1px solid var(--accent-primary)',
+                                borderRadius: '6px',
+                                textDecoration: 'none',
+                                fontSize: '0.85rem',
+                                fontWeight: '500'
+                            }}
+                        >
+                            Portfolio View →
+                        </Link>
+                        <button
+                            onClick={() => setShowTemplateModal(true)}
+                            style={{
+                                padding: '8px 16px',
+                                background: 'var(--accent-primary)',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '0.85rem'
+                            }}
+                        >
+                            + Add Template
+                        </button>
+                    </div>
                 </div>
 
                 {/* Summary Stats */}

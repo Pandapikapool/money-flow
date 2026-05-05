@@ -2,15 +2,17 @@ import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, Legend
+    PieChart, Pie, Cell, Legend, Area, AreaChart
 } from 'recharts';
 import {
     fetchDashboardSummary, getYearSummary,
     fetchFixedReturnsSummary, fetchSIPSummary, fetchRDSummary,
     fetchStocksSummary, fetchAccounts, fetchLifeXpBuckets,
     fetchExpenses, fetchTags, fetchSpecialTags, getExpenseSpecialTags,
+    fetchNetWorthHistory, fetchAnomalies,
     type DashboardSummary, type MonthlyAggregate, type FixedReturnsSummary,
-    type SIPSummary, type RDSummary, type StocksSummary, type Expense, type Tag, type SpecialTag
+    type SIPSummary, type RDSummary, type StocksSummary, type Expense, type Tag, type SpecialTag,
+    type NetWorthPoint, type Anomaly
 } from "../lib/api";
 import { formatCurrency } from "../lib/format";
 import { exportYearData, downloadSampleTemplate } from "../lib/export";
@@ -41,6 +43,8 @@ export default function Overview() {
     const [expenseSpecialTagsMap, setExpenseSpecialTagsMap] = useState<Record<number, number[]>>({});
     const [selectedHeatmapMonth, setSelectedHeatmapMonth] = useState<number | null>(null); // null = show weekly, number = show daily for that month
     const [excludedSpecialTagIds, setExcludedSpecialTagIds] = useState<Set<number>>(new Set()); // Set of special tag IDs to exclude
+    const [netWorthHistory, setNetWorthHistory] = useState<NetWorthPoint[]>([]);
+    const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
     const [exporting, setExporting] = useState(false);
     const [importing, setImporting] = useState(false);
     const importInputRef = useRef<HTMLInputElement>(null);
@@ -97,7 +101,7 @@ export default function Overview() {
                 // Keep excluded tags when year changes for better UX
 
                 // Current state data (not year-specific)
-                const [dashData, fixedData, sipData, rdData, indStocks, usStocksData, cryptoStocksData, accounts, lifeXp] = await Promise.all([
+                const [dashData, fixedData, sipData, rdData, indStocks, usStocksData, cryptoStocksData, accounts, lifeXp, nwHistory, anomalyData] = await Promise.all([
                     fetchDashboardSummary(),
                     fetchFixedReturnsSummary().catch(() => null),
                     fetchSIPSummary().catch(() => null),
@@ -106,7 +110,9 @@ export default function Overview() {
                     fetchStocksSummary('us').catch(() => null),
                     fetchStocksSummary('crypto').catch(() => null),
                     fetchAccounts().catch(() => []),
-                    fetchLifeXpBuckets().catch(() => [])
+                    fetchLifeXpBuckets().catch(() => []),
+                    fetchNetWorthHistory().catch(() => []),
+                    fetchAnomalies().catch(() => [])
                 ]);
 
                 setDashboard(dashData);
@@ -121,6 +127,8 @@ export default function Overview() {
                     saved: lifeXp.filter(b => b.status === 'active').reduce((sum, b) => sum + Number(b.saved_amount), 0),
                     target: lifeXp.filter(b => b.status === 'active').reduce((sum, b) => sum + Number(b.target_amount), 0)
                 });
+                setNetWorthHistory(nwHistory);
+                setAnomalies(anomalyData);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -402,8 +410,79 @@ export default function Overview() {
         },
     ];
 
+    // Current month quick stats (only when viewing current year)
+    const currentMonth = new Date().getMonth() + 1;
+    const currentMonthData = isCurrentYear ? monthlyData.find(m => m.month === currentMonth) : null;
+    const currentMonthSpent = currentMonthData?.spent || 0;
+    const currentMonthBudget = currentMonthData?.budget || 0;
+    const currentMonthPercent = currentMonthBudget > 0 ? (currentMonthSpent / currentMonthBudget) * 100 : 0;
+    const investmentGain = totalCurrentValue - totalInvested;
+
     return (
         <div style={{ maxWidth: '1400px' }}>
+
+            {/* Net Worth Hero */}
+            <div className="glass-panel" style={{
+                padding: '28px 32px',
+                marginBottom: '28px',
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(129,140,248,0.05) 100%)',
+                borderLeft: '4px solid var(--accent-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '24px',
+            }}>
+                <div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+                        Total Net Worth
+                    </div>
+                    <div style={{ fontSize: '2.4rem', fontWeight: '800', letterSpacing: '-1px', color: 'var(--text-primary)' }}>
+                        {formatCurrency(netWorth)}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                        Cash · Assets · Investments · Goals
+                    </div>
+                </div>
+                <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
+                    <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>Investments P&L</div>
+                        <div style={{
+                            fontSize: '1.3rem',
+                            fontWeight: '700',
+                            color: investmentGain >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)'
+                        }}>
+                            {investmentGain >= 0 ? '+' : ''}{formatCurrency(investmentGain)}
+                        </div>
+                    </div>
+                    {isCurrentYear && currentMonthBudget > 0 && (
+                        <div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>
+                                {new Date(0, currentMonth - 1).toLocaleString('default', { month: 'short' })} Budget
+                            </div>
+                            <div style={{ fontSize: '1.3rem', fontWeight: '700', color: currentMonthPercent > 100 ? 'var(--accent-danger)' : currentMonthPercent > 85 ? '#fbbf24' : 'var(--accent-success)' }}>
+                                {currentMonthPercent.toFixed(0)}%
+                            </div>
+                            <div style={{ marginTop: '4px', height: '4px', width: '80px', background: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
+                                <div style={{
+                                    height: '100%',
+                                    width: `${Math.min(currentMonthPercent, 100)}%`,
+                                    background: currentMonthPercent > 100 ? 'var(--accent-danger)' : currentMonthPercent > 85 ? '#fbbf24' : 'var(--accent-success)',
+                                    borderRadius: '2px',
+                                    transition: 'width 0.5s ease',
+                                }} />
+                            </div>
+                        </div>
+                    )}
+                    <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>Liquid Cash</div>
+                        <div style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--text-primary)' }}>
+                            {formatCurrency(accountsTotal)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Header with Year Navigation */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <h1 style={{ margin: 0 }}>Overview</h1>
@@ -486,6 +565,89 @@ export default function Overview() {
                     </Link>
                 ))}
             </div>
+
+            {/* Spending Anomalies — only relevant for current year/month */}
+            {isCurrentYear && anomalies.length > 0 && (
+                <div style={{ marginBottom: '24px' }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginBottom: '10px',
+                        fontSize: '0.8rem',
+                        color: 'var(--accent-warning)',
+                        fontWeight: '600',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                    }}>
+                        ⚠ Spending Anomalies this month
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                        {anomalies.map(a => (
+                            <div key={a.tag_name} className="glass-panel" style={{
+                                padding: '14px 18px',
+                                borderLeft: '3px solid var(--accent-warning)',
+                                minWidth: '200px',
+                                flex: '1',
+                            }}>
+                                <div style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '4px' }}>{a.tag_name}</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--accent-warning)' }}>
+                                    {formatCurrency(a.current_month)}
+                                    <span style={{ fontSize: '0.75rem', fontWeight: '400', color: 'var(--accent-danger)', marginLeft: '6px' }}>
+                                        +{a.percent_above.toFixed(0)}% above avg
+                                    </span>
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                                    3-month avg: {formatCurrency(a.three_month_avg)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Net Worth History Chart */}
+            {netWorthHistory.length > 1 && (
+                <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px' }}>
+                    <h3 style={{ marginBottom: '20px', fontSize: '1rem', color: 'var(--text-secondary)' }}>
+                        Net Worth Over Time <span style={{ fontSize: '0.75rem', fontWeight: '400', marginLeft: '8px', opacity: 0.6 }}>from account & asset snapshots</span>
+                    </h3>
+                    <ResponsiveContainer width="100%" height={220}>
+                        <AreaChart data={netWorthHistory} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                            <defs>
+                                <linearGradient id="nwGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="var(--accent-primary)" stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor="var(--accent-primary)" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                            <XAxis
+                                dataKey="month"
+                                tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
+                                tickFormatter={(v: string) => {
+                                    const [y, m] = v.split('-');
+                                    return `${new Date(0, parseInt(m) - 1).toLocaleString('default', { month: 'short' })} ${y.slice(2)}`;
+                                }}
+                            />
+                            <YAxis
+                                tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
+                                tickFormatter={(v: number) => `${(v / 100000).toFixed(0)}L`}
+                                width={45}
+                            />
+                            <Tooltip
+                                contentStyle={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)', borderRadius: '8px' }}
+                                formatter={(value, name) => [formatCurrency(Number(value)), name === 'net_worth' ? 'Net Worth' : name === 'accounts' ? 'Cash' : 'Assets']}
+                                labelFormatter={(label: string) => {
+                                    const [y, m] = label.split('-');
+                                    return `${new Date(0, parseInt(m) - 1).toLocaleString('default', { month: 'long' })} ${y}`;
+                                }}
+                            />
+                            <Area type="monotone" dataKey="net_worth" name="net_worth" stroke="var(--accent-primary)" strokeWidth={2} fill="url(#nwGradient)" dot={false} activeDot={{ r: 4 }} />
+                            <Area type="monotone" dataKey="accounts" name="accounts" stroke="var(--accent-success)" strokeWidth={1.5} fill="none" dot={false} strokeDasharray="4 2" />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
+            )}
 
             {/* Charts Section */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>

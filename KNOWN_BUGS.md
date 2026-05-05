@@ -16,6 +16,18 @@ This document tracks known bugs, limitations, and issues in Money Flow.
 - **Status**: Known limitation, improvement planned
 - **Workaround**: Rely on raw data tables for detailed information
 
+### Dead `window.dispatchEvent` Calls
+- **Issue**: `PlansPage.tsx` and `LifeXpPage.tsx` still dispatch `plansUpdated` / `lifeXpUpdated` window events after mutations. MainLayout no longer listens to these (it uses TanStack Query `refetchOnWindowFocus` instead), so the calls are harmless but dead code.
+- **Impact**: None — badge counts still update correctly via TanStack Query. Just noise in the code.
+- **Status**: Cleanup pending, no user impact
+- **Workaround**: N/A
+
+### Net Worth History Only Reflects Account + Asset Snapshots
+- **Issue**: The Net Worth Over Time chart on Overview only uses `account_history` and `asset_history` table entries. Investment values (SIPs, stocks) are not included in the historical timeline — only the current snapshot is shown in the hero card.
+- **Impact**: The chart underrepresents true net worth for months where only investment values changed
+- **Status**: By design for V1. Full investment history timeline requires additional backend work.
+- **Workaround**: The Net Worth Hero (top of Overview) always shows the current accurate total including all investments
+
 If you discover a bug, please report it by opening an issue on GitHub with:
 - Description of the bug
 - Steps to reproduce

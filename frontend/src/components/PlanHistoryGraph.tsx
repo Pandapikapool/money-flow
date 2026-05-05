@@ -43,7 +43,7 @@ export default function PlanHistoryGraph({ data, onPointClick }: Props) {
                     <Tooltip
                         contentStyle={{ backgroundColor: 'var(--bg-panel)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
                         itemStyle={{ color: 'var(--text-primary)' }}
-                        formatter={(value: any, name?: string) => [
+                        formatter={(value: any, _name?: string) => [
                             `${SETTINGS.CURRENCY}${Number(value).toLocaleString()}`,
                             'Total Premium Paid'
                         ]}

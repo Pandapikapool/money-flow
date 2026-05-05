@@ -237,3 +237,61 @@ export async function getYearlyAggregates(userId: string, year: number): Promise
         budget: Number(row.budget)
     }));
 }
+
+export interface SearchParams {
+    q?: string;
+    tag_id?: number;
+    from?: string;
+    to?: string;
+    min?: number;
+    max?: number;
+}
+
+export async function search(userId: string, params: SearchParams): Promise<Expense[]> {
+    const conditions: string[] = ["e.user_id = $1"];
+    const values: any[] = [userId];
+    let idx = 2;
+
+    if (params.q) {
+        conditions.push(`e.statement ILIKE $${idx}`);
+        values.push(`%${params.q}%`);
+        idx++;
+    }
+    if (params.tag_id) {
+        conditions.push(`e.tag_id = $${idx}`);
+        values.push(params.tag_id);
+        idx++;
+    }
+    if (params.from) {
+        conditions.push(`e.date >= $${idx}`);
+        values.push(params.from);
+        idx++;
+    }
+    if (params.to) {
+        conditions.push(`e.date <= $${idx}`);
+        values.push(params.to);
+        idx++;
+    }
+    if (params.min !== undefined) {
+        conditions.push(`e.amount >= $${idx}`);
+        values.push(params.min);
+        idx++;
+    }
+    if (params.max !== undefined) {
+        conditions.push(`e.amount <= $${idx}`);
+        values.push(params.max);
+        idx++;
+    }
+
+    const query = `
+        SELECT e.*, t.name as tag_name
+        FROM expenses e
+        LEFT JOIN tags t ON t.id = e.tag_id
+        WHERE ${conditions.join(" AND ")}
+        ORDER BY e.date DESC, e.id DESC
+        LIMIT 200
+    `;
+
+    const result = await pool.query(query, values);
+    return result.rows;
+}
