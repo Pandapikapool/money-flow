@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (2026-05-21 — FlowCraft Calm Layer)
+- **Brand identity**: Ripple logo (`frontend/public/logo.svg`) and Coin the cat mascot (`mascot.svg`) — soft pastel SVGs replacing the default Vite favicon, scalable across favicon (32 px) → app header → PWA icon size
+- **`/flow` page**: a calm weekly view with a Garden tile (monotonic growth, never wilts, never penalises), Coin in a glass panel with optional weekly observation, and a stream of insight cards in three tones (calm / gentle-attention / compassionate)
+- **Pluggable InsightEngine** (`backend/src/modules/flowcraft/engine.ts`): interface + default `RuleBasedEngine`; each insight is a single-file builder under `insights/`, ready to be swapped or augmented by an AI engine later without touching callers
+- **Five calm insights**: *Freely yours this week* (safe-to-spend math from monthly budget), *Same as usual* (reassurance when weekly coefficient-of-variation < 18%), *You already won this week* (no-spend or notably quiet day in past 7d), *Looks recurring* (≥3 stable-amount repeats over 120d), *Journal nudge* (gentle invite when an expense was tagged `mood:*`)
+- **Garden growth** in new `flowcraft_state` table: monotonic +1 per day with any logged expense, capped at 30, transitions `sapling → sprouted → leafy → blooming`. Skipping days does nothing — never wilts.
+- **Journal** (new `flowcraft_journal` table): optional, skippable 500-char entries linked to an expense or a week, with prompt + mood + answer
+- **Recurring detection** (new `flowcraft_recurring` table): user can confirm or dismiss; dismissed candidates never resurface in insights
+- **Mood/context tags** seeded into existing `special_tags`: `mood:stress`, `mood:joy`, `mood:social`, `mood:convenience`, `mood:health`, `mood:impulse` — feed the journal-nudge insight
+- **API endpoints**: `GET /flowcraft/insights`, `GET /flowcraft/state`, `POST /flowcraft/recurring/confirm`, `POST /flowcraft/recurring/dismiss`, `GET /flowcraft/journal`, `POST /flowcraft/journal`
+- **Sidebar entry**: `Flow` under the Money group, between Add expense and Search; sidebar header now shows the Ripple logo next to "MoneyFlow"
+- **Project-scoped Coach agent** (`.claude/agents/coach.md`): a haiku-model subagent that answers basic orientation questions in plain language. Read-only — explains, never edits. Available to anyone who clones the repo.
+
+### Design constraints (FlowCraft)
+The layer deliberately departs from common gamified-finance UI patterns. These are hard rules, not preferences:
+- **No XP, no streaks, no daily nudges, no red anywhere.** XP creates performance pressure; streak counters panic on breakage; red triggers threat response. The garden is the only visible progression metric, and it's monotonic — over-budget weeks do not slow growth.
+- **Insight tone is part of the data model** (`InsightTone`: `calm` | `gentle-attention` | `compassionate`). Tinted card backgrounds map directly. Adding a new tone is a single type change.
+- **Copy rules**: past-tense and factual when summarizing ("Friday passed quiet"), tentative when suggesting ("you could mark this recurring"). Forbidden words: *must, should, broken, critical, urgent, warning, failed*.
+- **Animation**: ease-out 200–300 ms, no springs, no bounce. Toasts cap at 2 stacked, 4 s.
+
 ### Added (2026-05-05 — Phase 2 Upgrades)
 - **Unified Portfolio page** (`/investments/portfolio`): cross-category view showing INR + USD hero cards, allocation pie chart by invested amount, and category breakdown table with per-row P&L — linked from Investments hub via "Portfolio View →" button
 - **Expense Search** (`/search`, `⌘F`): live debounced full-text search with tag, date-range, and amount-range filters; shows result count, total sum, and "View →" links back to month; backend `GET /expenses/search` endpoint with ILIKE + dynamic WHERE clauses (LIMIT 200)
