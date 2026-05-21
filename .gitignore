@@ -56,3 +56,6 @@ coverage/
 # Setup documentation (not needed in repo)
 OPEN_SOURCE_SETUP.md
 REPOSITORY_NAME_DISCUSSION.md
+
+# Claude Code local settings (user-specific permissions)
+.claude/settings.local.json
