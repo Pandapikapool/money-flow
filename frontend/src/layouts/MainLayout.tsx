@@ -12,6 +12,7 @@ const navGroups = [
         items: [
             { to: "/overview", label: "Overview" },
             { to: "/daily", label: "Add expense" },
+            { to: "/flow", label: "Flow" },
             { to: "/search", label: "Search" },
             { to: "/expenses", label: "Expenses" },
             { to: "/budget", label: "Budget" },
@@ -204,15 +205,23 @@ export default function MainLayout() {
                     borderBottom: '1px solid var(--border-color)',
                     marginBottom: '16px'
                 }}>
-                    <h1 style={{
-                        fontSize: '1.25rem',
-                        fontWeight: '700',
-                        color: 'var(--text-primary)',
-                        letterSpacing: '-0.5px',
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
                         marginBottom: '10px'
                     }}>
-                        MoneyFlow
-                    </h1>
+                        <img src="/logo.svg" alt="" width="28" height="28" />
+                        <h1 style={{
+                            fontSize: '1.25rem',
+                            fontWeight: '700',
+                            color: 'var(--text-primary)',
+                            letterSpacing: '-0.5px',
+                            margin: 0
+                        }}>
+                            MoneyFlow
+                        </h1>
+                    </div>
                     <button
                         onClick={openQuickAdd}
                         title="⌘K"

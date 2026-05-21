@@ -25,6 +25,7 @@ const SIPPage              = lazy(() => import("./pages/SIPPage"));
 const RecurringDepositsPage = lazy(() => import("./pages/RecurringDepositsPage"));
 const StocksPage           = lazy(() => import("./pages/StocksPage"));
 const SearchPage           = lazy(() => import("./pages/SearchPage"));
+const FlowPage             = lazy(() => import("./pages/FlowPage"));
 
 const PageLoader = () => (
     <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
@@ -44,6 +45,10 @@ function App() {
                     } />
 
                     <Route path="daily" element={<Daily />} />
+
+                    <Route path="flow" element={
+                        <Suspense fallback={<PageLoader />}><FlowPage /></Suspense>
+                    } />
 
                     <Route path="search" element={
                         <Suspense fallback={<PageLoader />}><SearchPage /></Suspense>
