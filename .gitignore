@@ -57,5 +57,7 @@ coverage/
 OPEN_SOURCE_SETUP.md
 REPOSITORY_NAME_DISCUSSION.md
 
-# Claude Code local settings (user-specific permissions)
+# Claude Code per-developer config (permissions, model prefs, etc.)
+# Custom agents under .claude/agents/ stay tracked — they're project knowledge.
+.claude/settings.json
 .claude/settings.local.json

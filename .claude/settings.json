@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(xargs ls -la)",
-      "Bash(git checkout *)",
-      "Bash(PGPASSWORD=\"\" pg_dump -h localhost -U raviraj -d finance_app -f ~/money-flow-backup-2026-05-21-083500.sql)"
-    ]
-  }
-}
