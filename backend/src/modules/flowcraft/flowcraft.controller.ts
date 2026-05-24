@@ -2,19 +2,23 @@ import { Request, Response } from "express";
 import { getUserId } from "../../core/userContext";
 import { RuleBasedEngine } from "./rule-based.engine";
 import * as repo from "./flowcraft.repo";
+import * as goalsRepo from "./goals.repo";
 
 const engine = new RuleBasedEngine();
 
 export async function getInsights(req: Request, res: Response) {
     try {
         const userId = getUserId();
-        // Water the garden as a gentle side-effect of opening the calm page.
-        await repo.waterIfDue(userId);
+        const today = new Date();
 
-        const insights = await engine.generateInsights({
-            userId,
-            today: new Date(),
-        });
+        // Side effects, in order:
+        // 1. Water the garden if user logged anything today (idempotent per-day).
+        await repo.waterIfDue(userId);
+        // 2. Sync the active goal — may transition to held/missed and apply
+        //    the +3 garden bonus (idempotent via bonus_applied flag).
+        await goalsRepo.syncActiveGoalForUser(userId, today);
+
+        const insights = await engine.generateInsights({ userId, today });
         res.json(insights);
     } catch (e) {
         console.error("Insights error:", e);

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import * as controller from "./flowcraft.controller";
+import goalsRouter from "./goals.routes";
 
 const router = Router();
 
@@ -9,5 +10,7 @@ router.post("/recurring/confirm", controller.confirmRecurring);
 router.post("/recurring/dismiss", controller.dismissRecurring);
 router.get("/journal", controller.listJournal);
 router.post("/journal", controller.addJournal);
+
+router.use("/goals", goalsRouter);
 
 export default router;

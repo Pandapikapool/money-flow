@@ -8,6 +8,8 @@ export type InsightKind =
     | 'recurring'
     | 'freely-yours'
     | 'quietly-bigger'
+    | 'heavier-weekdays'
+    | 'goal-held'
     | 'unused-sub'
     | 'small-swap'
     | 'keep-joy'
