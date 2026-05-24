@@ -20,7 +20,8 @@ import { importFromFile } from "../lib/import";
 import OverviewFlowWidget from "../components/OverviewFlowWidget";
 import OverviewAskBox from "../components/OverviewAskBox";
 
-const COLORS = ['#4caf50', '#2196f3', '#ff9800', '#e91e63', '#9c27b0', '#00bcd4'];
+// Tea Ceremony chart palette — desaturated, warm; matches the app tokens.
+const COLORS = ['#C9A66B', '#A8B5A0', '#D88B96', '#B9B5C9', '#D6B894', '#8FB39E'];
 
 export default function Overview() {
     const currentYear = new Date().getFullYear();

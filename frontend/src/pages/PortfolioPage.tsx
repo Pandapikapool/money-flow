@@ -19,7 +19,8 @@ interface Slice {
     isUSD?: boolean;
 }
 
-const COLORS = ['#818cf8', '#34d399', '#fbbf24', '#f87171', '#60a5fa', '#a78bfa'];
+// Tea Ceremony chart palette — desaturated, warm; matches the app tokens.
+const COLORS = ['#C9A66B', '#A8B5A0', '#D88B96', '#B9B5C9', '#D6B894', '#8FB39E'];
 
 export default function PortfolioPage() {
     const [fixed, setFixed] = useState<FixedReturnsSummary | null>(null);
