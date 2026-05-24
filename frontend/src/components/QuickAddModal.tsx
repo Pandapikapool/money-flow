@@ -41,6 +41,9 @@ export default function QuickAddModal({ onClose }: Props) {
                 alignItems: 'flex-start',
                 justifyContent: 'center',
                 paddingTop: '80px',
+                paddingBottom: '40px',
+                overflowY: 'auto',
+                overscrollBehavior: 'contain',
                 zIndex: 1000,
                 animation: 'fadeIn 0.15s ease',
             }}
