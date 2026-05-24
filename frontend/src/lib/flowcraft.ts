@@ -107,6 +107,73 @@ export async function fetchJournalEntries(): Promise<JournalEntry[]> {
     return res.json();
 }
 
+export interface WeekStory {
+    week_of: string;
+    week_label: string;
+    total: number;
+    count: number;
+    top_categories: { tag: string; total: number; count: number }[];
+    biggest_day: { date: string; weekday: string; total: number } | null;
+    by_day: { date: string; weekday: string; total: number }[];
+    mood_counts: { mood: string; count: number }[];
+}
+
+export async function fetchWeekStory(weekOffset: number = 0): Promise<WeekStory> {
+    const res = await fetch(`${API_BASE}/flowcraft/story?week_offset=${weekOffset}`);
+    if (!res.ok) throw new Error("Failed to load week story");
+    return res.json();
+}
+
+// === Goals (suggestion) ===
+
+export interface GoalSuggestion {
+    top_categories: { tag_id: number; tag_name: string; last_30d_total: number }[];
+    suggestion: {
+        kind: 'cap-category';
+        target_tag_id: number;
+        target_amount: number;
+        tag_name: string;
+        rationale: string;
+    } | null;
+}
+
+export async function fetchGoalSuggestion(): Promise<GoalSuggestion> {
+    const res = await fetch(`${API_BASE}/flowcraft/goals/suggestion`);
+    if (!res.ok) throw new Error("Failed to load goal suggestion");
+    return res.json();
+}
+
+// === Analytics ===
+
+export interface AnalyticsResult {
+    scope: { category: string; from?: string; to?: string; amount_min?: number; amount_max?: number };
+    total: number;
+    count: number;
+    min: number;
+    max: number;
+    avg: number;
+    monthly: { month: string; total: number; count: number }[];
+    top_categories?: { tag: string; total: number; count: number }[];
+}
+
+export async function fetchAnalyticsQuery(params: {
+    category?: string;
+    from?: string;
+    to?: string;
+    amount_min?: number;
+    amount_max?: number;
+}): Promise<AnalyticsResult> {
+    const sp = new URLSearchParams();
+    if (params.category) sp.set('category', params.category);
+    if (params.from) sp.set('from', params.from);
+    if (params.to) sp.set('to', params.to);
+    if (params.amount_min !== undefined) sp.set('amount_min', String(params.amount_min));
+    if (params.amount_max !== undefined) sp.set('amount_max', String(params.amount_max));
+    const res = await fetch(`${API_BASE}/analytics/query?${sp.toString()}`);
+    if (!res.ok) throw new Error("Failed to run analytics query");
+    return res.json();
+}
+
 // === Goals ===
 
 export type GoalKind = 'skip-category' | 'cap-category' | 'quiet-days';

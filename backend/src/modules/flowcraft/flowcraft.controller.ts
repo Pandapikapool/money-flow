@@ -106,3 +106,17 @@ export async function listJournal(req: Request, res: Response) {
         res.status(500).json({ error: "Internal Server Error" });
     }
 }
+
+export async function getWeekStory(req: Request, res: Response) {
+    try {
+        const userId = getUserId();
+        const raw = req.query.week_offset;
+        const weekOffset = Math.max(0, Math.min(52,
+            typeof raw === 'string' ? parseInt(raw, 10) || 0 : 0));
+        const story = await repo.getWeekStory(userId, weekOffset);
+        res.json(story);
+    } catch (e) {
+        console.error("Week story error:", e);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}

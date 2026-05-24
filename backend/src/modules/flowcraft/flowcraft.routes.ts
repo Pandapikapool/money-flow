@@ -10,6 +10,7 @@ router.post("/recurring/confirm", controller.confirmRecurring);
 router.post("/recurring/dismiss", controller.dismissRecurring);
 router.get("/journal", controller.listJournal);
 router.post("/journal", controller.addJournal);
+router.get("/story", controller.getWeekStory);
 
 router.use("/goals", goalsRouter);
 

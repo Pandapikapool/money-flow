@@ -27,6 +27,7 @@ const StocksPage           = lazy(() => import("./pages/StocksPage"));
 const SearchPage           = lazy(() => import("./pages/SearchPage"));
 const FlowPage             = lazy(() => import("./pages/FlowPage"));
 const JournalPage          = lazy(() => import("./pages/JournalPage"));
+const MoneyStoryPage       = lazy(() => import("./pages/MoneyStoryPage"));
 
 const PageLoader = () => (
     <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
@@ -53,6 +54,10 @@ function App() {
 
                     <Route path="flow/journal" element={
                         <Suspense fallback={<PageLoader />}><JournalPage /></Suspense>
+                    } />
+
+                    <Route path="flow/story" element={
+                        <Suspense fallback={<PageLoader />}><MoneyStoryPage /></Suspense>
                     } />
 
                     <Route path="search" element={
