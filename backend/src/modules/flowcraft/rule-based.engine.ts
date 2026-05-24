@@ -7,6 +7,10 @@ import { buildJournalNudge } from "./insights/journal-nudge";
 import { buildQuietlyBigger } from "./insights/quietly-bigger";
 import { buildHeavierWeekdays } from "./insights/heavier-weekdays";
 import { buildGoalHeld } from "./insights/goal-held";
+import { buildFutureYou } from "./insights/future-you";
+import { buildNoCheckDay } from "./insights/no-check-day";
+import { buildKeepJoy } from "./insights/keep-joy";
+import { buildUnusedSub } from "./insights/unused-sub";
 
 type Builder = (ctx: InsightContext) => Promise<Insight | null>;
 
@@ -14,11 +18,15 @@ export class RuleBasedEngine implements InsightEngine {
     async generateInsights(ctx: InsightContext): Promise<Insight[]> {
         const builders: Builder[] = [
             buildGoalHeld,        // celebration first when applicable
+            buildNoCheckDay,      // permission-to-skip card sits high if it fires
             buildFreelyYours,
             buildUsual,
             buildWon,
+            buildKeepJoy,
+            buildFutureYou,
             buildQuietlyBigger,
             buildHeavierWeekdays,
+            buildUnusedSub,
             buildRecurring,
             buildJournalNudge,
         ];
