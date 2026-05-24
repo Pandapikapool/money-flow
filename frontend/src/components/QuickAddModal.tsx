@@ -1,6 +1,6 @@
-import { useEffect, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import ExpenseForm from "./ExpenseForm";
+import { useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import ExpenseForm from './ExpenseForm';
 
 interface Props {
     onClose: () => void;
@@ -13,7 +13,9 @@ export default function QuickAddModal({ onClose }: Props) {
     // Lock body scroll while open
     useEffect(() => {
         document.body.style.overflow = 'hidden';
-        return () => { document.body.style.overflow = ''; };
+        return () => {
+            document.body.style.overflow = '';
+        };
     }, []);
 
     const handleSuccess = () => {
@@ -48,22 +50,37 @@ export default function QuickAddModal({ onClose }: Props) {
                 animation: 'fadeIn 0.15s ease',
             }}
         >
-            <div style={{
-                width: '100%',
-                maxWidth: '480px',
-                animation: 'slideDown 0.2s ease',
-                position: 'relative',
-            }}>
+            <div
+                style={{
+                    width: '100%',
+                    maxWidth: '480px',
+                    animation: 'slideDown 0.2s ease',
+                    position: 'relative',
+                }}
+            >
                 {/* Header */}
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: '12px',
-                    padding: '0 4px',
-                }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '12px',
+                        padding: '0 4px',
+                    }}
+                >
                     <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
-                        Quick Add — <kbd style={{ background: 'rgba(255,255,255,0.15)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>Esc</kbd> to close
+                        Quick Add —{' '}
+                        <kbd
+                            style={{
+                                background: 'rgba(255,255,255,0.15)',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                fontSize: '0.75rem',
+                            }}
+                        >
+                            Esc
+                        </kbd>{' '}
+                        to close
                     </span>
                     <button
                         onClick={onClose}

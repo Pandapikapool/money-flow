@@ -1,24 +1,52 @@
-import { useEffect, useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, Legend, Area, AreaChart
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    Legend,
+    Area,
+    AreaChart,
 } from 'recharts';
 import {
-    fetchDashboardSummary, getYearSummary,
-    fetchFixedReturnsSummary, fetchSIPSummary, fetchRDSummary,
-    fetchStocksSummary, fetchAccounts, fetchLifeXpBuckets,
-    fetchExpenses, fetchTags, fetchSpecialTags, getExpenseSpecialTags,
-    fetchNetWorthHistory, fetchAnomalies,
-    type DashboardSummary, type MonthlyAggregate, type FixedReturnsSummary,
-    type SIPSummary, type RDSummary, type StocksSummary, type Expense, type Tag, type SpecialTag,
-    type NetWorthPoint, type Anomaly
-} from "../lib/api";
-import { formatCurrency } from "../lib/format";
-import { exportYearData, downloadSampleTemplate } from "../lib/export";
-import { importFromFile } from "../lib/import";
-import OverviewFlowWidget from "../components/OverviewFlowWidget";
-import OverviewAskBox from "../components/OverviewAskBox";
+    fetchDashboardSummary,
+    getYearSummary,
+    fetchFixedReturnsSummary,
+    fetchSIPSummary,
+    fetchRDSummary,
+    fetchStocksSummary,
+    fetchAccounts,
+    fetchLifeXpBuckets,
+    fetchExpenses,
+    fetchTags,
+    fetchSpecialTags,
+    getExpenseSpecialTags,
+    fetchNetWorthHistory,
+    fetchAnomalies,
+    type DashboardSummary,
+    type MonthlyAggregate,
+    type FixedReturnsSummary,
+    type SIPSummary,
+    type RDSummary,
+    type StocksSummary,
+    type Expense,
+    type Tag,
+    type SpecialTag,
+    type NetWorthPoint,
+    type Anomaly,
+} from '../lib/api';
+import { formatCurrency } from '../lib/format';
+import { exportYearData, downloadSampleTemplate } from '../lib/export';
+import { importFromFile } from '../lib/import';
+import OverviewFlowWidget from '../components/OverviewFlowWidget';
+import OverviewAskBox from '../components/OverviewAskBox';
 
 // Tea Ceremony chart palette — desaturated, warm; matches the app tokens.
 const COLORS = ['#C9A66B', '#A8B5A0', '#D88B96', '#B9B5C9', '#D6B894', '#8FB39E'];
@@ -43,7 +71,9 @@ export default function Overview() {
     const [allExpensesData, setAllExpensesData] = useState<Expense[]>([]);
     const [tags, setTags] = useState<Tag[]>([]);
     const [specialTags, setSpecialTags] = useState<SpecialTag[]>([]);
-    const [expenseSpecialTagsMap, setExpenseSpecialTagsMap] = useState<Record<number, number[]>>({});
+    const [expenseSpecialTagsMap, setExpenseSpecialTagsMap] = useState<Record<number, number[]>>(
+        {}
+    );
     const [selectedHeatmapMonth, setSelectedHeatmapMonth] = useState<number | null>(null); // null = show weekly, number = show daily for that month
     const [excludedSpecialTagIds, setExcludedSpecialTagIds] = useState<Set<number>>(new Set()); // Set of special tag IDs to exclude
     const [netWorthHistory, setNetWorthHistory] = useState<NetWorthPoint[]>([]);
@@ -69,7 +99,7 @@ export default function Overview() {
                 setSpecialTags(specialTagsData);
 
                 // Fetch expenses for all months of the selected year
-                const allExpensesPromises = Array.from({ length: 12 }, (_, i) => 
+                const allExpensesPromises = Array.from({ length: 12 }, (_, i) =>
                     fetchExpenses(selectedYear, i + 1).catch(() => [] as Expense[])
                 );
                 const expensesArrays = await Promise.all(allExpensesPromises);
@@ -84,7 +114,10 @@ export default function Overview() {
                             const specialTagIds = await getExpenseSpecialTags(expense.id);
                             specialTagsMap[expense.id] = specialTagIds;
                         } catch (err) {
-                            console.error(`Failed to fetch special tags for expense ${expense.id}:`, err);
+                            console.error(
+                                `Failed to fetch special tags for expense ${expense.id}:`,
+                                err
+                            );
                             specialTagsMap[expense.id] = [];
                         }
                     })
@@ -93,10 +126,11 @@ export default function Overview() {
 
                 // Group expenses by category (tag) - only regular tags, not special tags
                 const categoryTotals: Record<string, number> = {};
-                allExpenses.forEach(expense => {
-                    const tag = tagsData.find(t => t.id === expense.tag_id);
+                allExpenses.forEach((expense) => {
+                    const tag = tagsData.find((t) => t.id === expense.tag_id);
                     const tagName = tag?.name || 'Unknown';
-                    categoryTotals[tagName] = (categoryTotals[tagName] || 0) + Number(expense.amount);
+                    categoryTotals[tagName] =
+                        (categoryTotals[tagName] || 0) + Number(expense.amount);
                 });
                 setExpensesByCategory(categoryTotals);
                 setSelectedMonths([]); // Reset to all months when year changes
@@ -104,7 +138,19 @@ export default function Overview() {
                 // Keep excluded tags when year changes for better UX
 
                 // Current state data (not year-specific)
-                const [dashData, fixedData, sipData, rdData, indStocks, usStocksData, cryptoStocksData, accounts, lifeXp, nwHistory, anomalyData] = await Promise.all([
+                const [
+                    dashData,
+                    fixedData,
+                    sipData,
+                    rdData,
+                    indStocks,
+                    usStocksData,
+                    cryptoStocksData,
+                    accounts,
+                    lifeXp,
+                    nwHistory,
+                    anomalyData,
+                ] = await Promise.all([
                     fetchDashboardSummary(),
                     fetchFixedReturnsSummary().catch(() => null),
                     fetchSIPSummary().catch(() => null),
@@ -115,7 +161,7 @@ export default function Overview() {
                     fetchAccounts().catch(() => []),
                     fetchLifeXpBuckets().catch(() => []),
                     fetchNetWorthHistory().catch(() => []),
-                    fetchAnomalies().catch(() => [])
+                    fetchAnomalies().catch(() => []),
                 ]);
 
                 setDashboard(dashData);
@@ -127,8 +173,12 @@ export default function Overview() {
                 setCryptoStocks(cryptoStocksData);
                 setAccountsTotal(accounts.reduce((sum, a) => sum + Number(a.balance), 0));
                 setLifeXpTotal({
-                    saved: lifeXp.filter(b => b.status === 'active').reduce((sum, b) => sum + Number(b.saved_amount), 0),
-                    target: lifeXp.filter(b => b.status === 'active').reduce((sum, b) => sum + Number(b.target_amount), 0)
+                    saved: lifeXp
+                        .filter((b) => b.status === 'active')
+                        .reduce((sum, b) => sum + Number(b.saved_amount), 0),
+                    target: lifeXp
+                        .filter((b) => b.status === 'active')
+                        .reduce((sum, b) => sum + Number(b.target_amount), 0),
                 });
                 setNetWorthHistory(nwHistory);
                 setAnomalies(anomalyData);
@@ -170,10 +220,11 @@ export default function Overview() {
         (cryptoStocks?.current_value || 0);
 
     // Net worth calculation
-    const netWorth = accountsTotal + (dashboard?.assets || 0) + totalCurrentValue + lifeXpTotal.saved;
+    const netWorth =
+        accountsTotal + (dashboard?.assets || 0) + totalCurrentValue + lifeXpTotal.saved;
 
     // Filter expenses for category chart (apply both month filter and special tag filter)
-    const filteredExpensesForCategory = allExpensesData.filter(expense => {
+    const filteredExpensesForCategory = allExpensesData.filter((expense) => {
         // Apply month filter
         if (selectedMonths.length > 0) {
             const expenseMonth = new Date(expense.date).getMonth() + 1;
@@ -182,23 +233,26 @@ export default function Overview() {
         // Apply special tag filter
         if (excludedSpecialTagIds.size > 0) {
             const expenseSpecialTagIds = expenseSpecialTagsMap[expense.id] || [];
-            if (expenseSpecialTagIds.some(tagId => excludedSpecialTagIds.has(tagId))) return false;
+            if (expenseSpecialTagIds.some((tagId) => excludedSpecialTagIds.has(tagId)))
+                return false;
         }
         return true;
     });
 
     // Recalculate category totals based on filtered expenses
     const filteredCategoryTotals: Record<string, number> = {};
-    filteredExpensesForCategory.forEach(expense => {
-        const tag = tags.find(t => t.id === expense.tag_id);
+    filteredExpensesForCategory.forEach((expense) => {
+        const tag = tags.find((t) => t.id === expense.tag_id);
         const tagName = tag?.name || 'Unknown';
-        filteredCategoryTotals[tagName] = (filteredCategoryTotals[tagName] || 0) + Number(expense.amount);
+        filteredCategoryTotals[tagName] =
+            (filteredCategoryTotals[tagName] || 0) + Number(expense.amount);
     });
 
     // Use filtered totals if months or tags are selected, otherwise use all
-    const displayCategoryTotals = (selectedMonths.length > 0 || excludedSpecialTagIds.size > 0) 
-        ? filteredCategoryTotals 
-        : expensesByCategory;
+    const displayCategoryTotals =
+        selectedMonths.length > 0 || excludedSpecialTagIds.size > 0
+            ? filteredCategoryTotals
+            : expensesByCategory;
 
     // Helper function to get week number (1-52) from a date
     const getWeekNumber = (date: Date): number => {
@@ -206,20 +260,20 @@ export default function Overview() {
         const dayNum = d.getUTCDay() || 7;
         d.setUTCDate(d.getUTCDate() + 4 - dayNum);
         const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-        return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+        return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
     };
 
     // Filter expenses based on excluded special tags
-    const filteredExpensesForHeatmap = allExpensesData.filter(expense => {
+    const filteredExpensesForHeatmap = allExpensesData.filter((expense) => {
         if (excludedSpecialTagIds.size === 0) return true; // No tags excluded, include all
         const expenseSpecialTagIds = expenseSpecialTagsMap[expense.id] || [];
         // Exclude expense if it has any of the excluded special tags
-        return !expenseSpecialTagIds.some(tagId => excludedSpecialTagIds.has(tagId));
+        return !expenseSpecialTagIds.some((tagId) => excludedSpecialTagIds.has(tagId));
     });
 
     // Helper to toggle special tag exclusion
     const toggleSpecialTagExclusion = (tagId: number) => {
-        setExcludedSpecialTagIds(prev => {
+        setExcludedSpecialTagIds((prev) => {
             const newSet = new Set(prev);
             if (newSet.has(tagId)) {
                 newSet.delete(tagId);
@@ -234,15 +288,15 @@ export default function Overview() {
     const getExcludedTagsDescription = () => {
         if (excludedSpecialTagIds.size === 0) return '';
         const excludedTagNames = specialTags
-            .filter(st => excludedSpecialTagIds.has(st.id))
-            .map(st => st.name)
+            .filter((st) => excludedSpecialTagIds.has(st.id))
+            .map((st) => st.name)
             .join(', ');
         return `(excluding: ${excludedTagNames})`;
     };
 
     // Weekday-wise expenses (Sunday to Saturday, accumulated over the year)
     const weekdayExpenseMap: Record<number, number> = {}; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    filteredExpensesForHeatmap.forEach(expense => {
+    filteredExpensesForHeatmap.forEach((expense) => {
         const expenseDate = new Date(expense.date);
         const dayOfWeek = expenseDate.getDay(); // 0 = Sunday, 6 = Saturday
         weekdayExpenseMap[dayOfWeek] = (weekdayExpenseMap[dayOfWeek] || 0) + Number(expense.amount);
@@ -262,7 +316,7 @@ export default function Overview() {
     // Weekly Heatmap: Week of year (1-52) with expense totals
     const weekExpenseMap: Record<number, number> = {};
     const weekMonthMap: Record<number, number> = {}; // Track which month each week belongs to
-    filteredExpensesForHeatmap.forEach(expense => {
+    filteredExpensesForHeatmap.forEach((expense) => {
         const expenseDate = new Date(expense.date);
         const weekNum = getWeekNumber(expenseDate);
         weekExpenseMap[weekNum] = (weekExpenseMap[weekNum] || 0) + Number(expense.amount);
@@ -275,7 +329,7 @@ export default function Overview() {
     // Calculate month boundaries in weeks (for dividers)
     const monthWeekBoundaries: Array<{ month: number; startWeek: number; endWeek: number }> = [];
     const monthWeekRanges: Record<number, { startWeek: number; endWeek: number }> = {};
-    
+
     // Group weeks by month
     for (let month = 1; month <= 12; month++) {
         const weeksInMonth: number[] = [];
@@ -295,9 +349,12 @@ export default function Overview() {
     // Daily expense map for selected month
     const dailyExpenseMap: Record<string, number> = {};
     if (selectedHeatmapMonth !== null) {
-        filteredExpensesForHeatmap.forEach(expense => {
+        filteredExpensesForHeatmap.forEach((expense) => {
             const expenseDate = new Date(expense.date);
-            if (expenseDate.getMonth() + 1 === selectedHeatmapMonth && expenseDate.getFullYear() === selectedYear) {
+            if (
+                expenseDate.getMonth() + 1 === selectedHeatmapMonth &&
+                expenseDate.getFullYear() === selectedYear
+            ) {
                 // Normalize date to YYYY-MM-DD format
                 const year = expenseDate.getFullYear();
                 const month = String(expenseDate.getMonth() + 1).padStart(2, '0');
@@ -312,24 +369,26 @@ export default function Overview() {
     const generateDailyCalendarData = (month: number) => {
         const daysInMonth = new Date(selectedYear, month, 0).getDate();
         const days: Array<{ day: number; amount: number; date: string }> = [];
-        
+
         for (let day = 1; day <= daysInMonth; day++) {
             const dateStr = `${selectedYear}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             days.push({
                 day,
                 amount: dailyExpenseMap[dateStr] || 0,
-                date: dateStr
+                date: dateStr,
             });
         }
-        
+
         return days;
     };
 
-    const dailyCalendarData = selectedHeatmapMonth !== null ? generateDailyCalendarData(selectedHeatmapMonth) : [];
+    const dailyCalendarData =
+        selectedHeatmapMonth !== null ? generateDailyCalendarData(selectedHeatmapMonth) : [];
 
     // Get max values for heatmap intensity
     const maxWeekExpense = Math.max(...Object.values(weekExpenseMap), 0);
-    const maxDailyExpense = selectedHeatmapMonth !== null ? Math.max(...Object.values(dailyExpenseMap), 0) : 0;
+    const maxDailyExpense =
+        selectedHeatmapMonth !== null ? Math.max(...Object.values(dailyExpenseMap), 0) : 0;
 
     // Helper to get heatmap color intensity
     const getHeatmapColor = (value: number, max: number): string => {
@@ -344,10 +403,10 @@ export default function Overview() {
     };
 
     // Chart data
-    const monthlyChartData = monthlyData.map(m => ({
+    const monthlyChartData = monthlyData.map((m) => ({
         name: new Date(0, m.month - 1).toLocaleString('default', { month: 'short' }),
         spent: m.spent,
-        budget: m.budget
+        budget: m.budget,
     }));
 
     const investmentPieData = [
@@ -357,73 +416,80 @@ export default function Overview() {
         { name: 'Indian Stocks', value: indianStocks?.total_invested || 0 },
         { name: 'US Stocks', value: usStocks?.total_invested || 0 },
         { name: 'Crypto', value: cryptoStocks?.total_invested || 0 },
-    ].filter(d => d.value > 0);
+    ].filter((d) => d.value > 0);
 
     const wealthPieData = [
         { name: 'Cash (Accounts)', value: accountsTotal },
         { name: 'Assets', value: dashboard?.assets || 0 },
         { name: 'Investments', value: totalCurrentValue },
         { name: 'Life XP Savings', value: lifeXpTotal.saved },
-    ].filter(d => d.value > 0);
+    ].filter((d) => d.value > 0);
 
     // Summary tiles
     const tiles = [
         {
-            title: "Net Worth",
+            title: 'Net Worth',
             value: netWorth,
             color: 'var(--accent-primary)',
-            subtitle: "Total wealth (current)"
+            subtitle: 'Total wealth (current)',
         },
         {
             title: `${selectedYear} Yearly Expenses`,
             value: yearlySpent,
             link: `/expenses/${selectedYear}`,
-            color: yearlySpent > yearlyBudget && yearlyBudget > 0 ? 'var(--accent-danger)' : 'var(--accent-success)',
-            subtitle: yearlyBudget > 0 ? `of ${formatCurrency(yearlyBudget)} budget` : 'No budget set'
+            color:
+                yearlySpent > yearlyBudget && yearlyBudget > 0
+                    ? 'var(--accent-danger)'
+                    : 'var(--accent-success)',
+            subtitle:
+                yearlyBudget > 0 ? `of ${formatCurrency(yearlyBudget)} budget` : 'No budget set',
         },
         {
-            title: "Investments",
+            title: 'Investments',
             value: totalCurrentValue,
-            link: "/investments",
+            link: '/investments',
             color: '#2196f3',
-            subtitle: totalInvestedUSD > 0 
-                ? `${formatCurrency(totalInvestedINR)} invested (INR) + $${totalInvestedUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} invested (USD)`
-                : `${formatCurrency(totalInvested)} invested`
+            subtitle:
+                totalInvestedUSD > 0
+                    ? `${formatCurrency(totalInvestedINR)} invested (INR) + $${totalInvestedUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} invested (USD)`
+                    : `${formatCurrency(totalInvested)} invested`,
         },
         {
-            title: "Accounts",
+            title: 'Accounts',
             value: accountsTotal,
-            link: "/accounts",
+            link: '/accounts',
             color: '#4caf50',
-            subtitle: "Liquid cash (current)"
+            subtitle: 'Liquid cash (current)',
         },
         {
-            title: "Assets",
+            title: 'Assets',
             value: dashboard?.assets || 0,
-            link: "/assets",
+            link: '/assets',
             color: '#ff9800',
-            subtitle: "Properties & more"
+            subtitle: 'Properties & more',
         },
         {
-            title: "Life XP",
+            title: 'Life XP',
             value: lifeXpTotal.saved,
-            link: "/life-xp",
+            link: '/life-xp',
             color: '#9c27b0',
-            subtitle: `of ${formatCurrency(lifeXpTotal.target)} target`
+            subtitle: `of ${formatCurrency(lifeXpTotal.target)} target`,
         },
     ];
 
     // Current month quick stats (only when viewing current year)
     const currentMonth = new Date().getMonth() + 1;
-    const currentMonthData = isCurrentYear ? monthlyData.find(m => m.month === currentMonth) : null;
+    const currentMonthData = isCurrentYear
+        ? monthlyData.find((m) => m.month === currentMonth)
+        : null;
     const currentMonthSpent = currentMonthData?.spent || 0;
     const currentMonthBudget = currentMonthData?.budget || 0;
-    const currentMonthPercent = currentMonthBudget > 0 ? (currentMonthSpent / currentMonthBudget) * 100 : 0;
+    const currentMonthPercent =
+        currentMonthBudget > 0 ? (currentMonthSpent / currentMonthBudget) * 100 : 0;
     const investmentGain = totalCurrentValue - totalInvested;
 
     return (
         <div style={{ maxWidth: '1400px' }}>
-
             {/* FlowCraft widget — shows only when no active goal + not dismissed recently */}
             <OverviewFlowWidget />
 
@@ -431,61 +497,153 @@ export default function Overview() {
             <OverviewAskBox />
 
             {/* Net Worth Hero */}
-            <div className="glass-panel" style={{
-                padding: '28px 32px',
-                marginBottom: '28px',
-                background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(129,140,248,0.05) 100%)',
-                borderLeft: '4px solid var(--accent-primary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '24px',
-            }}>
+            <div
+                className="glass-panel"
+                style={{
+                    padding: '28px 32px',
+                    marginBottom: '28px',
+                    background:
+                        'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(129,140,248,0.05) 100%)',
+                    borderLeft: '4px solid var(--accent-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '24px',
+                }}
+            >
                 <div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+                    <div
+                        style={{
+                            fontSize: '0.8rem',
+                            color: 'var(--text-secondary)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.08em',
+                            marginBottom: '6px',
+                        }}
+                    >
                         Total Net Worth
                     </div>
-                    <div style={{ fontSize: '2.4rem', fontWeight: '800', letterSpacing: '-1px', color: 'var(--text-primary)' }}>
+                    <div
+                        style={{
+                            fontSize: '2.4rem',
+                            fontWeight: '800',
+                            letterSpacing: '-1px',
+                            color: 'var(--text-primary)',
+                        }}
+                    >
                         {formatCurrency(netWorth)}
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    <div
+                        style={{
+                            fontSize: '0.8rem',
+                            color: 'var(--text-secondary)',
+                            marginTop: '4px',
+                        }}
+                    >
                         Cash · Assets · Investments · Goals
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
                     <div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>Investments P&L</div>
-                        <div style={{
-                            fontSize: '1.3rem',
-                            fontWeight: '700',
-                            color: investmentGain >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)'
-                        }}>
-                            {investmentGain >= 0 ? '+' : ''}{formatCurrency(investmentGain)}
+                        <div
+                            style={{
+                                fontSize: '0.75rem',
+                                color: 'var(--text-secondary)',
+                                textTransform: 'uppercase',
+                                marginBottom: '4px',
+                            }}
+                        >
+                            Investments P&L
+                        </div>
+                        <div
+                            style={{
+                                fontSize: '1.3rem',
+                                fontWeight: '700',
+                                color:
+                                    investmentGain >= 0
+                                        ? 'var(--accent-success)'
+                                        : 'var(--accent-danger)',
+                            }}
+                        >
+                            {investmentGain >= 0 ? '+' : ''}
+                            {formatCurrency(investmentGain)}
                         </div>
                     </div>
                     {isCurrentYear && currentMonthBudget > 0 && (
                         <div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>
-                                {new Date(0, currentMonth - 1).toLocaleString('default', { month: 'short' })} Budget
+                            <div
+                                style={{
+                                    fontSize: '0.75rem',
+                                    color: 'var(--text-secondary)',
+                                    textTransform: 'uppercase',
+                                    marginBottom: '4px',
+                                }}
+                            >
+                                {new Date(0, currentMonth - 1).toLocaleString('default', {
+                                    month: 'short',
+                                })}{' '}
+                                Budget
                             </div>
-                            <div style={{ fontSize: '1.3rem', fontWeight: '700', color: currentMonthPercent > 100 ? 'var(--accent-danger)' : currentMonthPercent > 85 ? '#fbbf24' : 'var(--accent-success)' }}>
+                            <div
+                                style={{
+                                    fontSize: '1.3rem',
+                                    fontWeight: '700',
+                                    color:
+                                        currentMonthPercent > 100
+                                            ? 'var(--accent-danger)'
+                                            : currentMonthPercent > 85
+                                              ? '#fbbf24'
+                                              : 'var(--accent-success)',
+                                }}
+                            >
                                 {currentMonthPercent.toFixed(0)}%
                             </div>
-                            <div style={{ marginTop: '4px', height: '4px', width: '80px', background: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden' }}>
-                                <div style={{
-                                    height: '100%',
-                                    width: `${Math.min(currentMonthPercent, 100)}%`,
-                                    background: currentMonthPercent > 100 ? 'var(--accent-danger)' : currentMonthPercent > 85 ? '#fbbf24' : 'var(--accent-success)',
+                            <div
+                                style={{
+                                    marginTop: '4px',
+                                    height: '4px',
+                                    width: '80px',
+                                    background: 'var(--border-color)',
                                     borderRadius: '2px',
-                                    transition: 'width 0.5s ease',
-                                }} />
+                                    overflow: 'hidden',
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        height: '100%',
+                                        width: `${Math.min(currentMonthPercent, 100)}%`,
+                                        background:
+                                            currentMonthPercent > 100
+                                                ? 'var(--accent-danger)'
+                                                : currentMonthPercent > 85
+                                                  ? '#fbbf24'
+                                                  : 'var(--accent-success)',
+                                        borderRadius: '2px',
+                                        transition: 'width 0.5s ease',
+                                    }}
+                                />
                             </div>
                         </div>
                     )}
                     <div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '4px' }}>Liquid Cash</div>
-                        <div style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--text-primary)' }}>
+                        <div
+                            style={{
+                                fontSize: '0.75rem',
+                                color: 'var(--text-secondary)',
+                                textTransform: 'uppercase',
+                                marginBottom: '4px',
+                            }}
+                        >
+                            Liquid Cash
+                        </div>
+                        <div
+                            style={{
+                                fontSize: '1.3rem',
+                                fontWeight: '700',
+                                color: 'var(--text-primary)',
+                            }}
+                        >
                             {formatCurrency(accountsTotal)}
                         </div>
                     </div>
@@ -493,11 +651,18 @@ export default function Overview() {
             </div>
 
             {/* Header with Year Navigation */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+            <div
+                style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '32px',
+                }}
+            >
                 <h1 style={{ margin: 0 }}>Overview</h1>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <button
-                        onClick={() => setSelectedYear(y => y - 1)}
+                        onClick={() => setSelectedYear((y) => y - 1)}
                         style={{
                             background: 'var(--bg-panel)',
                             border: '1px solid var(--border-color)',
@@ -505,23 +670,25 @@ export default function Overview() {
                             padding: '8px 16px',
                             borderRadius: '6px',
                             cursor: 'pointer',
-                            fontSize: '0.9rem'
+                            fontSize: '0.9rem',
                         }}
                     >
                         &larr; {selectedYear - 1}
                     </button>
-                    <span style={{
-                        fontSize: '1.2rem',
-                        fontWeight: '600',
-                        padding: '8px 16px',
-                        background: isCurrentYear ? 'var(--accent-primary)' : 'var(--bg-panel)',
-                        color: isCurrentYear ? '#fff' : 'var(--text-primary)',
-                        borderRadius: '6px'
-                    }}>
+                    <span
+                        style={{
+                            fontSize: '1.2rem',
+                            fontWeight: '600',
+                            padding: '8px 16px',
+                            background: isCurrentYear ? 'var(--accent-primary)' : 'var(--bg-panel)',
+                            color: isCurrentYear ? '#fff' : 'var(--text-primary)',
+                            borderRadius: '6px',
+                        }}
+                    >
                         {selectedYear}
                     </span>
                     <button
-                        onClick={() => setSelectedYear(y => y + 1)}
+                        onClick={() => setSelectedYear((y) => y + 1)}
                         style={{
                             background: 'var(--bg-panel)',
                             border: '1px solid var(--border-color)',
@@ -529,7 +696,7 @@ export default function Overview() {
                             padding: '8px 16px',
                             borderRadius: '6px',
                             cursor: 'pointer',
-                            fontSize: '0.9rem'
+                            fontSize: '0.9rem',
                         }}
                     >
                         {selectedYear + 1} &rarr;
@@ -538,12 +705,14 @@ export default function Overview() {
             </div>
 
             {/* Summary Tiles */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                gap: '20px',
-                marginBottom: '40px'
-            }}>
+            <div
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                    gap: '20px',
+                    marginBottom: '40px',
+                }}
+            >
                 {tiles.map((tile, i) => (
                     <Link
                         key={i}
@@ -556,15 +725,31 @@ export default function Overview() {
                                 padding: '20px',
                                 cursor: tile.link ? 'pointer' : 'default',
                                 transition: 'transform 0.15s',
-                                borderLeft: `4px solid ${tile.color}`
+                                borderLeft: `4px solid ${tile.color}`,
                             }}
-                            onMouseEnter={e => tile.link && (e.currentTarget.style.transform = 'translateY(-2px)')}
-                            onMouseLeave={e => tile.link && (e.currentTarget.style.transform = 'translateY(0)')}
+                            onMouseEnter={(e) =>
+                                tile.link && (e.currentTarget.style.transform = 'translateY(-2px)')
+                            }
+                            onMouseLeave={(e) =>
+                                tile.link && (e.currentTarget.style.transform = 'translateY(0)')
+                            }
                         >
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                            <div
+                                style={{
+                                    fontSize: '0.8rem',
+                                    color: 'var(--text-secondary)',
+                                    marginBottom: '8px',
+                                }}
+                            >
                                 {tile.title}
                             </div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '4px' }}>
+                            <div
+                                style={{
+                                    fontSize: '1.5rem',
+                                    fontWeight: '700',
+                                    marginBottom: '4px',
+                                }}
+                            >
                                 {formatCurrency(tile.value)}
                             </div>
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
@@ -578,35 +763,68 @@ export default function Overview() {
             {/* Spending Anomalies — only relevant for current year/month */}
             {isCurrentYear && anomalies.length > 0 && (
                 <div style={{ marginBottom: '24px' }}>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        marginBottom: '10px',
-                        fontSize: '0.8rem',
-                        color: 'var(--accent-warning)',
-                        fontWeight: '600',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                    }}>
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            marginBottom: '10px',
+                            fontSize: '0.8rem',
+                            color: 'var(--accent-warning)',
+                            fontWeight: '600',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                        }}
+                    >
                         ⚠ Spending Anomalies this month
                     </div>
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                        {anomalies.map(a => (
-                            <div key={a.tag_name} className="glass-panel" style={{
-                                padding: '14px 18px',
-                                borderLeft: '3px solid var(--accent-warning)',
-                                minWidth: '200px',
-                                flex: '1',
-                            }}>
-                                <div style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '4px' }}>{a.tag_name}</div>
-                                <div style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--accent-warning)' }}>
+                        {anomalies.map((a) => (
+                            <div
+                                key={a.tag_name}
+                                className="glass-panel"
+                                style={{
+                                    padding: '14px 18px',
+                                    borderLeft: '3px solid var(--accent-warning)',
+                                    minWidth: '200px',
+                                    flex: '1',
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        fontWeight: '600',
+                                        fontSize: '0.9rem',
+                                        marginBottom: '4px',
+                                    }}
+                                >
+                                    {a.tag_name}
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: '1.1rem',
+                                        fontWeight: '700',
+                                        color: 'var(--accent-warning)',
+                                    }}
+                                >
                                     {formatCurrency(a.current_month)}
-                                    <span style={{ fontSize: '0.75rem', fontWeight: '400', color: 'var(--accent-danger)', marginLeft: '6px' }}>
+                                    <span
+                                        style={{
+                                            fontSize: '0.75rem',
+                                            fontWeight: '400',
+                                            color: 'var(--accent-danger)',
+                                            marginLeft: '6px',
+                                        }}
+                                    >
                                         +{a.percent_above.toFixed(0)}% above avg
                                     </span>
                                 </div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                                <div
+                                    style={{
+                                        fontSize: '0.75rem',
+                                        color: 'var(--text-secondary)',
+                                        marginTop: '2px',
+                                    }}
+                                >
                                     3-month avg: {formatCurrency(a.three_month_avg)}
                                 </div>
                             </div>
@@ -618,15 +836,42 @@ export default function Overview() {
             {/* Net Worth History Chart */}
             {netWorthHistory.length > 1 && (
                 <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px' }}>
-                    <h3 style={{ marginBottom: '20px', fontSize: '1rem', color: 'var(--text-secondary)' }}>
-                        Net Worth Over Time <span style={{ fontSize: '0.75rem', fontWeight: '400', marginLeft: '8px', opacity: 0.6 }}>from account & asset snapshots</span>
+                    <h3
+                        style={{
+                            marginBottom: '20px',
+                            fontSize: '1rem',
+                            color: 'var(--text-secondary)',
+                        }}
+                    >
+                        Net Worth Over Time{' '}
+                        <span
+                            style={{
+                                fontSize: '0.75rem',
+                                fontWeight: '400',
+                                marginLeft: '8px',
+                                opacity: 0.6,
+                            }}
+                        >
+                            from account & asset snapshots
+                        </span>
                     </h3>
                     <ResponsiveContainer width="100%" height={220}>
-                        <AreaChart data={netWorthHistory} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                        <AreaChart
+                            data={netWorthHistory}
+                            margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+                        >
                             <defs>
                                 <linearGradient id="nwGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="var(--accent-primary)" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="var(--accent-primary)" stopOpacity={0} />
+                                    <stop
+                                        offset="5%"
+                                        stopColor="var(--accent-primary)"
+                                        stopOpacity={0.3}
+                                    />
+                                    <stop
+                                        offset="95%"
+                                        stopColor="var(--accent-primary)"
+                                        stopOpacity={0}
+                                    />
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
@@ -644,61 +889,137 @@ export default function Overview() {
                                 width={45}
                             />
                             <Tooltip
-                                contentStyle={{ background: 'var(--bg-panel)', border: '1px solid var(--border-color)', borderRadius: '8px' }}
-                                formatter={(value, name) => [formatCurrency(Number(value)), name === 'net_worth' ? 'Net Worth' : name === 'accounts' ? 'Cash' : 'Assets']}
+                                contentStyle={{
+                                    background: 'var(--bg-panel)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '8px',
+                                }}
+                                formatter={(value, name) => [
+                                    formatCurrency(Number(value)),
+                                    name === 'net_worth'
+                                        ? 'Net Worth'
+                                        : name === 'accounts'
+                                          ? 'Cash'
+                                          : 'Assets',
+                                ]}
                                 labelFormatter={(label: string) => {
                                     const [y, m] = label.split('-');
                                     return `${new Date(0, parseInt(m) - 1).toLocaleString('default', { month: 'long' })} ${y}`;
                                 }}
                             />
-                            <Area type="monotone" dataKey="net_worth" name="net_worth" stroke="var(--accent-primary)" strokeWidth={2} fill="url(#nwGradient)" dot={false} activeDot={{ r: 4 }} />
-                            <Area type="monotone" dataKey="accounts" name="accounts" stroke="var(--accent-success)" strokeWidth={1.5} fill="none" dot={false} strokeDasharray="4 2" />
+                            <Area
+                                type="monotone"
+                                dataKey="net_worth"
+                                name="net_worth"
+                                stroke="var(--accent-primary)"
+                                strokeWidth={2}
+                                fill="url(#nwGradient)"
+                                dot={false}
+                                activeDot={{ r: 4 }}
+                            />
+                            <Area
+                                type="monotone"
+                                dataKey="accounts"
+                                name="accounts"
+                                stroke="var(--accent-success)"
+                                strokeWidth={1.5}
+                                fill="none"
+                                dot={false}
+                                strokeDasharray="4 2"
+                            />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
             )}
 
             {/* Charts Section */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
-
+            <div
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+                    gap: '24px',
+                }}
+            >
                 {/* Monthly Expenses vs Budget Chart */}
                 <div className="glass-panel" style={{ padding: '24px' }}>
-                    <h3 style={{ marginBottom: '20px', fontSize: '1rem', color: 'var(--text-secondary)' }}>
+                    <h3
+                        style={{
+                            marginBottom: '20px',
+                            fontSize: '1rem',
+                            color: 'var(--text-secondary)',
+                        }}
+                    >
                         {selectedYear} Monthly Expenses vs Budget
                     </h3>
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={monthlyChartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                            <XAxis dataKey="name" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
-                            <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                            <XAxis
+                                dataKey="name"
+                                tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+                            />
+                            <YAxis
+                                tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+                                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                            />
                             <Tooltip
                                 contentStyle={{
                                     background: 'var(--bg-panel)',
                                     border: '1px solid var(--border-color)',
-                                    borderRadius: '8px'
+                                    borderRadius: '8px',
                                 }}
                                 formatter={(value) => formatCurrency(Number(value))}
                             />
                             <Legend />
-                            <Bar dataKey="spent" name="Spent" fill="#f44336" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="budget" name="Budget" fill="#4caf50" radius={[4, 4, 0, 0]} />
+                            <Bar
+                                dataKey="spent"
+                                name="Spent"
+                                fill="#f44336"
+                                radius={[4, 4, 0, 0]}
+                            />
+                            <Bar
+                                dataKey="budget"
+                                name="Budget"
+                                fill="#4caf50"
+                                radius={[4, 4, 0, 0]}
+                            />
                         </BarChart>
                     </ResponsiveContainer>
-                    <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                        Year Total: {formatCurrency(yearlySpent)} spent of {formatCurrency(yearlyBudget)} budget
-                        <span style={{
-                            marginLeft: '12px',
-                            color: yearlySpent > yearlyBudget ? 'var(--accent-danger)' : 'var(--accent-success)',
-                            fontWeight: '600'
-                        }}>
-                            ({yearlySpent > yearlyBudget ? 'Over' : 'Under'} by {formatCurrency(Math.abs(yearlyBudget - yearlySpent))})
+                    <div
+                        style={{
+                            textAlign: 'center',
+                            marginTop: '12px',
+                            fontSize: '0.85rem',
+                            color: 'var(--text-secondary)',
+                        }}
+                    >
+                        Year Total: {formatCurrency(yearlySpent)} spent of{' '}
+                        {formatCurrency(yearlyBudget)} budget
+                        <span
+                            style={{
+                                marginLeft: '12px',
+                                color:
+                                    yearlySpent > yearlyBudget
+                                        ? 'var(--accent-danger)'
+                                        : 'var(--accent-success)',
+                                fontWeight: '600',
+                            }}
+                        >
+                            ({yearlySpent > yearlyBudget ? 'Over' : 'Under'} by{' '}
+                            {formatCurrency(Math.abs(yearlyBudget - yearlySpent))})
                         </span>
                     </div>
                 </div>
 
                 {/* Wealth Distribution Pie Chart */}
                 <div className="glass-panel" style={{ padding: '24px' }}>
-                    <h3 style={{ marginBottom: '20px', fontSize: '1rem', color: 'var(--text-secondary)' }}>
+                    <h3
+                        style={{
+                            marginBottom: '20px',
+                            fontSize: '1rem',
+                            color: 'var(--text-secondary)',
+                        }}
+                    >
                         Wealth Distribution
                     </h3>
                     <ResponsiveContainer width="100%" height={300}>
@@ -711,18 +1032,23 @@ export default function Overview() {
                                 outerRadius={100}
                                 paddingAngle={2}
                                 dataKey="value"
-                                label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                                label={({ name, percent }) =>
+                                    `${name} ${((percent || 0) * 100).toFixed(0)}%`
+                                }
                                 labelLine={false}
                             >
                                 {wealthPieData.map((_, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    <Cell
+                                        key={`cell-${index}`}
+                                        fill={COLORS[index % COLORS.length]}
+                                    />
                                 ))}
                             </Pie>
                             <Tooltip
                                 contentStyle={{
                                     background: 'var(--bg-panel)',
                                     border: '1px solid var(--border-color)',
-                                    borderRadius: '8px'
+                                    borderRadius: '8px',
                                 }}
                                 formatter={(value) => formatCurrency(Number(value))}
                             />
@@ -738,7 +1064,13 @@ export default function Overview() {
                 {/* Investment Breakdown Pie Chart */}
                 {investmentPieData.length > 0 && (
                     <div className="glass-panel" style={{ padding: '24px' }}>
-                        <h3 style={{ marginBottom: '20px', fontSize: '1rem', color: 'var(--text-secondary)' }}>
+                        <h3
+                            style={{
+                                marginBottom: '20px',
+                                fontSize: '1rem',
+                                color: 'var(--text-secondary)',
+                            }}
+                        >
                             Investment Breakdown
                         </h3>
                         <ResponsiveContainer width="100%" height={300}>
@@ -751,34 +1083,50 @@ export default function Overview() {
                                     outerRadius={100}
                                     paddingAngle={2}
                                     dataKey="value"
-                                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                                    label={({ name, percent }) =>
+                                        `${name} ${((percent || 0) * 100).toFixed(0)}%`
+                                    }
                                     labelLine={false}
                                 >
                                     {investmentPieData.map((_, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        <Cell
+                                            key={`cell-${index}`}
+                                            fill={COLORS[index % COLORS.length]}
+                                        />
                                     ))}
                                 </Pie>
                                 <Tooltip
                                     contentStyle={{
                                         background: 'var(--bg-panel)',
                                         border: '1px solid var(--border-color)',
-                                        borderRadius: '8px'
+                                        borderRadius: '8px',
                                     }}
                                     formatter={(value) => formatCurrency(Number(value))}
                                 />
                             </PieChart>
                         </ResponsiveContainer>
-                        <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.85rem' }}>
-                            <div style={{ fontWeight: '600', color: '#2196f3', marginBottom: '4px' }}>
+                        <div
+                            style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.85rem' }}
+                        >
+                            <div
+                                style={{ fontWeight: '600', color: '#2196f3', marginBottom: '4px' }}
+                            >
                                 Total Invested: {formatCurrency(totalInvestedINR)}
                                 {totalInvestedUSD > 0 && (
                                     <span style={{ marginLeft: '8px' }}>
-                                        + ${totalInvestedUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (USD)
-                            </span>
+                                        + $
+                                        {totalInvestedUSD.toLocaleString('en-US', {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        })}{' '}
+                                        (USD)
+                                    </span>
                                 )}
                             </div>
                             {totalInvestedUSD > 0 && (
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                <div
+                                    style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}
+                                >
                                     USD: US Stocks + Crypto
                                 </div>
                             )}
@@ -789,26 +1137,49 @@ export default function Overview() {
                 {/* Expense Distribution by Category */}
                 {Object.keys(expensesByCategory).length > 0 && (
                     <div className="glass-panel" style={{ padding: '24px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                            <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-secondary)' }}>
+                        <div
+                            style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: '20px',
+                            }}
+                        >
+                            <h3
+                                style={{
+                                    margin: 0,
+                                    fontSize: '1rem',
+                                    color: 'var(--text-secondary)',
+                                }}
+                            >
                                 {selectedYear} Expense Distribution by Category
                             </h3>
                             {excludedSpecialTagIds.size > 0 && (
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                <div
+                                    style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}
+                                >
                                     {getExcludedTagsDescription()}
                                 </div>
                             )}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                <label
+                                    style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}
+                                >
                                     Filter by Month:
                                 </label>
                                 <select
-                                    value={selectedMonths.length === 0 ? 'all' : selectedMonths.join(',')}
+                                    value={
+                                        selectedMonths.length === 0
+                                            ? 'all'
+                                            : selectedMonths.join(',')
+                                    }
                                     onChange={(e) => {
                                         if (e.target.value === 'all') {
                                             setSelectedMonths([]);
                                         } else {
-                                            const months = e.target.value.split(',').map(m => parseInt(m));
+                                            const months = e.target.value
+                                                .split(',')
+                                                .map((m) => parseInt(m));
                                             setSelectedMonths(months);
                                         }
                                     }}
@@ -819,13 +1190,15 @@ export default function Overview() {
                                         borderRadius: '6px',
                                         color: 'var(--text-primary)',
                                         fontSize: '0.85rem',
-                                        cursor: 'pointer'
+                                        cursor: 'pointer',
                                     }}
                                 >
                                     <option value="all">All Months</option>
                                     {Array.from({ length: 12 }, (_, i) => {
                                         const monthNum = i + 1;
-                                        const monthName = new Date(0, i).toLocaleString('default', { month: 'long' });
+                                        const monthName = new Date(0, i).toLocaleString('default', {
+                                            month: 'long',
+                                        });
                                         return (
                                             <option key={monthNum} value={monthNum.toString()}>
                                                 {monthName}
@@ -833,14 +1206,25 @@ export default function Overview() {
                                         );
                                     })}
                                     {Array.from({ length: 12 }, (_, i) => {
-                                        const monthName = new Date(0, i).toLocaleString('default', { month: 'long' });
+                                        const monthName = new Date(0, i).toLocaleString('default', {
+                                            month: 'long',
+                                        });
                                         // Create range options (e.g., "Jan-Mar", "Apr-Jun", etc.)
                                         if (i % 3 === 0) {
                                             const endMonth = Math.min(i + 3, 12);
-                                            const endMonthName = new Date(0, endMonth - 1).toLocaleString('default', { month: 'long' });
-                                            const rangeMonths = Array.from({ length: endMonth - i }, (_, j) => i + j + 1);
+                                            const endMonthName = new Date(
+                                                0,
+                                                endMonth - 1
+                                            ).toLocaleString('default', { month: 'long' });
+                                            const rangeMonths = Array.from(
+                                                { length: endMonth - i },
+                                                (_, j) => i + j + 1
+                                            );
                                             return (
-                                                <option key={`range-${i}`} value={rangeMonths.join(',')}>
+                                                <option
+                                                    key={`range-${i}`}
+                                                    value={rangeMonths.join(',')}
+                                                >
                                                     {monthName} - {endMonthName}
                                                 </option>
                                             );
@@ -864,39 +1248,79 @@ export default function Overview() {
                                             outerRadius={100}
                                             paddingAngle={2}
                                             dataKey="value"
-                                            label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                                            label={({ name, percent }) =>
+                                                `${name} ${((percent || 0) * 100).toFixed(0)}%`
+                                            }
                                             labelLine={false}
                                         >
                                             {Object.entries(displayCategoryTotals)
                                                 .map(([name, value]) => ({ name, value }))
                                                 .sort((a, b) => b.value - a.value)
                                                 .map((_, index) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                    <Cell
+                                                        key={`cell-${index}`}
+                                                        fill={COLORS[index % COLORS.length]}
+                                                    />
                                                 ))}
                                         </Pie>
                                         <Tooltip
                                             contentStyle={{
                                                 background: 'var(--bg-panel)',
                                                 border: '1px solid var(--border-color)',
-                                                borderRadius: '8px'
+                                                borderRadius: '8px',
                                             }}
                                             formatter={(value) => formatCurrency(Number(value))}
                                         />
                                     </PieChart>
                                 </ResponsiveContainer>
-                                <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.85rem' }}>
-                                    <span style={{ fontWeight: '600', color: 'var(--accent-primary)' }}>
-                                        Total: {formatCurrency(Object.values(displayCategoryTotals).reduce((sum, val) => sum + val, 0))}
+                                <div
+                                    style={{
+                                        textAlign: 'center',
+                                        marginTop: '12px',
+                                        fontSize: '0.85rem',
+                                    }}
+                                >
+                                    <span
+                                        style={{
+                                            fontWeight: '600',
+                                            color: 'var(--accent-primary)',
+                                        }}
+                                    >
+                                        Total:{' '}
+                                        {formatCurrency(
+                                            Object.values(displayCategoryTotals).reduce(
+                                                (sum, val) => sum + val,
+                                                0
+                                            )
+                                        )}
                                     </span>
                                     {selectedMonths.length > 0 && (
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                                            {selectedMonths.map(m => new Date(0, m - 1).toLocaleString('default', { month: 'short' })).join(', ')}
+                                        <div
+                                            style={{
+                                                fontSize: '0.75rem',
+                                                color: 'var(--text-secondary)',
+                                                marginTop: '4px',
+                                            }}
+                                        >
+                                            {selectedMonths
+                                                .map((m) =>
+                                                    new Date(0, m - 1).toLocaleString('default', {
+                                                        month: 'short',
+                                                    })
+                                                )
+                                                .join(', ')}
                                         </div>
                                     )}
                                 </div>
                             </>
                         ) : (
-                            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+                            <div
+                                style={{
+                                    textAlign: 'center',
+                                    padding: '40px',
+                                    color: 'var(--text-secondary)',
+                                }}
+                            >
                                 No expenses found for selected months
                             </div>
                         )}
@@ -906,17 +1330,47 @@ export default function Overview() {
 
             {/* Common Expense Filters Section */}
             {specialTags.length > 0 && (
-                <div className="glass-panel" style={{ padding: '20px', marginTop: '24px', marginBottom: '24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                        <div style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)', minWidth: '140px' }}>
+                <div
+                    className="glass-panel"
+                    style={{ padding: '20px', marginTop: '24px', marginBottom: '24px' }}
+                >
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '16px',
+                            flexWrap: 'wrap',
+                        }}
+                    >
+                        <div
+                            style={{
+                                fontSize: '0.9rem',
+                                fontWeight: '600',
+                                color: 'var(--text-primary)',
+                                minWidth: '140px',
+                            }}
+                        >
                             Filter Expenses:
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                        <div
+                            style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px',
+                                flex: 1,
+                            }}
+                        >
+                            <div
+                                style={{
+                                    fontSize: '0.75rem',
+                                    color: 'var(--text-secondary)',
+                                    marginBottom: '4px',
+                                }}
+                            >
                                 Exclude Special Tags (affects all expense charts below):
                             </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                {specialTags.map(tag => (
+                                {specialTags.map((tag) => (
                                     <label
                                         key={tag.id}
                                         style={{
@@ -928,12 +1382,14 @@ export default function Overview() {
                                             color: 'var(--text-secondary)',
                                             padding: '6px 12px',
                                             borderRadius: '8px',
-                                            background: excludedSpecialTagIds.has(tag.id) 
-                                                ? 'rgba(239, 68, 68, 0.15)' 
+                                            background: excludedSpecialTagIds.has(tag.id)
+                                                ? 'rgba(239, 68, 68, 0.15)'
                                                 : 'var(--bg-app)',
                                             border: `1px solid ${excludedSpecialTagIds.has(tag.id) ? 'rgba(239, 68, 68, 0.3)' : 'var(--border-color)'}`,
                                             transition: 'all 0.2s',
-                                            fontWeight: excludedSpecialTagIds.has(tag.id) ? '500' : '400'
+                                            fontWeight: excludedSpecialTagIds.has(tag.id)
+                                                ? '500'
+                                                : '400',
                                         }}
                                     >
                                         <input
@@ -952,64 +1408,97 @@ export default function Overview() {
             )}
 
             {/* Expense Heatmaps Section */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
-                
+            <div
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+                    gap: '24px',
+                }}
+            >
                 {/* Weekday Bar Chart (Sunday to Saturday) */}
                 <div className="glass-panel" style={{ padding: '24px' }}>
-                    <h3 style={{ marginBottom: '20px', fontSize: '1rem', color: 'var(--text-secondary)' }}>
+                    <h3
+                        style={{
+                            marginBottom: '20px',
+                            fontSize: '1rem',
+                            color: 'var(--text-secondary)',
+                        }}
+                    >
                         {selectedYear} Expense by Weekday
                     </h3>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                    <div
+                        style={{
+                            fontSize: '0.75rem',
+                            color: 'var(--text-secondary)',
+                            marginBottom: '16px',
+                        }}
+                    >
                         Accumulated expenses by day of week {getExcludedTagsDescription()}
                     </div>
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={weekdayChartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                            <XAxis 
-                                dataKey="name" 
+                            <XAxis
+                                dataKey="name"
                                 tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
                             />
-                            <YAxis 
+                            <YAxis
                                 tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
-                                tickFormatter={(v) => `${(v/1000).toFixed(0)}k`}
+                                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
                             />
                             <Tooltip
                                 contentStyle={{
                                     background: 'var(--bg-panel)',
                                     border: '1px solid var(--border-color)',
-                                    borderRadius: '8px'
+                                    borderRadius: '8px',
                                 }}
                                 formatter={(value) => formatCurrency(Number(value))}
                             />
-                            <Bar 
-                                dataKey="amount" 
-                                fill="#3b82f6" 
-                                radius={[4, 4, 0, 0]}
-                            />
+                            <Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
-                    <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    <div
+                        style={{
+                            textAlign: 'center',
+                            marginTop: '12px',
+                            fontSize: '0.85rem',
+                            color: 'var(--text-secondary)',
+                        }}
+                    >
                         <span style={{ fontWeight: '600', color: 'var(--accent-primary)' }}>
-                            Total: {formatCurrency(weekdayChartData.reduce((sum, w) => sum + w.amount, 0))}
+                            Total:{' '}
+                            {formatCurrency(weekdayChartData.reduce((sum, w) => sum + w.amount, 0))}
                         </span>
                     </div>
                 </div>
 
                 {/* Weekly/Daily Heatmap */}
                 <div className="glass-panel" style={{ padding: '24px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                    <div
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '20px',
+                            flexWrap: 'wrap',
+                            gap: '12px',
+                        }}
+                    >
                         <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-secondary)' }}>
-                            {selectedHeatmapMonth !== null 
+                            {selectedHeatmapMonth !== null
                                 ? `${selectedYear} ${new Date(0, selectedHeatmapMonth - 1).toLocaleString('default', { month: 'long' })} Daily Expense Heatmap`
-                                : `${selectedYear} Weekly Expense Heatmap`
-                            }
+                                : `${selectedYear} Weekly Expense Heatmap`}
                         </h3>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                                 View:
                             </label>
                             <select
-                                value={selectedHeatmapMonth === null ? 'all' : selectedHeatmapMonth.toString()}
+                                value={
+                                    selectedHeatmapMonth === null
+                                        ? 'all'
+                                        : selectedHeatmapMonth.toString()
+                                }
                                 onChange={(e) => {
                                     if (e.target.value === 'all') {
                                         setSelectedHeatmapMonth(null);
@@ -1024,13 +1513,15 @@ export default function Overview() {
                                     borderRadius: '6px',
                                     color: 'var(--text-primary)',
                                     fontSize: '0.85rem',
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
                                 }}
                             >
                                 <option value="all">All Weeks (1-52)</option>
                                 {Array.from({ length: 12 }, (_, i) => {
                                     const monthNum = i + 1;
-                                    const monthName = new Date(0, i).toLocaleString('default', { month: 'long' });
+                                    const monthName = new Date(0, i).toLocaleString('default', {
+                                        month: 'long',
+                                    });
                                     return (
                                         <option key={monthNum} value={monthNum.toString()}>
                                             {monthName} (Daily)
@@ -1040,59 +1531,75 @@ export default function Overview() {
                             </select>
                         </div>
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                        {selectedHeatmapMonth !== null 
+                    <div
+                        style={{
+                            fontSize: '0.75rem',
+                            color: 'var(--text-secondary)',
+                            marginBottom: '16px',
+                        }}
+                    >
+                        {selectedHeatmapMonth !== null
                             ? `Daily expenses for ${new Date(0, selectedHeatmapMonth - 1).toLocaleString('default', { month: 'long' })} ${getExcludedTagsDescription()}`
-                            : `Week 1-52 of the year ${getExcludedTagsDescription()}`
-                        }
+                            : `Week 1-52 of the year ${getExcludedTagsDescription()}`}
                     </div>
 
                     {selectedHeatmapMonth === null ? (
                         <>
                             {/* Weekly Heatmap */}
-                            <div style={{ 
-                                display: 'grid', 
-                                gridTemplateColumns: 'repeat(13, 1fr)', 
-                                gap: '4px',
-                                fontSize: '0.7rem',
-                                position: 'relative'
-                            }}>
+                            <div
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(13, 1fr)',
+                                    gap: '4px',
+                                    fontSize: '0.7rem',
+                                    position: 'relative',
+                                }}
+                            >
                                 {Array.from({ length: 52 }, (_, i) => {
                                     const weekNum = i + 1;
                                     const amount = weekExpenseMap[weekNum] || 0;
                                     const month = weekMonthMap[weekNum] || 1;
-                                    
+
                                     // Check if this is the start of a new month (first week of month)
-                                    const isMonthStart = monthWeekRanges[month]?.startWeek === weekNum;
-                                    
+                                    const isMonthStart =
+                                        monthWeekRanges[month]?.startWeek === weekNum;
+
                                     return (
                                         <div key={weekNum} style={{ position: 'relative' }}>
                                             {isMonthStart && weekNum > 1 && (
-                                                <div style={{
-                                                    position: 'absolute',
-                                                    left: '-2px',
-                                                    top: '0',
-                                                    bottom: '0',
-                                                    width: '2px',
-                                                    background: 'var(--accent-primary)',
-                                                    zIndex: 10,
-                                                    borderRadius: '1px'
-                                                }} />
+                                                <div
+                                                    style={{
+                                                        position: 'absolute',
+                                                        left: '-2px',
+                                                        top: '0',
+                                                        bottom: '0',
+                                                        width: '2px',
+                                                        background: 'var(--accent-primary)',
+                                                        zIndex: 10,
+                                                        borderRadius: '1px',
+                                                    }}
+                                                />
                                             )}
                                             <div
                                                 title={`Week ${weekNum} (${new Date(0, month - 1).toLocaleString('default', { month: 'short' })}): ${formatCurrency(amount)}`}
                                                 style={{
                                                     aspectRatio: '1',
-                                                    background: getHeatmapColor(amount, maxWeekExpense),
+                                                    background: getHeatmapColor(
+                                                        amount,
+                                                        maxWeekExpense
+                                                    ),
                                                     border: '1px solid var(--border-color)',
                                                     borderRadius: '4px',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
                                                     fontSize: '0.65rem',
-                                                    color: amount > 0 ? '#fff' : 'var(--text-secondary)',
+                                                    color:
+                                                        amount > 0
+                                                            ? '#fff'
+                                                            : 'var(--text-secondary)',
                                                     cursor: amount > 0 ? 'pointer' : 'default',
-                                                    fontWeight: amount > 0 ? '600' : '400'
+                                                    fontWeight: amount > 0 ? '600' : '400',
                                                 }}
                                             >
                                                 {weekNum}
@@ -1102,28 +1609,39 @@ export default function Overview() {
                                 })}
                             </div>
                             {/* Month indicators below the heatmap */}
-                            <div style={{ 
-                                display: 'grid', 
-                                gridTemplateColumns: 'repeat(13, 1fr)', 
-                                gap: '4px',
-                                marginTop: '8px',
-                                fontSize: '0.65rem',
-                                color: 'var(--text-secondary)'
-                            }}>
+                            <div
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(13, 1fr)',
+                                    gap: '4px',
+                                    marginTop: '8px',
+                                    fontSize: '0.65rem',
+                                    color: 'var(--text-secondary)',
+                                }}
+                            >
                                 {Array.from({ length: 52 }, (_, i) => {
                                     const weekNum = i + 1;
                                     const month = weekMonthMap[weekNum] || 1;
-                                    const isMonthStart = monthWeekRanges[month]?.startWeek === weekNum;
-                                    
+                                    const isMonthStart =
+                                        monthWeekRanges[month]?.startWeek === weekNum;
+
                                     return (
-                                        <div key={weekNum} style={{ textAlign: 'center', height: '16px' }}>
+                                        <div
+                                            key={weekNum}
+                                            style={{ textAlign: 'center', height: '16px' }}
+                                        >
                                             {isMonthStart && (
-                                                <span style={{ 
-                                                    fontSize: '0.6rem',
-                                                    color: 'var(--accent-primary)',
-                                                    fontWeight: '600'
-                                                }}>
-                                                    {new Date(0, month - 1).toLocaleString('default', { month: 'short' })}
+                                                <span
+                                                    style={{
+                                                        fontSize: '0.6rem',
+                                                        color: 'var(--accent-primary)',
+                                                        fontWeight: '600',
+                                                    }}
+                                                >
+                                                    {new Date(0, month - 1).toLocaleString(
+                                                        'default',
+                                                        { month: 'short' }
+                                                    )}
                                                 </span>
                                             )}
                                         </div>
@@ -1134,26 +1652,40 @@ export default function Overview() {
                     ) : (
                         <>
                             {/* Daily Calendar Heatmap */}
-                            <div style={{ 
-                                display: 'grid', 
-                                gridTemplateColumns: 'repeat(7, 1fr)', 
-                                gap: '4px',
-                                fontSize: '0.7rem'
-                            }}>
-                                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                                    <div key={day} style={{ 
-                                        textAlign: 'center', 
-                                        padding: '4px',
-                                        color: 'var(--text-secondary)',
-                                        fontWeight: '600'
-                                    }}>
+                            <div
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(7, 1fr)',
+                                    gap: '4px',
+                                    fontSize: '0.7rem',
+                                }}
+                            >
+                                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                                    <div
+                                        key={day}
+                                        style={{
+                                            textAlign: 'center',
+                                            padding: '4px',
+                                            color: 'var(--text-secondary)',
+                                            fontWeight: '600',
+                                        }}
+                                    >
                                         {day}
                                     </div>
                                 ))}
                                 {/* Empty cells for days before the first day of month */}
-                                {Array.from({ length: new Date(selectedYear, selectedHeatmapMonth - 1, 1).getDay() }, (_, i) => (
-                                    <div key={`empty-${i}`} />
-                                ))}
+                                {Array.from(
+                                    {
+                                        length: new Date(
+                                            selectedYear,
+                                            selectedHeatmapMonth - 1,
+                                            1
+                                        ).getDay(),
+                                    },
+                                    (_, i) => (
+                                        <div key={`empty-${i}`} />
+                                    )
+                                )}
                                 {dailyCalendarData.map(({ day, amount, date }) => (
                                     <div
                                         key={day}
@@ -1169,7 +1701,7 @@ export default function Overview() {
                                             fontSize: '0.7rem',
                                             color: amount > 0 ? '#fff' : 'var(--text-secondary)',
                                             cursor: amount > 0 ? 'pointer' : 'default',
-                                            fontWeight: amount > 0 ? '600' : '400'
+                                            fontWeight: amount > 0 ? '600' : '400',
                                         }}
                                     >
                                         {day}
@@ -1178,15 +1710,17 @@ export default function Overview() {
                             </div>
                         </>
                     )}
-                    
-                    <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '12px', 
-                        marginTop: '16px',
-                        fontSize: '0.75rem',
-                        color: 'var(--text-secondary)'
-                    }}>
+
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            marginTop: '16px',
+                            fontSize: '0.75rem',
+                            color: 'var(--text-secondary)',
+                        }}
+                    >
                         <span>Less</span>
                         <div style={{ display: 'flex', gap: '2px' }}>
                             {[0, 0.2, 0.4, 0.6, 0.8, 1].map((intensity, i) => (
@@ -1195,11 +1729,12 @@ export default function Overview() {
                                     style={{
                                         width: '20px',
                                         height: '20px',
-                                        background: intensity === 0 
-                                            ? 'var(--bg-panel)' 
-                                            : `rgba(59, 130, 246, ${intensity})`,
+                                        background:
+                                            intensity === 0
+                                                ? 'var(--bg-panel)'
+                                                : `rgba(59, 130, 246, ${intensity})`,
                                         border: '1px solid var(--border-color)',
-                                        borderRadius: '4px'
+                                        borderRadius: '4px',
                                     }}
                                 />
                             ))}
@@ -1211,52 +1746,70 @@ export default function Overview() {
 
             {/* Quick Actions */}
             <div className="glass-panel" style={{ padding: '24px', marginTop: '24px' }}>
-                <h3 style={{ marginBottom: '16px', fontSize: '1rem', color: 'var(--text-secondary)' }}>
+                <h3
+                    style={{
+                        marginBottom: '16px',
+                        fontSize: '1rem',
+                        color: 'var(--text-secondary)',
+                    }}
+                >
                     Quick Actions
                 </h3>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    <Link to="/daily" style={{
-                        padding: '10px 20px',
-                        background: 'var(--accent-primary)',
-                        color: '#fff',
-                        borderRadius: '8px',
-                        textDecoration: 'none',
-                        fontSize: '0.9rem',
-                        fontWeight: '500'
-                    }}>
+                    <Link
+                        to="/daily"
+                        style={{
+                            padding: '10px 20px',
+                            background: 'var(--accent-primary)',
+                            color: '#fff',
+                            borderRadius: '8px',
+                            textDecoration: 'none',
+                            fontSize: '0.9rem',
+                            fontWeight: '500',
+                        }}
+                    >
                         + Add Expense
                     </Link>
-                    <Link to="/budget" style={{
-                        padding: '10px 20px',
-                        background: 'var(--bg-panel)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)',
-                        borderRadius: '8px',
-                        textDecoration: 'none',
-                        fontSize: '0.9rem'
-                    }}>
+                    <Link
+                        to="/budget"
+                        style={{
+                            padding: '10px 20px',
+                            background: 'var(--bg-panel)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            borderRadius: '8px',
+                            textDecoration: 'none',
+                            fontSize: '0.9rem',
+                        }}
+                    >
                         Set Budget
                     </Link>
-                    <Link to="/investments" style={{
-                        padding: '10px 20px',
-                        background: 'var(--bg-panel)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)',
-                        borderRadius: '8px',
-                        textDecoration: 'none',
-                        fontSize: '0.9rem'
-                    }}>
+                    <Link
+                        to="/investments"
+                        style={{
+                            padding: '10px 20px',
+                            background: 'var(--bg-panel)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            borderRadius: '8px',
+                            textDecoration: 'none',
+                            fontSize: '0.9rem',
+                        }}
+                    >
                         View Investments
                     </Link>
-                    <Link to={`/expenses/${selectedYear}`} style={{
-                        padding: '10px 20px',
-                        background: 'var(--bg-panel)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)',
-                        borderRadius: '8px',
-                        textDecoration: 'none',
-                        fontSize: '0.9rem'
-                    }}>
+                    <Link
+                        to={`/expenses/${selectedYear}`}
+                        style={{
+                            padding: '10px 20px',
+                            background: 'var(--bg-panel)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            borderRadius: '8px',
+                            textDecoration: 'none',
+                            fontSize: '0.9rem',
+                        }}
+                    >
                         {selectedYear} Expenses
                     </Link>
                     <button
@@ -1268,16 +1821,19 @@ export default function Overview() {
                             color: 'var(--text-primary)',
                             borderRadius: '8px',
                             fontSize: '0.9rem',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
                         }}
                     >
                         📄 Download sample template
                     </button>
                     <button
                         onClick={async () => {
-                            const yearInput = prompt(`Enter year to export (default: ${selectedYear}):`, selectedYear.toString());
+                            const yearInput = prompt(
+                                `Enter year to export (default: ${selectedYear}):`,
+                                selectedYear.toString()
+                            );
                             if (!yearInput) return;
-                            
+
                             const year = parseInt(yearInput, 10);
                             if (isNaN(year) || year < 2000 || year > 2100) {
                                 alert('Please enter a valid year');
@@ -1298,14 +1854,16 @@ export default function Overview() {
                         disabled={exporting}
                         style={{
                             padding: '10px 20px',
-                            background: exporting ? 'var(--text-secondary)' : 'var(--accent-success)',
+                            background: exporting
+                                ? 'var(--text-secondary)'
+                                : 'var(--accent-success)',
                             border: 'none',
                             color: '#fff',
                             borderRadius: '8px',
                             fontSize: '0.9rem',
                             fontWeight: '500',
                             cursor: exporting ? 'not-allowed' : 'pointer',
-                            opacity: exporting ? 0.6 : 1
+                            opacity: exporting ? 0.6 : 1,
                         }}
                     >
                         {exporting ? 'Exporting...' : '📥 Export Data'}
@@ -1326,9 +1884,13 @@ export default function Overview() {
                                     .map(([k, n]) => `${k}: ${n}`)
                                     .join(', ');
                                 if (result.errors.length > 0) {
-                                    alert(`Import finished with some errors.\n\nCreated: ${countStr || 'none'}\n\nErrors:\n${result.errors.slice(0, 5).join('\n')}${result.errors.length > 5 ? `\n... and ${result.errors.length - 5} more` : ''}`);
+                                    alert(
+                                        `Import finished with some errors.\n\nCreated: ${countStr || 'none'}\n\nErrors:\n${result.errors.slice(0, 5).join('\n')}${result.errors.length > 5 ? `\n... and ${result.errors.length - 5} more` : ''}`
+                                    );
                                 } else {
-                                    alert(`Import completed for year ${result.year}.\n\nCreated: ${countStr || 'none'}`);
+                                    alert(
+                                        `Import completed for year ${result.year}.\n\nCreated: ${countStr || 'none'}`
+                                    );
                                 }
                                 window.location.reload();
                             } catch (error) {
@@ -1345,14 +1907,16 @@ export default function Overview() {
                         disabled={importing}
                         style={{
                             padding: '10px 20px',
-                            background: importing ? 'var(--text-secondary)' : 'var(--accent-primary)',
+                            background: importing
+                                ? 'var(--text-secondary)'
+                                : 'var(--accent-primary)',
                             border: 'none',
                             color: '#fff',
                             borderRadius: '8px',
                             fontSize: '0.9rem',
                             fontWeight: '500',
                             cursor: importing ? 'not-allowed' : 'pointer',
-                            opacity: importing ? 0.6 : 1
+                            opacity: importing ? 0.6 : 1,
                         }}
                     >
                         {importing ? 'Importing...' : '📤 Import Data'}

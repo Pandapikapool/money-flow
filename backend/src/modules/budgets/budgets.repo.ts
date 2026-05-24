@@ -15,7 +15,12 @@ export async function get(userId: string, year: number, month: number): Promise<
     return { ...row, amount: Number(row.amount) };
 }
 
-export async function set(userId: string, year: number, month: number, amount: number): Promise<MonthlyBudget> {
+export async function set(
+    userId: string,
+    year: number,
+    month: number,
+    amount: number
+): Promise<MonthlyBudget> {
     const query = `
     INSERT INTO monthly_budgets (user_id, year, month, amount)
     VALUES ($1, $2, $3, $4)

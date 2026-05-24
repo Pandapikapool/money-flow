@@ -14,7 +14,7 @@ export async function getDashboardSummary(req: Request, res: Response) {
         // 1. Get Expenses for current month
         // We can reuse getYearlyAggregates for the year and pick the month
         const yearly = await expenseRepo.getYearlyAggregates(userId, currentYear);
-        const monthData = yearly.find(m => m.month === currentMonth);
+        const monthData = yearly.find((m) => m.month === currentMonth);
         const totalExpenses = monthData ? Number(monthData.spent) : 0;
 
         // 2. Get Resources
@@ -29,10 +29,10 @@ export async function getDashboardSummary(req: Request, res: Response) {
             asset: 0,
             investment: 0,
             plan: 0,
-            life_xp: 0
+            life_xp: 0,
         };
 
-        assets.forEach(a => {
+        assets.forEach((a) => {
             if (assetTotals[a.type] !== undefined) {
                 assetTotals[a.type] += a.value;
             }
@@ -44,9 +44,8 @@ export async function getDashboardSummary(req: Request, res: Response) {
             assets: assetTotals.asset,
             investments: assetTotals.investment,
             plans: assetTotals.plan,
-            life_xp: assetTotals.life_xp
+            life_xp: assetTotals.life_xp,
         });
-
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: "Internal Server Error" });
@@ -59,7 +58,8 @@ export async function getAnomalies(req: Request, res: Response) {
     try {
         const userId = getUserId();
 
-        const result = await pool.query(`
+        const result = await pool.query(
+            `
             WITH monthly_by_tag AS (
                 SELECT
                     t.name  AS tag_name,
@@ -93,14 +93,18 @@ export async function getAnomalies(req: Request, res: Response) {
               AND cm.total > pa.avg_total * 1.5
             ORDER BY (cm.total / pa.avg_total) DESC
             LIMIT 5
-        `, [userId]);
+        `,
+            [userId]
+        );
 
-        res.json(result.rows.map(r => ({
-            tag_name: r.tag_name,
-            current_month: Number(r.current_month),
-            three_month_avg: Number(r.three_month_avg),
-            percent_above: Number(r.percent_above),
-        })));
+        res.json(
+            result.rows.map((r) => ({
+                tag_name: r.tag_name,
+                current_month: Number(r.current_month),
+                three_month_avg: Number(r.three_month_avg),
+                percent_above: Number(r.percent_above),
+            }))
+        );
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: "Internal Server Error" });
@@ -113,7 +117,8 @@ export async function getNetWorthHistory(req: Request, res: Response) {
     try {
         const userId = getUserId();
 
-        const result = await pool.query(`
+        const result = await pool.query(
+            `
             WITH months AS (
                 SELECT DISTINCT DATE_TRUNC('month', ah.date) AS month_start
                 FROM account_history ah
@@ -164,15 +169,18 @@ export async function getNetWorthHistory(req: Request, res: Response) {
             LEFT JOIN account_monthly am ON am.month_start = m.month_start
             LEFT JOIN asset_monthly ast ON ast.month_start = m.month_start
             ORDER BY m.month_start ASC
-        `, [userId]);
+        `,
+            [userId]
+        );
 
-        res.json(result.rows.map(r => ({
-            month: r.month,
-            accounts: Number(r.accounts),
-            assets: Number(r.assets),
-            net_worth: Number(r.net_worth),
-        })));
-
+        res.json(
+            result.rows.map((r) => ({
+                month: r.month,
+                accounts: Number(r.accounts),
+                assets: Number(r.assets),
+                net_worth: Number(r.net_worth),
+            }))
+        );
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: "Internal Server Error" });

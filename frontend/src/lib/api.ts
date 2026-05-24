@@ -1,4 +1,4 @@
-export const API_BASE = "http://localhost:3000";
+export const API_BASE = 'http://localhost:3000';
 
 export interface ExpenseMeta {
     planned?: boolean;
@@ -47,39 +47,39 @@ export interface SpecialTag {
 
 export async function fetchTags(): Promise<Tag[]> {
     const res = await fetch(`${API_BASE}/tags`);
-    if (!res.ok) throw new Error("Failed to fetch tags");
+    if (!res.ok) throw new Error('Failed to fetch tags');
     return res.json();
 }
 
 export async function createTag(name: string, pageType: string = 'expense'): Promise<Tag> {
     const res = await fetch(`${API_BASE}/tags`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, page_type: pageType }),
     });
-    if (!res.ok) throw new Error("Failed to create tag");
+    if (!res.ok) throw new Error('Failed to create tag');
     return res.json();
 }
 
 export async function fetchSpecialTags(): Promise<SpecialTag[]> {
     const res = await fetch(`${API_BASE}/special-tags`);
-    if (!res.ok) throw new Error("Failed to fetch special tags");
+    if (!res.ok) throw new Error('Failed to fetch special tags');
     return res.json();
 }
 
 export async function createSpecialTag(name: string): Promise<SpecialTag> {
     const res = await fetch(`${API_BASE}/special-tags`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),
     });
-    if (!res.ok) throw new Error("Failed to create special tag");
+    if (!res.ok) throw new Error('Failed to create special tag');
     return res.json();
 }
 
 export async function getBudget(year: number, month: number): Promise<MonthlyBudget> {
     const res = await fetch(`${API_BASE}/budgets/${year}/${month}`);
-    if (!res.ok) throw new Error("Failed to fetch budget");
+    if (!res.ok) throw new Error('Failed to fetch budget');
     return res.json();
 }
 
@@ -92,39 +92,49 @@ export interface MonthlyAggregate {
 
 export async function createExpense(data: CreateExpenseData): Promise<Expense> {
     const res = await fetch(`${API_BASE}/expenses`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Failed to create expense");
+    if (!res.ok) throw new Error('Failed to create expense');
     return res.json();
 }
 
 export async function getYearSummary(year: number): Promise<MonthlyAggregate[]> {
     const res = await fetch(`${API_BASE}/expenses/summary/${year}`);
-    if (!res.ok) throw new Error("Failed to fetch year summary");
+    if (!res.ok) throw new Error('Failed to fetch year summary');
     return res.json();
 }
 
 export async function fetchExpenses(year: number, month: number): Promise<Expense[]> {
     const res = await fetch(`${API_BASE}/expenses?year=${year}&month=${month}`);
-    if (!res.ok) throw new Error("Failed to fetch expenses");
+    if (!res.ok) throw new Error('Failed to fetch expenses');
     return res.json();
 }
 
-export async function updateExpense(id: number, data: { amount?: number; statement?: string; date?: string; tag_id?: number; special_tag_ids?: number[]; notes?: string }): Promise<Expense> {
+export async function updateExpense(
+    id: number,
+    data: {
+        amount?: number;
+        statement?: string;
+        date?: string;
+        tag_id?: number;
+        special_tag_ids?: number[];
+        notes?: string;
+    }
+): Promise<Expense> {
     const res = await fetch(`${API_BASE}/expenses/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Failed to update expense");
+    if (!res.ok) throw new Error('Failed to update expense');
     return res.json();
 }
 
 export async function getExpenseSpecialTags(expenseId: number): Promise<number[]> {
     const res = await fetch(`${API_BASE}/expenses/${expenseId}/special-tags`);
-    if (!res.ok) throw new Error("Failed to fetch expense special tags");
+    if (!res.ok) throw new Error('Failed to fetch expense special tags');
     return res.json();
 }
 
@@ -150,24 +160,27 @@ export async function searchExpenses(params: SearchExpensesParams): Promise<Expe
     if (params.min !== undefined) qs.set('min', String(params.min));
     if (params.max !== undefined) qs.set('max', String(params.max));
     const res = await fetch(`${API_BASE}/expenses/search?${qs}`);
-    if (!res.ok) throw new Error("Failed to search expenses");
+    if (!res.ok) throw new Error('Failed to search expenses');
     return res.json();
 }
 
 export async function deleteExpense(id: number): Promise<void> {
     const res = await fetch(`${API_BASE}/expenses/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
     });
-    if (!res.ok) throw new Error("Failed to delete expense");
+    if (!res.ok) throw new Error('Failed to delete expense');
 }
 
-export async function deleteExpensesByMonths(year: number, months: number[]): Promise<{ deletedCount: number }> {
+export async function deleteExpensesByMonths(
+    year: number,
+    months: number[]
+): Promise<{ deletedCount: number }> {
     const res = await fetch(`${API_BASE}/expenses/year/${year}/months`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ months }),
     });
-    if (!res.ok) throw new Error("Failed to delete expenses");
+    if (!res.ok) throw new Error('Failed to delete expenses');
     return res.json();
 }
 
@@ -195,48 +208,52 @@ export interface DashboardSummary {
     life_xp: number;
 }
 
-export async function setBudget(year: number, month: number, amount: number): Promise<MonthlyBudget> {
+export async function setBudget(
+    year: number,
+    month: number,
+    amount: number
+): Promise<MonthlyBudget> {
     const res = await fetch(`${API_BASE}/budgets/${year}/${month}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount }),
     });
-    if (!res.ok) throw new Error("Failed to set budget");
+    if (!res.ok) throw new Error('Failed to set budget');
     return res.json();
 }
 
 // Resources (Accounts)
 export async function fetchAccounts(): Promise<Account[]> {
     const res = await fetch(`${API_BASE}/resources/accounts`);
-    if (!res.ok) throw new Error("Failed to fetch accounts");
+    if (!res.ok) throw new Error('Failed to fetch accounts');
     return res.json();
 }
 
 export async function createAccount(name: string, balance: number): Promise<Account> {
     const res = await fetch(`${API_BASE}/resources/accounts`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, balance }),
     });
-    if (!res.ok) throw new Error("Failed to create account");
+    if (!res.ok) throw new Error('Failed to create account');
     return res.json();
 }
 
 export async function updateAccount(id: number, balance: number, notes: string): Promise<Account> {
     const res = await fetch(`${API_BASE}/resources/accounts/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ balance, notes }),
     });
-    if (!res.ok) throw new Error("Failed to update account");
+    if (!res.ok) throw new Error('Failed to update account');
     return res.json();
 }
 
 export async function deleteAccount(id: number): Promise<void> {
     const res = await fetch(`${API_BASE}/resources/accounts/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
     });
-    if (!res.ok) throw new Error("Failed to delete account");
+    if (!res.ok) throw new Error('Failed to delete account');
 }
 
 export interface AccountHistory {
@@ -249,70 +266,90 @@ export interface AccountHistory {
 
 export async function fetchAccountHistory(accountId: number): Promise<AccountHistory[]> {
     const res = await fetch(`${API_BASE}/resources/accounts/${accountId}/history`);
-    if (!res.ok) throw new Error("Failed to fetch history");
+    if (!res.ok) throw new Error('Failed to fetch history');
     return res.json();
 }
 
-export async function createHistoryEntry(accountId: number, date: string, balance: number, notes?: string): Promise<AccountHistory> {
+export async function createHistoryEntry(
+    accountId: number,
+    date: string,
+    balance: number,
+    notes?: string
+): Promise<AccountHistory> {
     const res = await fetch(`${API_BASE}/resources/accounts/${accountId}/history`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date, balance, notes }),
     });
-    if (!res.ok) throw new Error("Failed to create history entry");
+    if (!res.ok) throw new Error('Failed to create history entry');
     return res.json();
 }
 
-export async function updateHistoryEntry(id: number, balance: number, notes?: string, date?: string): Promise<AccountHistory> {
+export async function updateHistoryEntry(
+    id: number,
+    balance: number,
+    notes?: string,
+    date?: string
+): Promise<AccountHistory> {
     const res = await fetch(`${API_BASE}/history/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ balance, notes, date }),
     });
-    if (!res.ok) throw new Error("Failed to update history entry");
+    if (!res.ok) throw new Error('Failed to update history entry');
     return res.json();
 }
 
 export async function deleteHistoryEntry(id: number): Promise<void> {
     const res = await fetch(`${API_BASE}/history/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
     });
-    if (!res.ok) throw new Error("Failed to delete history entry");
+    if (!res.ok) throw new Error('Failed to delete history entry');
 }
 
 // Resources (Assets)
 export async function fetchAssets(type?: string): Promise<Asset[]> {
     const url = type ? `${API_BASE}/resources/assets?type=${type}` : `${API_BASE}/resources/assets`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error("Failed to fetch assets");
+    if (!res.ok) throw new Error('Failed to fetch assets');
     return res.json();
 }
 
-export async function createAsset(name: string, value: number, type: string, notes?: string): Promise<Asset> {
+export async function createAsset(
+    name: string,
+    value: number,
+    type: string,
+    notes?: string
+): Promise<Asset> {
     const res = await fetch(`${API_BASE}/resources/assets`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, value, type, notes }),
     });
-    if (!res.ok) throw new Error("Failed to create asset");
+    if (!res.ok) throw new Error('Failed to create asset');
     return res.json();
 }
 
-export async function updateAsset(id: number, name: string, value: number, notes: string): Promise<Asset> {
+export async function updateAsset(
+    id: number,
+    name: string,
+    value: number,
+    notes: string
+): Promise<Asset> {
     const res = await fetch(`${API_BASE}/resources/assets/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, value, notes }),
     });
-    if (!res.ok) throw new Error("Failed to update asset");
+    if (!res.ok) throw new Error('Failed to update asset');
     return res.json();
 }
 
 export async function deleteAsset(id: number): Promise<void> {
     const res = await fetch(`${API_BASE}/resources/assets/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
     });
-    if (!res.ok) throw new Error("Failed to delete asset");
+    if (!res.ok) throw new Error('Failed to delete asset');
 }
 
 // Asset History
@@ -326,41 +363,51 @@ export interface AssetHistory {
 
 export async function fetchAssetHistory(assetId: number): Promise<AssetHistory[]> {
     const res = await fetch(`${API_BASE}/resources/assets/${assetId}/history`);
-    if (!res.ok) throw new Error("Failed to fetch history");
+    if (!res.ok) throw new Error('Failed to fetch history');
     return res.json();
 }
 
-export async function createAssetHistoryEntry(assetId: number, date: string, value: number, notes?: string): Promise<AssetHistory> {
+export async function createAssetHistoryEntry(
+    assetId: number,
+    date: string,
+    value: number,
+    notes?: string
+): Promise<AssetHistory> {
     const res = await fetch(`${API_BASE}/resources/assets/${assetId}/history`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date, value, notes }),
     });
-    if (!res.ok) throw new Error("Failed to create history entry");
+    if (!res.ok) throw new Error('Failed to create history entry');
     return res.json();
 }
 
-export async function updateAssetHistoryEntry(id: number, value: number, notes?: string, date?: string): Promise<AssetHistory> {
+export async function updateAssetHistoryEntry(
+    id: number,
+    value: number,
+    notes?: string,
+    date?: string
+): Promise<AssetHistory> {
     const res = await fetch(`${API_BASE}/resources/asset-history/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ value, notes, date }),
     });
-    if (!res.ok) throw new Error("Failed to update history entry");
+    if (!res.ok) throw new Error('Failed to update history entry');
     return res.json();
 }
 
 export async function deleteAssetHistoryEntry(id: number): Promise<void> {
     const res = await fetch(`${API_BASE}/resources/asset-history/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
     });
-    if (!res.ok) throw new Error("Failed to delete history entry");
+    if (!res.ok) throw new Error('Failed to delete history entry');
 }
 
 // Dashboard
 export async function fetchDashboardSummary(): Promise<DashboardSummary> {
     const res = await fetch(`${API_BASE}/dashboard/summary`);
-    if (!res.ok) throw new Error("Failed to fetch dashboard summary");
+    if (!res.ok) throw new Error('Failed to fetch dashboard summary');
     return res.json();
 }
 
@@ -380,13 +427,13 @@ export interface Anomaly {
 
 export async function fetchAnomalies(): Promise<Anomaly[]> {
     const res = await fetch(`${API_BASE}/dashboard/anomalies`);
-    if (!res.ok) throw new Error("Failed to fetch anomalies");
+    if (!res.ok) throw new Error('Failed to fetch anomalies');
     return res.json();
 }
 
 export async function fetchNetWorthHistory(): Promise<NetWorthPoint[]> {
     const res = await fetch(`${API_BASE}/dashboard/net-worth-history`);
-    if (!res.ok) throw new Error("Failed to fetch net worth history");
+    if (!res.ok) throw new Error('Failed to fetch net worth history');
     return res.json();
 }
 
@@ -414,7 +461,7 @@ export interface PlanHistory {
 
 export async function fetchPlans(): Promise<Plan[]> {
     const res = await fetch(`${API_BASE}/resources/plans`);
-    if (!res.ok) throw new Error("Failed to fetch plans");
+    if (!res.ok) throw new Error('Failed to fetch plans');
     return res.json();
 }
 
@@ -429,11 +476,20 @@ export async function createPlan(
     custom_frequency_days?: number
 ): Promise<Plan> {
     const res = await fetch(`${API_BASE}/resources/plans`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, cover_amount, premium_amount, premium_frequency, expiry_date, next_premium_date, notes, custom_frequency_days }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name,
+            cover_amount,
+            premium_amount,
+            premium_frequency,
+            expiry_date,
+            next_premium_date,
+            notes,
+            custom_frequency_days,
+        }),
     });
-    if (!res.ok) throw new Error("Failed to create plan");
+    if (!res.ok) throw new Error('Failed to create plan');
     return res.json();
 }
 
@@ -449,25 +505,34 @@ export async function updatePlan(
     custom_frequency_days?: number
 ): Promise<Plan> {
     const res = await fetch(`${API_BASE}/resources/plans/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, cover_amount, premium_amount, premium_frequency, expiry_date, next_premium_date, notes, custom_frequency_days }),
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name,
+            cover_amount,
+            premium_amount,
+            premium_frequency,
+            expiry_date,
+            next_premium_date,
+            notes,
+            custom_frequency_days,
+        }),
     });
-    if (!res.ok) throw new Error("Failed to update plan");
+    if (!res.ok) throw new Error('Failed to update plan');
     return res.json();
 }
 
 export async function deletePlan(id: number): Promise<void> {
     const res = await fetch(`${API_BASE}/resources/plans/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
     });
-    if (!res.ok) throw new Error("Failed to delete plan");
+    if (!res.ok) throw new Error('Failed to delete plan');
 }
 
 // Plan History
 export async function fetchPlanHistory(planId: number): Promise<PlanHistory[]> {
     const res = await fetch(`${API_BASE}/resources/plans/${planId}/history`);
-    if (!res.ok) throw new Error("Failed to fetch plan history");
+    if (!res.ok) throw new Error('Failed to fetch plan history');
     return res.json();
 }
 
@@ -479,11 +544,11 @@ export async function createPlanHistoryEntry(
     notes?: string
 ): Promise<PlanHistory> {
     const res = await fetch(`${API_BASE}/resources/plans/${planId}/history`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date, cover_amount, premium_amount, notes }),
     });
-    if (!res.ok) throw new Error("Failed to create plan history entry");
+    if (!res.ok) throw new Error('Failed to create plan history entry');
     return res.json();
 }
 
@@ -495,19 +560,19 @@ export async function updatePlanHistoryEntry(
     date?: string
 ): Promise<PlanHistory> {
     const res = await fetch(`${API_BASE}/resources/plan-history/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cover_amount, premium_amount, notes, date }),
     });
-    if (!res.ok) throw new Error("Failed to update plan history entry");
+    if (!res.ok) throw new Error('Failed to update plan history entry');
     return res.json();
 }
 
 export async function deletePlanHistoryEntry(id: number): Promise<void> {
     const res = await fetch(`${API_BASE}/resources/plan-history/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
     });
-    if (!res.ok) throw new Error("Failed to delete plan history entry");
+    if (!res.ok) throw new Error('Failed to delete plan history entry');
 }
 
 // Life XP Buckets (Savings Goals)
@@ -535,7 +600,7 @@ export interface LifeXpHistory {
 
 export async function fetchLifeXpBuckets(): Promise<LifeXpBucket[]> {
     const res = await fetch(`${API_BASE}/resources/life-xp`);
-    if (!res.ok) throw new Error("Failed to fetch life xp buckets");
+    if (!res.ok) throw new Error('Failed to fetch life xp buckets');
     return res.json();
 }
 
@@ -549,11 +614,19 @@ export async function createLifeXpBucket(
     custom_frequency_days?: number
 ): Promise<LifeXpBucket> {
     const res = await fetch(`${API_BASE}/resources/life-xp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, target_amount, is_repetitive, contribution_frequency, next_contribution_date, notes, custom_frequency_days }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name,
+            target_amount,
+            is_repetitive,
+            contribution_frequency,
+            next_contribution_date,
+            notes,
+            custom_frequency_days,
+        }),
     });
-    if (!res.ok) throw new Error("Failed to create bucket");
+    if (!res.ok) throw new Error('Failed to create bucket');
     return res.json();
 }
 
@@ -568,60 +641,76 @@ export async function updateLifeXpBucket(
     custom_frequency_days?: number
 ): Promise<LifeXpBucket> {
     const res = await fetch(`${API_BASE}/resources/life-xp/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, target_amount, is_repetitive, contribution_frequency, next_contribution_date, notes, custom_frequency_days }),
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name,
+            target_amount,
+            is_repetitive,
+            contribution_frequency,
+            next_contribution_date,
+            notes,
+            custom_frequency_days,
+        }),
     });
-    if (!res.ok) throw new Error("Failed to update bucket");
+    if (!res.ok) throw new Error('Failed to update bucket');
     return res.json();
 }
 
 export async function deleteLifeXpBucket(id: number): Promise<void> {
     const res = await fetch(`${API_BASE}/resources/life-xp/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
     });
-    if (!res.ok) throw new Error("Failed to delete bucket");
+    if (!res.ok) throw new Error('Failed to delete bucket');
 }
 
-export async function addContribution(id: number, amount: number, notes?: string): Promise<{ bucket: LifeXpBucket; history: LifeXpHistory }> {
+export async function addContribution(
+    id: number,
+    amount: number,
+    notes?: string
+): Promise<{ bucket: LifeXpBucket; history: LifeXpHistory }> {
     const res = await fetch(`${API_BASE}/resources/life-xp/${id}/contribute`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount, notes }),
     });
-    if (!res.ok) throw new Error("Failed to add contribution");
+    if (!res.ok) throw new Error('Failed to add contribution');
     return res.json();
 }
 
 export async function markBucketAchieved(id: number): Promise<LifeXpBucket> {
     const res = await fetch(`${API_BASE}/resources/life-xp/${id}/achieved`, {
-        method: "POST",
+        method: 'POST',
     });
-    if (!res.ok) throw new Error("Failed to mark as achieved");
+    if (!res.ok) throw new Error('Failed to mark as achieved');
     return res.json();
 }
 
 export async function reactivateBucket(id: number): Promise<LifeXpBucket> {
     const res = await fetch(`${API_BASE}/resources/life-xp/${id}/reactivate`, {
-        method: "POST",
+        method: 'POST',
     });
-    if (!res.ok) throw new Error("Failed to reactivate");
+    if (!res.ok) throw new Error('Failed to reactivate');
     return res.json();
 }
 
-export async function markContributionDone(id: number, amount: number, notes?: string): Promise<{ bucket: LifeXpBucket; history: LifeXpHistory }> {
+export async function markContributionDone(
+    id: number,
+    amount: number,
+    notes?: string
+): Promise<{ bucket: LifeXpBucket; history: LifeXpHistory }> {
     const res = await fetch(`${API_BASE}/resources/life-xp/${id}/mark-done`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount, notes }),
     });
-    if (!res.ok) throw new Error("Failed to mark contribution done");
+    if (!res.ok) throw new Error('Failed to mark contribution done');
     return res.json();
 }
 
 export async function fetchLifeXpHistory(bucketId: number): Promise<LifeXpHistory[]> {
     const res = await fetch(`${API_BASE}/resources/life-xp/${bucketId}/history`);
-    if (!res.ok) throw new Error("Failed to fetch history");
+    if (!res.ok) throw new Error('Failed to fetch history');
     return res.json();
 }
 
@@ -632,19 +721,19 @@ export async function updateLifeXpHistoryEntry(
     date?: string
 ): Promise<LifeXpHistory> {
     const res = await fetch(`${API_BASE}/resources/life-xp-history/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount, notes, date }),
     });
-    if (!res.ok) throw new Error("Failed to update history entry");
+    if (!res.ok) throw new Error('Failed to update history entry');
     return res.json();
 }
 
 export async function deleteLifeXpHistoryEntry(id: number): Promise<void> {
     const res = await fetch(`${API_BASE}/resources/life-xp-history/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
     });
-    if (!res.ok) throw new Error("Failed to delete history entry");
+    if (!res.ok) throw new Error('Failed to delete history entry');
 }
 
 // Fixed Returns (FD, RD, etc.)
@@ -670,13 +759,13 @@ export interface FixedReturnsSummary {
 
 export async function fetchFixedReturns(): Promise<FixedReturn[]> {
     const res = await fetch(`${API_BASE}/resources/fixed-returns`);
-    if (!res.ok) throw new Error("Failed to fetch fixed returns");
+    if (!res.ok) throw new Error('Failed to fetch fixed returns');
     return res.json();
 }
 
 export async function fetchFixedReturnsSummary(): Promise<FixedReturnsSummary> {
     const res = await fetch(`${API_BASE}/resources/fixed-returns/summary`);
-    if (!res.ok) throw new Error("Failed to fetch summary");
+    if (!res.ok) throw new Error('Failed to fetch summary');
     return res.json();
 }
 
@@ -689,11 +778,18 @@ export async function createFixedReturn(
     notes?: string
 ): Promise<FixedReturn> {
     const res = await fetch(`${API_BASE}/resources/fixed-returns`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, invested_amount, interest_rate, start_date, maturity_date, notes }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name,
+            invested_amount,
+            interest_rate,
+            start_date,
+            maturity_date,
+            notes,
+        }),
     });
-    if (!res.ok) throw new Error("Failed to create fixed return");
+    if (!res.ok) throw new Error('Failed to create fixed return');
     return res.json();
 }
 
@@ -707,11 +803,18 @@ export async function updateFixedReturn(
     notes?: string
 ): Promise<FixedReturn> {
     const res = await fetch(`${API_BASE}/resources/fixed-returns/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, invested_amount, interest_rate, start_date, maturity_date, notes }),
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name,
+            invested_amount,
+            interest_rate,
+            start_date,
+            maturity_date,
+            notes,
+        }),
     });
-    if (!res.ok) throw new Error("Failed to update fixed return");
+    if (!res.ok) throw new Error('Failed to update fixed return');
     return res.json();
 }
 
@@ -721,11 +824,11 @@ export async function closeFixedReturn(
     closed_date: string
 ): Promise<FixedReturn> {
     const res = await fetch(`${API_BASE}/resources/fixed-returns/${id}/close`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ actual_withdrawal, closed_date }),
     });
-    if (!res.ok) throw new Error("Failed to close fixed return");
+    if (!res.ok) throw new Error('Failed to close fixed return');
     return res.json();
 }
 
@@ -736,19 +839,19 @@ export async function updateClosedFixedReturn(
     notes?: string
 ): Promise<FixedReturn> {
     const res = await fetch(`${API_BASE}/resources/fixed-returns/${id}/closed`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ actual_withdrawal, closed_date, notes }),
     });
-    if (!res.ok) throw new Error("Failed to update closed fixed return");
+    if (!res.ok) throw new Error('Failed to update closed fixed return');
     return res.json();
 }
 
 export async function deleteFixedReturn(id: number): Promise<void> {
     const res = await fetch(`${API_BASE}/resources/fixed-returns/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
     });
-    if (!res.ok) throw new Error("Failed to delete fixed return");
+    if (!res.ok) throw new Error('Failed to delete fixed return');
 }
 
 // ===================== SIP / Mutual Funds =====================
@@ -791,13 +894,13 @@ export interface SIPSummary {
 
 export async function fetchSIPs(): Promise<SIP[]> {
     const res = await fetch(`${API_BASE}/resources/sips`);
-    if (!res.ok) throw new Error("Failed to fetch SIPs");
+    if (!res.ok) throw new Error('Failed to fetch SIPs');
     return res.json();
 }
 
 export async function fetchSIPSummary(): Promise<SIPSummary> {
     const res = await fetch(`${API_BASE}/resources/sips/summary`);
-    if (!res.ok) throw new Error("Failed to fetch SIP summary");
+    if (!res.ok) throw new Error('Failed to fetch SIP summary');
     return res.json();
 }
 
@@ -813,11 +916,21 @@ export async function createSIP(
     investment_type?: 'sip' | 'lumpsum'
 ): Promise<SIP> {
     const res = await fetch(`${API_BASE}/resources/sips`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, sip_amount, start_date, current_nav, notes, scheme_code, total_units, invested_amount, investment_type }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name,
+            sip_amount,
+            start_date,
+            current_nav,
+            notes,
+            scheme_code,
+            total_units,
+            invested_amount,
+            investment_type,
+        }),
     });
-    if (!res.ok) throw new Error("Failed to create SIP");
+    if (!res.ok) throw new Error('Failed to create SIP');
     return res.json();
 }
 
@@ -830,31 +943,31 @@ export async function updateSIP(
     scheme_code?: number | null
 ): Promise<SIP> {
     const res = await fetch(`${API_BASE}/resources/sips/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, sip_amount, notes, start_date, scheme_code }),
     });
-    if (!res.ok) throw new Error("Failed to update SIP");
+    if (!res.ok) throw new Error('Failed to update SIP');
     return res.json();
 }
 
 export async function updateSIPNav(id: number, current_nav: number): Promise<SIP> {
     const res = await fetch(`${API_BASE}/resources/sips/${id}/nav`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ current_nav }),
     });
-    if (!res.ok) throw new Error("Failed to update NAV");
+    if (!res.ok) throw new Error('Failed to update NAV');
     return res.json();
 }
 
 export async function updateSIPTotalUnits(id: number, total_units: number): Promise<SIP> {
     const res = await fetch(`${API_BASE}/resources/sips/${id}/units`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ total_units }),
     });
-    if (!res.ok) throw new Error("Failed to update total units");
+    if (!res.ok) throw new Error('Failed to update total units');
     return res.json();
 }
 
@@ -867,27 +980,27 @@ export async function addSIPInstallment(
     notes?: string
 ): Promise<SIP> {
     const res = await fetch(`${API_BASE}/resources/sips/${id}/installment`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount, nav, date, type, notes }),
     });
-    if (!res.ok) throw new Error("Failed to add installment");
+    if (!res.ok) throw new Error('Failed to add installment');
     return res.json();
 }
 
 export async function pauseSIP(id: number): Promise<SIP> {
     const res = await fetch(`${API_BASE}/resources/sips/${id}/pause`, {
-        method: "POST",
+        method: 'POST',
     });
-    if (!res.ok) throw new Error("Failed to pause SIP");
+    if (!res.ok) throw new Error('Failed to pause SIP');
     return res.json();
 }
 
 export async function resumeSIP(id: number): Promise<SIP> {
     const res = await fetch(`${API_BASE}/resources/sips/${id}/resume`, {
-        method: "POST",
+        method: 'POST',
     });
-    if (!res.ok) throw new Error("Failed to resume SIP");
+    if (!res.ok) throw new Error('Failed to resume SIP');
     return res.json();
 }
 
@@ -897,24 +1010,24 @@ export async function redeemSIP(
     redeemed_date: string
 ): Promise<SIP> {
     const res = await fetch(`${API_BASE}/resources/sips/${id}/redeem`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ redeemed_amount, redeemed_date }),
     });
-    if (!res.ok) throw new Error("Failed to redeem SIP");
+    if (!res.ok) throw new Error('Failed to redeem SIP');
     return res.json();
 }
 
 export async function deleteSIP(id: number): Promise<void> {
     const res = await fetch(`${API_BASE}/resources/sips/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
     });
-    if (!res.ok) throw new Error("Failed to delete SIP");
+    if (!res.ok) throw new Error('Failed to delete SIP');
 }
 
 export async function fetchSIPTransactions(id: number): Promise<SIPTransaction[]> {
     const res = await fetch(`${API_BASE}/resources/sips/${id}/transactions`);
-    if (!res.ok) throw new Error("Failed to fetch SIP transactions");
+    if (!res.ok) throw new Error('Failed to fetch SIP transactions');
     return res.json();
 }
 
@@ -949,13 +1062,13 @@ export interface RDSummary {
 
 export async function fetchRecurringDeposits(): Promise<RecurringDeposit[]> {
     const res = await fetch(`${API_BASE}/resources/recurring-deposits`);
-    if (!res.ok) throw new Error("Failed to fetch recurring deposits");
+    if (!res.ok) throw new Error('Failed to fetch recurring deposits');
     return res.json();
 }
 
 export async function fetchRDSummary(): Promise<RDSummary> {
     const res = await fetch(`${API_BASE}/resources/recurring-deposits/summary`);
-    if (!res.ok) throw new Error("Failed to fetch RD summary");
+    if (!res.ok) throw new Error('Failed to fetch RD summary');
     return res.json();
 }
 
@@ -970,11 +1083,20 @@ export async function createRecurringDeposit(
     notes?: string
 ): Promise<RecurringDeposit> {
     const res = await fetch(`${API_BASE}/resources/recurring-deposits`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, installment_amount, frequency, interest_rate, start_date, total_installments, custom_frequency_days, notes }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name,
+            installment_amount,
+            frequency,
+            interest_rate,
+            start_date,
+            total_installments,
+            custom_frequency_days,
+            notes,
+        }),
     });
-    if (!res.ok) throw new Error("Failed to create recurring deposit");
+    if (!res.ok) throw new Error('Failed to create recurring deposit');
     return res.json();
 }
 
@@ -990,19 +1112,28 @@ export async function updateRecurringDeposit(
     notes?: string
 ): Promise<RecurringDeposit> {
     const res = await fetch(`${API_BASE}/resources/recurring-deposits/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, installment_amount, frequency, interest_rate, start_date, total_installments, custom_frequency_days, notes }),
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name,
+            installment_amount,
+            frequency,
+            interest_rate,
+            start_date,
+            total_installments,
+            custom_frequency_days,
+            notes,
+        }),
     });
-    if (!res.ok) throw new Error("Failed to update recurring deposit");
+    if (!res.ok) throw new Error('Failed to update recurring deposit');
     return res.json();
 }
 
 export async function markRDInstallmentPaid(id: number): Promise<RecurringDeposit> {
     const res = await fetch(`${API_BASE}/resources/recurring-deposits/${id}/mark-paid`, {
-        method: "POST",
+        method: 'POST',
     });
-    if (!res.ok) throw new Error("Failed to mark installment paid");
+    if (!res.ok) throw new Error('Failed to mark installment paid');
     return res.json();
 }
 
@@ -1012,19 +1143,19 @@ export async function closeRecurringDeposit(
     closed_date: string
 ): Promise<RecurringDeposit> {
     const res = await fetch(`${API_BASE}/resources/recurring-deposits/${id}/close`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ actual_withdrawal, closed_date }),
     });
-    if (!res.ok) throw new Error("Failed to close recurring deposit");
+    if (!res.ok) throw new Error('Failed to close recurring deposit');
     return res.json();
 }
 
 export async function deleteRecurringDeposit(id: number): Promise<void> {
     const res = await fetch(`${API_BASE}/resources/recurring-deposits/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
     });
-    if (!res.ok) throw new Error("Failed to delete recurring deposit");
+    if (!res.ok) throw new Error('Failed to delete recurring deposit');
 }
 
 // ===================== Stocks & Crypto =====================
@@ -1063,16 +1194,19 @@ export async function fetchStocks(market: StockMarket, tileId?: string): Promise
         ? `${API_BASE}/resources/stocks/${market}?tile_id=${encodeURIComponent(tileId)}`
         : `${API_BASE}/resources/stocks/${market}`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error("Failed to fetch stocks");
+    if (!res.ok) throw new Error('Failed to fetch stocks');
     return res.json();
 }
 
-export async function fetchStocksSummary(market: StockMarket, tileId?: string): Promise<StocksSummary> {
+export async function fetchStocksSummary(
+    market: StockMarket,
+    tileId?: string
+): Promise<StocksSummary> {
     const url = tileId
         ? `${API_BASE}/resources/stocks/${market}/summary?tile_id=${encodeURIComponent(tileId)}`
         : `${API_BASE}/resources/stocks/${market}/summary`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error("Failed to fetch stocks summary");
+    if (!res.ok) throw new Error('Failed to fetch stocks summary');
     return res.json();
 }
 
@@ -1088,11 +1222,20 @@ export async function createStock(
     tileId?: string
 ): Promise<Stock> {
     const res = await fetch(`${API_BASE}/resources/stocks/${market}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbol, name, quantity, invested_value, buy_date, current_price, notes, tile_id: tileId }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            symbol,
+            name,
+            quantity,
+            invested_value,
+            buy_date,
+            current_price,
+            notes,
+            tile_id: tileId,
+        }),
     });
-    if (!res.ok) throw new Error("Failed to create stock");
+    if (!res.ok) throw new Error('Failed to create stock');
     return res.json();
 }
 
@@ -1107,37 +1250,45 @@ export async function updateStock(
     current_price?: number
 ): Promise<Stock> {
     const res = await fetch(`${API_BASE}/resources/stocks/item/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbol, name, quantity, invested_value, buy_date, notes, current_price }),
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            symbol,
+            name,
+            quantity,
+            invested_value,
+            buy_date,
+            notes,
+            current_price,
+        }),
     });
-    if (!res.ok) throw new Error("Failed to update stock");
+    if (!res.ok) throw new Error('Failed to update stock');
     return res.json();
 }
 
 export async function updateStockPrice(id: number, current_price: number): Promise<Stock> {
     const res = await fetch(`${API_BASE}/resources/stocks/item/${id}/price`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ current_price }),
     });
-    if (!res.ok) throw new Error("Failed to update stock price");
+    if (!res.ok) throw new Error('Failed to update stock price');
     return res.json();
 }
 
 export async function sellStock(id: number, sell_price: number, sell_date: string): Promise<Stock> {
     const res = await fetch(`${API_BASE}/resources/stocks/item/${id}/sell`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sell_price, sell_date }),
     });
-    if (!res.ok) throw new Error("Failed to sell stock");
+    if (!res.ok) throw new Error('Failed to sell stock');
     return res.json();
 }
 
 export async function deleteStock(id: number): Promise<void> {
     const res = await fetch(`${API_BASE}/resources/stocks/item/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
     });
-    if (!res.ok) throw new Error("Failed to delete stock");
+    if (!res.ok) throw new Error('Failed to delete stock');
 }

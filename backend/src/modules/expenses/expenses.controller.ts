@@ -25,8 +25,13 @@ export async function createExpense(req: Request, res: Response) {
         }
 
         const expense = await repo.create(userId, {
-            date, amount, statement, tag_id, special_tag_ids, notes,
-            meta: meta && typeof meta === 'object' ? meta : undefined,
+            date,
+            amount,
+            statement,
+            tag_id,
+            special_tag_ids,
+            notes,
+            meta: meta && typeof meta === "object" ? meta : undefined,
         });
         res.status(201).json(expense);
     } catch (error) {
@@ -117,7 +122,7 @@ export async function getExpenseSpecialTags(req: Request, res: Response) {
 
         // Verify expense belongs to user
         const expense = await repo.list(userId);
-        const expenseExists = expense.some(e => e.id === id);
+        const expenseExists = expense.some((e) => e.id === id);
         if (!expenseExists) {
             return res.status(404).json({ error: "Expense not found" });
         }
@@ -138,7 +143,9 @@ export async function deleteExpensesByMonths(req: Request, res: Response) {
 
         if (isNaN(year)) return res.status(400).json({ error: "Invalid Year" });
         if (!Array.isArray(months) || months.length === 0) {
-            return res.status(400).json({ error: "Months array is required and must not be empty" });
+            return res
+                .status(400)
+                .json({ error: "Months array is required and must not be empty" });
         }
 
         // Validate months are between 1-12

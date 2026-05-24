@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from 'react';
 
 export interface ToastOptions {
     message: string;
@@ -27,7 +27,9 @@ export function Toast() {
         _show = (opts) => {
             setToast({ ...opts, id: Date.now(), progress: 100 });
         };
-        return () => { _show = null; };
+        return () => {
+            _show = null;
+        };
     }, []);
 
     useEffect(() => {
@@ -36,10 +38,13 @@ export function Toast() {
         const interval = 50;
         const step = (interval / duration) * 100;
         const timer = setInterval(() => {
-            setToast(prev => {
+            setToast((prev) => {
                 if (!prev) return null;
                 const next = prev.progress - step;
-                if (next <= 0) { clearInterval(timer); return null; }
+                if (next <= 0) {
+                    clearInterval(timer);
+                    return null;
+                }
                 return { ...prev, progress: next };
             });
         }, interval);
@@ -49,35 +54,42 @@ export function Toast() {
     if (!toast) return null;
 
     return (
-        <div style={{
-            position: 'fixed',
-            bottom: '24px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 2000,
-            minWidth: '280px',
-            maxWidth: '420px',
-            animation: 'slideUp 0.2s ease',
-        }}>
-            <div className="glass-panel" style={{
-                padding: '14px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                position: 'relative',
-                overflow: 'hidden',
-            }}>
+        <div
+            style={{
+                position: 'fixed',
+                bottom: '24px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 2000,
+                minWidth: '280px',
+                maxWidth: '420px',
+                animation: 'slideUp 0.2s ease',
+            }}
+        >
+            <div
+                className="glass-panel"
+                style={{
+                    padding: '14px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    position: 'relative',
+                    overflow: 'hidden',
+                }}
+            >
                 {/* Progress bar */}
-                <div style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    height: '3px',
-                    width: `${toast.progress}%`,
-                    background: 'var(--accent-primary)',
-                    transition: 'width 0.05s linear',
-                    borderRadius: '0 0 0 var(--radius-lg)',
-                }} />
+                <div
+                    style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        height: '3px',
+                        width: `${toast.progress}%`,
+                        background: 'var(--accent-primary)',
+                        transition: 'width 0.05s linear',
+                        borderRadius: '0 0 0 var(--radius-lg)',
+                    }}
+                />
 
                 <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                     {toast.message}
@@ -85,7 +97,10 @@ export function Toast() {
 
                 {toast.onUndo && (
                     <button
-                        onClick={() => { toast.onUndo!(); dismiss(); }}
+                        onClick={() => {
+                            toast.onUndo!();
+                            dismiss();
+                        }}
                         style={{
                             background: 'var(--accent-primary)',
                             color: '#fff',

@@ -1,37 +1,37 @@
-import { Outlet, NavLink } from "react-router-dom";
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchPlans, fetchLifeXpBuckets, type Plan, type LifeXpBucket } from "../lib/api";
-import { useAppStore } from "../store/appStore";
-import QuickAddModal from "../components/QuickAddModal";
-import { Toast } from "../components/Toast";
+import { Outlet, NavLink } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { fetchPlans, fetchLifeXpBuckets, type Plan, type LifeXpBucket } from '../lib/api';
+import { useAppStore } from '../store/appStore';
+import QuickAddModal from '../components/QuickAddModal';
+import { Toast } from '../components/Toast';
 
 const navGroups = [
     {
-        label: "Money",
+        label: 'Money',
         items: [
-            { to: "/overview", label: "Overview" },
-            { to: "/daily", label: "Add expense" },
-            { to: "/flow", label: "Flow" },
-            { to: "/search", label: "Search" },
-            { to: "/expenses", label: "Expenses" },
-            { to: "/budget", label: "Budget" },
+            { to: '/overview', label: 'Overview' },
+            { to: '/daily', label: 'Add expense' },
+            { to: '/flow', label: 'Flow' },
+            { to: '/search', label: 'Search' },
+            { to: '/expenses', label: 'Expenses' },
+            { to: '/budget', label: 'Budget' },
         ],
     },
     {
-        label: "Wealth",
+        label: 'Wealth',
         items: [
-            { to: "/accounts", label: "Accounts" },
-            { to: "/assets", label: "Assets" },
-            { to: "/investments", label: "Investments" },
+            { to: '/accounts', label: 'Accounts' },
+            { to: '/assets', label: 'Assets' },
+            { to: '/investments', label: 'Investments' },
         ],
     },
     {
-        label: "Life",
+        label: 'Life',
         items: [
-            { to: "/plans", label: "Insurance" },
-            { to: "/life-xp", label: "Life XP" },
-            { to: "/tags", label: "Tags" },
+            { to: '/plans', label: 'Insurance' },
+            { to: '/life-xp', label: 'Life XP' },
+            { to: '/tags', label: 'Tags' },
         ],
     },
 ];
@@ -74,14 +74,15 @@ const getAcknowledgedExpired = (): number[] => {
 };
 
 const isContributionDue = (bucket: LifeXpBucket): boolean => {
-    if (!bucket.is_repetitive || !bucket.next_contribution_date || bucket.status !== 'active') return false;
+    if (!bucket.is_repetitive || !bucket.next_contribution_date || bucket.status !== 'active')
+        return false;
     const days = getDaysUntil(bucket.next_contribution_date);
     return days !== null && days <= 7;
 };
 
 const calcPlansActionCount = (plans: Plan[]): number => {
     const acknowledgedExpired = getAcknowledgedExpired();
-    return plans.filter(p => {
+    return plans.filter((p) => {
         if (isExpired(p.expiry_date) && acknowledgedExpired.includes(p.id)) return false;
         return (
             isPremiumDue(p.next_premium_date, p.expiry_date) ||
@@ -92,7 +93,17 @@ const calcPlansActionCount = (plans: Plan[]): number => {
 };
 
 export default function MainLayout() {
-    const { theme, toggleTheme, setPlansActionCount, setLifeXpActionCount, isQuickAddOpen, openQuickAdd, closeQuickAdd, plansActionCount, lifeXpActionCount } = useAppStore();
+    const {
+        theme,
+        toggleTheme,
+        setPlansActionCount,
+        setLifeXpActionCount,
+        isQuickAddOpen,
+        openQuickAdd,
+        closeQuickAdd,
+        plansActionCount,
+        lifeXpActionCount,
+    } = useAppStore();
 
     // Apply saved theme on mount
     useEffect(() => {
@@ -108,7 +119,10 @@ export default function MainLayout() {
             }
             if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
                 // Only intercept if not already in an input
-                if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+                if (
+                    document.activeElement?.tagName !== 'INPUT' &&
+                    document.activeElement?.tagName !== 'TEXTAREA'
+                ) {
                     e.preventDefault();
                     window.location.href = '/search';
                 }
@@ -164,61 +178,73 @@ export default function MainLayout() {
     };
 
     const Badge = ({ count, color }: { count: number; color: string }) => (
-        <span style={{
-            minWidth: '18px',
-            height: '18px',
-            borderRadius: '9px',
-            background: color,
-            color: 'white',
-            fontSize: '0.7rem',
-            fontWeight: '600',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '0 5px',
-        }}>
+        <span
+            style={{
+                minWidth: '18px',
+                height: '18px',
+                borderRadius: '9px',
+                background: color,
+                color: 'white',
+                fontSize: '0.7rem',
+                fontWeight: '600',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 5px',
+            }}
+        >
             {count}
         </span>
     );
 
     return (
-        <div style={{
-            display: 'flex',
-            height: '100vh',
-            width: '100vw',
-            backgroundColor: 'var(--bg-app)',
-            transition: 'background-color 0.3s'
-        }}>
-            {/* Sidebar */}
-            <nav style={{
-                width: '220px',
-                minWidth: '220px',
-                padding: '20px 12px',
-                borderRight: '1px solid var(--border-color)',
+        <div
+            style={{
                 display: 'flex',
-                flexDirection: 'column',
-                backgroundColor: 'var(--bg-panel)',
-            }}>
+                height: '100vh',
+                width: '100vw',
+                backgroundColor: 'var(--bg-app)',
+                transition: 'background-color 0.3s',
+            }}
+        >
+            {/* Sidebar */}
+            <nav
+                style={{
+                    width: '220px',
+                    minWidth: '220px',
+                    padding: '20px 12px',
+                    borderRight: '1px solid var(--border-color)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    backgroundColor: 'var(--bg-panel)',
+                }}
+            >
                 {/* Logo + Quick Add shortcut hint */}
-                <div style={{
-                    padding: '8px 16px 20px',
-                    borderBottom: '1px solid var(--border-color)',
-                    marginBottom: '16px'
-                }}>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        marginBottom: '10px'
-                    }}>
+                <div
+                    style={{
+                        padding: '8px 16px 20px',
+                        borderBottom: '1px solid var(--border-color)',
+                        marginBottom: '16px',
+                    }}
+                >
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            marginBottom: '10px',
+                        }}
+                    >
                         <img src="/logo.svg" alt="" width="28" height="28" />
-                        <h1 style={{
-                            fontSize: '1.25rem',
-                            fontWeight: '700',
-                            color: 'var(--text-primary)',
-                            letterSpacing: '-0.5px',
-                            margin: 0
-                        }}>
+                        <h1
+                            style={{
+                                fontSize: '1.25rem',
+                                fontWeight: '700',
+                                color: 'var(--text-primary)',
+                                letterSpacing: '-0.5px',
+                                margin: 0,
+                            }}
+                        >
                             MoneyFlow
                         </h1>
                     </div>
@@ -242,7 +268,11 @@ export default function MainLayout() {
                         }}
                     >
                         <span>+ Add Expense</span>
-                        <span style={{ opacity: 0.7, fontSize: '0.75rem', fontFamily: 'monospace' }}>⌘K</span>
+                        <span
+                            style={{ opacity: 0.7, fontSize: '0.75rem', fontFamily: 'monospace' }}
+                        >
+                            ⌘K
+                        </span>
                     </button>
                 </div>
 
@@ -250,29 +280,39 @@ export default function MainLayout() {
                 <div style={{ flex: 1, overflowY: 'auto' }}>
                     {navGroups.map((group) => (
                         <div key={group.label} style={{ marginBottom: '16px' }}>
-                            <div style={{
-                                fontSize: '0.7rem',
-                                fontWeight: '600',
-                                color: 'var(--text-secondary)',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.08em',
-                                padding: '0 16px',
-                                marginBottom: '4px',
-                            }}>
+                            <div
+                                style={{
+                                    fontSize: '0.7rem',
+                                    fontWeight: '600',
+                                    color: 'var(--text-secondary)',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.08em',
+                                    padding: '0 16px',
+                                    marginBottom: '4px',
+                                }}
+                            >
                                 {group.label}
                             </div>
                             {group.items.map((item) => (
                                 <NavLink
                                     key={item.to}
                                     to={item.to}
-                                    style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}
+                                    style={({ isActive }) =>
+                                        isActive ? activeLinkStyle : linkStyle
+                                    }
                                 >
                                     <span>{item.label}</span>
                                     {item.to === '/plans' && plansActionCount > 0 && (
-                                        <Badge count={plansActionCount} color="var(--accent-danger)" />
+                                        <Badge
+                                            count={plansActionCount}
+                                            color="var(--accent-danger)"
+                                        />
                                     )}
                                     {item.to === '/life-xp' && lifeXpActionCount > 0 && (
-                                        <Badge count={lifeXpActionCount} color="var(--accent-primary)" />
+                                        <Badge
+                                            count={lifeXpActionCount}
+                                            color="var(--accent-primary)"
+                                        />
                                     )}
                                 </NavLink>
                             ))}
@@ -300,12 +340,14 @@ export default function MainLayout() {
             </nav>
 
             {/* Main Content */}
-            <main style={{
-                flex: 1,
-                padding: '32px 40px',
-                overflowY: 'auto',
-                backgroundColor: 'var(--bg-app)'
-            }}>
+            <main
+                style={{
+                    flex: 1,
+                    padding: '32px 40px',
+                    overflowY: 'auto',
+                    backgroundColor: 'var(--bg-app)',
+                }}
+            >
                 <Outlet />
             </main>
 

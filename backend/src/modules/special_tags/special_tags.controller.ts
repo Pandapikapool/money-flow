@@ -23,7 +23,7 @@ export async function createSpecialTag(req: Request, res: Response) {
         const tag = await repo.create(userId, name);
         res.status(201).json(tag);
     } catch (error: any) {
-        if (error.code === '23505') {
+        if (error.code === "23505") {
             return res.status(409).json({ error: "Special Tag already exists" });
         }
         console.error("Create Special Tag Error:", error);

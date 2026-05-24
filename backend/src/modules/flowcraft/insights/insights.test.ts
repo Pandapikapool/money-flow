@@ -66,12 +66,7 @@ describe("buildUsual", () => {
 
     it("returns null when weekly CV is >= 18%", async () => {
         mockedQuery.mockResolvedValueOnce({
-            rows: [
-                { total: "1000" },
-                { total: "2000" },
-                { total: "1500" },
-                { total: "500" },
-            ],
+            rows: [{ total: "1000" }, { total: "2000" }, { total: "1500" }, { total: "500" }],
         } as any);
         const insight = await buildUsual(ctx);
         expect(insight).toBeNull();
@@ -79,12 +74,7 @@ describe("buildUsual", () => {
 
     it("returns a calm card when weekly CV is low", async () => {
         mockedQuery.mockResolvedValueOnce({
-            rows: [
-                { total: "1000" },
-                { total: "1050" },
-                { total: "980" },
-                { total: "1020" },
-            ],
+            rows: [{ total: "1000" }, { total: "1050" }, { total: "980" }, { total: "1020" }],
         } as any);
         const insight = await buildUsual(ctx);
         expect(insight).not.toBeNull();
@@ -120,9 +110,7 @@ describe("buildWon", () => {
         expect(insight).not.toBeNull();
         expect(insight!.kind).toBe("won");
         expect(insight!.tone).toBe("compassionate");
-        expect(insight!.body).toMatch(
-            /Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday/,
-        );
+        expect(insight!.body).toMatch(/Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday/);
     });
 
     it("surfaces a notably-quiet day when no no-spend day exists", async () => {
