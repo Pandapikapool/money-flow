@@ -92,6 +92,21 @@ export async function addJournalEntry(opts: {
     return res.json();
 }
 
+export interface JournalEntry {
+    id: number;
+    expense_id: number | null;
+    prompt: string | null;
+    answer: string;
+    mood: string | null;
+    created_at: string;
+}
+
+export async function fetchJournalEntries(): Promise<JournalEntry[]> {
+    const res = await fetch(`${API_BASE}/flowcraft/journal`);
+    if (!res.ok) throw new Error("Failed to load journal entries");
+    return res.json();
+}
+
 // === Goals ===
 
 export type GoalKind = 'skip-category' | 'cap-category' | 'quiet-days';
