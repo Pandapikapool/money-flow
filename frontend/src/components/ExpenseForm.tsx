@@ -1,9 +1,19 @@
 import { useState, useEffect } from 'react';
 import { createExpense, fetchTags, createTag, fetchSpecialTags, type Tag, type SpecialTag } from '../lib/api';
 
-// Helper to convert to Title Case
-const toTitleCase = (str: string) => {
-    return str.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+const toTitleCase = (str: string) =>
+    str.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+
+const FUEL_RE = /\b(fuel|petrol|gas|diesel)\b/i;
+
+// Soft palette per mood — calmer than primary accent, all desaturated
+const moodPalette: Record<string, string> = {
+    stress:      '#B9B5C9',
+    joy:         '#A8B5A0',
+    social:      '#C9A66B',
+    convenience: '#D6B894',
+    health:      '#8FB39E',
+    impulse:     '#E8B4B8',
 };
 
 interface Props {
@@ -13,23 +23,37 @@ interface Props {
 export default function ExpenseForm({ onSuccess }: Props) {
     const [amount, setAmount] = useState('');
     const [statement, setStatement] = useState('');
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]); // Default today
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
-    // Tag Logic
     const [tagName, setTagName] = useState('');
     const [tags, setTags] = useState<Tag[]>([]);
 
-    // Special Tags Logic (select only, no creation here)
     const [specialTags, setSpecialTags] = useState<SpecialTag[]>([]);
     const [selectedSpecialTagIds, setSelectedSpecialTagIds] = useState<number[]>([]);
 
     const [notes, setNotes] = useState('');
+    const [noteWarning, setNoteWarning] = useState(false);
+
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         fetchTags().then(setTags).catch(console.error);
         fetchSpecialTags().then(setSpecialTags).catch(console.error);
     }, []);
+
+    // Conditional-prompt thresholds (user policy):
+    //   amount > 100  AND non-fuel  -> ask mood + soft note prompt
+    //   amount > 250  AND non-fuel  -> note becomes required
+    //   amount > 1500 AND fuel-like -> note becomes required (no mood — fuel is routine)
+    const amountNum = parseFloat(amount) || 0;
+    const isFuelLike = FUEL_RE.test(tagName);
+    const showMood = amountNum > 100 && !isFuelLike;
+    const notesNeeded =
+        (amountNum > 250 && !isFuelLike) ||
+        (amountNum > 1500 && isFuelLike);
+
+    const moodTags = specialTags.filter(t => t.name.startsWith('mood:'));
+    const otherSpecialTags = specialTags.filter(t => !t.name.startsWith('mood:'));
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -38,9 +62,13 @@ export default function ExpenseForm({ onSuccess }: Props) {
             return;
         }
 
+        if (notesNeeded && !notes.trim()) {
+            setNoteWarning(true);
+            return;
+        }
+
         setLoading(true);
         try {
-            // Resolve Tag ID (Find or Create with Title Case)
             let finalTagId: number;
             const normalizedTagName = toTitleCase(tagName);
             const existingTag = tags.find(t => t.name.toLowerCase() === normalizedTagName.toLowerCase());
@@ -53,22 +81,21 @@ export default function ExpenseForm({ onSuccess }: Props) {
                 finalTagId = newTag.id;
             }
 
-            // Create Expense with selected date
             await createExpense({
                 date: new Date(date).toISOString(),
                 amount: parseFloat(amount),
                 statement,
                 tag_id: finalTagId,
                 special_tag_ids: selectedSpecialTagIds,
-                notes
+                notes,
             });
 
-            // Reset form (keep date as is for convenience)
             setAmount('');
             setStatement('');
             setTagName('');
             setSelectedSpecialTagIds([]);
             setNotes('');
+            setNoteWarning(false);
 
             onSuccess();
         } catch (err) {
@@ -83,6 +110,16 @@ export default function ExpenseForm({ onSuccess }: Props) {
         setSelectedSpecialTagIds(prev =>
             prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
         );
+    };
+
+    const handleNotesChange = (v: string) => {
+        setNotes(v);
+        if (noteWarning && v.trim()) setNoteWarning(false);
+    };
+
+    const moodLabel = (raw: string) => {
+        const bare = raw.replace(/^mood:/, '');
+        return bare.charAt(0).toUpperCase() + bare.slice(1);
     };
 
     return (
@@ -141,14 +178,48 @@ export default function ExpenseForm({ onSuccess }: Props) {
                 </datalist>
             </div>
 
-            {/* Special Tags (select only) */}
-            {specialTags.length > 0 && (
+            {/* Mood — appears once amount > 100 on a non-fuel category */}
+            {showMood && moodTags.length > 0 && (
+                <div style={{ marginBottom: '16px', animation: 'efFadeIn 0.22s ease-out' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        How did this feel? <span style={{ opacity: 0.6 }}>(optional, helps later analysis)</span>
+                    </label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {moodTags.map(mt => {
+                            const isSelected = selectedSpecialTagIds.includes(mt.id);
+                            const bare = mt.name.replace(/^mood:/, '').toLowerCase();
+                            const tint = moodPalette[bare] || '#C9A66B';
+                            return (
+                                <div
+                                    key={mt.id}
+                                    onClick={() => toggleSpecialTag(mt.id)}
+                                    style={{
+                                        padding: '6px 14px',
+                                        borderRadius: '16px',
+                                        cursor: 'pointer',
+                                        fontSize: '0.85rem',
+                                        border: `1px solid ${tint}`,
+                                        background: isSelected ? tint : 'transparent',
+                                        color: isSelected ? '#fff' : tint,
+                                        transition: 'all 0.15s ease',
+                                    }}
+                                >
+                                    {moodLabel(mt.name)}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Other special tags (everything that isn't a mood:* entry) */}
+            {otherSpecialTags.length > 0 && (
                 <div style={{ marginBottom: '16px' }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                         Special Tags <span style={{ opacity: 0.6 }}>(optional)</span>
                     </label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                        {specialTags.map(st => {
+                        {otherSpecialTags.map(st => {
                             const isSelected = selectedSpecialTagIds.includes(st.id);
                             return (
                                 <div
@@ -176,15 +247,36 @@ export default function ExpenseForm({ onSuccess }: Props) {
                 </div>
             )}
 
-            {/* Notes */}
+            {/* Notes — soft prompt for >100 non-fuel, required for >250 non-fuel or >1500 fuel */}
             <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Notes <span style={{ opacity: 0.6 }}>(optional)</span></label>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    Notes <span style={{ opacity: 0.6 }}>
+                        {notesNeeded
+                            ? '(a few words help future-you remember)'
+                            : showMood
+                                ? '(optional — a small note?)'
+                                : '(optional)'}
+                    </span>
+                </label>
                 <input
                     type="text"
                     value={notes}
-                    onChange={e => setNotes(e.target.value)}
-                    placeholder="Any additional details..."
+                    onChange={e => handleNotesChange(e.target.value)}
+                    placeholder={notesNeeded ? 'a few words…' : 'Any additional details...'}
+                    style={{
+                        borderColor: noteWarning ? '#C9A66B' : undefined,
+                    }}
                 />
+                {noteWarning && (
+                    <p style={{
+                        fontSize: '0.8rem',
+                        color: '#C9A66B',
+                        marginTop: '6px',
+                        fontStyle: 'italic',
+                    }}>
+                        even one word — what was it for, or how it felt?
+                    </p>
+                )}
             </div>
 
             <button
@@ -204,6 +296,13 @@ export default function ExpenseForm({ onSuccess }: Props) {
             >
                 {loading ? 'Saving...' : 'Add Expense'}
             </button>
+
+            <style>{`
+                @keyframes efFadeIn {
+                    from { opacity: 0; transform: translateY(-4px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+            `}</style>
         </form>
     );
 }
