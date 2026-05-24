@@ -36,6 +36,9 @@ export default function ExpenseForm({ onSuccess }: Props) {
     // Quantitative dimension: was this spend planned ahead, or in the moment?
     // null = no answer (default); true = planned; false = impulse.
     const [planned, setPlanned] = useState<boolean | null>(null);
+    // Wellness dimension: rough energy level at time of spend.
+    // null = no answer; 1 = low, 2 = steady, 3 = high.
+    const [energy, setEnergy] = useState<1 | 2 | 3 | null>(null);
 
     const [loading, setLoading] = useState(false);
 
@@ -85,6 +88,10 @@ export default function ExpenseForm({ onSuccess }: Props) {
                 finalTagId = newTag.id;
             }
 
+            const meta: { planned?: boolean; energy?: 1 | 2 | 3 } = {};
+            if (planned !== null) meta.planned = planned;
+            if (energy !== null) meta.energy = energy;
+
             await createExpense({
                 date: new Date(date).toISOString(),
                 amount: parseFloat(amount),
@@ -92,7 +99,7 @@ export default function ExpenseForm({ onSuccess }: Props) {
                 tag_id: finalTagId,
                 special_tag_ids: selectedSpecialTagIds,
                 notes,
-                meta: planned !== null ? { planned } : undefined,
+                meta: Object.keys(meta).length > 0 ? meta : undefined,
             });
 
             setAmount('');
@@ -102,6 +109,7 @@ export default function ExpenseForm({ onSuccess }: Props) {
             setNotes('');
             setNoteWarning(false);
             setPlanned(null);
+            setEnergy(null);
 
             onSuccess();
         } catch (err) {
@@ -243,6 +251,43 @@ export default function ExpenseForm({ onSuccess }: Props) {
                                         border: '1px solid #A8B5A0',
                                         background: isSelected ? '#A8B5A0' : 'transparent',
                                         color: isSelected ? '#fff' : '#A8B5A0',
+                                        transition: 'all 0.15s ease',
+                                    }}
+                                >
+                                    {opt.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Energy — appears once amount > 200 on a non-fuel category */}
+            {showPlanned && (
+                <div style={{ marginBottom: '16px', animation: 'efFadeIn 0.22s ease-out' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        Energy then? <span style={{ opacity: 0.6 }}>(optional)</span>
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        {[
+                            { label: 'Low', value: 1 as const },
+                            { label: 'Steady', value: 2 as const },
+                            { label: 'High', value: 3 as const },
+                        ].map(opt => {
+                            const isSelected = energy === opt.value;
+                            return (
+                                <button
+                                    type="button"
+                                    key={opt.value}
+                                    onClick={() => setEnergy(isSelected ? null : opt.value)}
+                                    style={{
+                                        padding: '6px 14px',
+                                        borderRadius: '16px',
+                                        cursor: 'pointer',
+                                        fontSize: '0.85rem',
+                                        border: '1px solid #C9A66B',
+                                        background: isSelected ? '#C9A66B' : 'transparent',
+                                        color: isSelected ? '#fff' : '#C9A66B',
                                         transition: 'all 0.15s ease',
                                     }}
                                 >

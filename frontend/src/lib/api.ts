@@ -2,7 +2,8 @@ export const API_BASE = "http://localhost:3000";
 
 export interface ExpenseMeta {
     planned?: boolean;
-    energy?: 1 | 2 | 3 | 4 | 5;
+    // 1 = low energy, 2 = steady, 3 = high.
+    energy?: 1 | 2 | 3;
     [key: string]: unknown;
 }
 

@@ -29,7 +29,9 @@ export interface MonthlyBudget {
 // without a schema migration.
 export interface ExpenseMeta {
     planned?: boolean;
-    energy?: 1 | 2 | 3 | 4 | 5;
+    // 1 = low energy, 2 = steady, 3 = high. Captured optionally alongside
+    // 'planned' on larger non-fuel spends for later analysis.
+    energy?: 1 | 2 | 3;
     [key: string]: unknown;
 }
 
