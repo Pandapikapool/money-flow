@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (2026-05-24 — Final FlowCraft slice: 14/14 insights + extensible meta + frontend tests)
+- **Two final calm insights**, completing the 14-card library:
+  - *small-swap* (gentle-attention): highest-frequency cheap repeat in last 30d (₹30–₹400 each, ≥6 occurrences). Suggests halving the frequency with a concrete monthly saving number. *"Just an option."*
+  - *unfounded-worry* (compassionate): picks the largest-spending category over last 30d, checks how many of last 12 weeks fell at-or-below 1.3× the mean. If ≥N-1 weeks were in range (≥8 weeks of data), surfaces statistical reassurance: *"X has stayed in its usual range N of last M weeks. The worry isn't quite earned."*
+- **Extensible expense meta** (migration 0004): adds `meta JSONB NOT NULL DEFAULT '{}'` to expenses. Open-ended sidecar for quantitative dimensions — no schema change per dimension. Typed `ExpenseMeta` on both backend and frontend (planned, energy, open keys).
+- **"Planned ahead?" prompt** in ExpenseForm: when amount > 200 on a non-fuel category, a soft *Planned / In the moment* toggle appears alongside the mood chips. Stored as `meta.planned` on submit. Same calm conditional pattern.
+- **Frontend vitest setup**: vitest dev dep, minimal `vitest.config.ts`, `npm test` / `npm run test:watch`. First test file: `format.test.ts` (5 cases on `formatCurrency` covering Indian grouping, zero, decimals, negatives). CI workflow runs frontend tests after typecheck.
+- **5 more backend test cases** on `evaluateGoal` cap-category — the "single most valuable missing test" the Auditor named. Uses `vi.mock('../../core/db')` so the SQL paths run without a live database. Covers mid-week/week-over transitions and the null-target_tag_id short-circuit. Backend test count: 5 → 10.
+- **Pre-push git hook** (`.githooks/pre-push`): opt-in tsc + tests on both packages before any `git push`. Enable per-clone with `git config core.hooksPath .githooks`. Lightweight alternative to husky — no root package.json, no dependency tree. Documented in DEVELOPER_GUIDE.md.
+- **Prettier override** for `frontend/**/*.{ts,tsx}` → `singleQuote: true`. Backend stays on doubles, frontend stays on singles, each matching its existing convention.
+
+### Changed (2026-05-24 — formatting + small cleanups)
+- All 36 new FlowCraft files reformatted with Prettier. Pure whitespace/quote normalization; no semantic changes. Both packages still typecheck clean; all 15 tests still pass.
+- `backend/src/core/db.ts`: idle-pool errors now log via `console.error` instead of `process.exit(-1)` (the latter would tear down the vitest runner on any stray pool event).
+- `insights/future-you.ts`: comment added on the local-time Date math (assumes IST-local backend; points at `mondayOf` if the runtime ever moves to UTC).
+
 ### Added (2026-05-24 — Story, Journal, Ask-box + more insights + tooling)
 - **Journal page** (`/flow/journal`): minimal page with prompt picker (5 short prompts), 500-char-cap answer, optional mood chip (joy, calm, stress, social, convenience, health, impulse). Past entries listed reverse-chrono with date · mood · prompt · answer. Closes the broken nav from the `journal-nudge` insight which had been linking to a 404.
 - **Weekly money story** (`/flow/story`): pull-only summary of any past week. Total tile, 7-bar by-day chart with biggest day picked out in ochre, top categories with proportional bars, mood chips with counts. Prev/Next week navigation (clamped 0..52). Backed by new `GET /flowcraft/story?week_offset=N` endpoint.
