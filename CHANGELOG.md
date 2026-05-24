@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.1.0] - 2026-05-24
+## [1.2.0] - 2026-05-24
 
-The FlowCraft calm layer — a quiet, anxiety-friendly view bolted onto money-flow, plus the supporting infrastructure (zod, vitest on both packages, CI, Prettier, opt-in pre-push hook, four DB migrations, four custom Claude Code subagents) and an app-wide Tea Ceremony palette refresh. Released as a single minor bump because the changes are purely additive — no breaking API changes, no removed routes, no schema changes that affect existing data.
+The FlowCraft calm layer — a quiet, anxiety-friendly view bolted onto money-flow, plus the supporting infrastructure (zod, vitest on both packages, CI, Prettier, opt-in pre-push hook, four DB migrations, four custom Claude Code subagents) and an app-wide Tea Ceremony palette refresh. Released as a single minor bump because the changes are purely additive — no breaking API changes, no removed routes, no schema changes that affect existing data. (Skipped 1.1.x — v1.1.0 was already taken by a Jan 2026 release.)
 
 ### Added (2026-05-24 — Bullet-journal Essential/Comfort/Treat + rotating prompts)
 - ExpenseForm now offers a single human-centered axis when amount > ₹100 (non-fuel): **Essential / Comfort / Treat**, stored as `meta.kind`. Replaces the earlier `planned` + `energy` pair with one function-first dimension (no "did you need it?" guilt frame). Earlier rows with `planned`/`energy` keys remain valid JSONB.
