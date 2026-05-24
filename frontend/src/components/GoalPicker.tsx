@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { fetchTags, type Tag } from "../lib/api";
+import { fetchGoalSuggestion } from "../lib/flowcraft";
 import type { CreateGoalPayload, GoalKind } from "../lib/flowcraft";
 
 interface Props {
@@ -18,6 +20,22 @@ export default function GoalPicker({ onCreate, onClose }: Props) {
     useEffect(() => {
         fetchTags().then(setTags).catch(console.error);
     }, []);
+
+    const { data: suggestion } = useQuery({
+        queryKey: ['flowcraft-goal-suggestion'],
+        queryFn: fetchGoalSuggestion,
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const acceptSuggestion = () => {
+        if (!suggestion?.suggestion) return;
+        const s = suggestion.suggestion;
+        onCreate({
+            kind: 'cap-category',
+            target_tag_id: s.target_tag_id,
+            target_amount: s.target_amount,
+        });
+    };
 
     const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget) onClose();
@@ -111,6 +129,49 @@ export default function GoalPicker({ onCreate, onClose }: Props) {
 
                 {!kind && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {suggestion?.suggestion && (
+                            <button
+                                onClick={acceptSuggestion}
+                                style={{
+                                    background: 'rgba(232, 180, 184, 0.12)',
+                                    border: '1px solid rgba(232, 180, 184, 0.45)',
+                                    borderRadius: '12px',
+                                    padding: '14px 16px',
+                                    cursor: 'pointer',
+                                    textAlign: 'left',
+                                    transition: 'background 0.15s ease',
+                                    width: '100%',
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(232, 180, 184, 0.22)')}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(232, 180, 184, 0.12)')}
+                            >
+                                <div style={{
+                                    fontSize: '0.7rem',
+                                    color: 'var(--accent-warning)',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.08em',
+                                    marginBottom: '4px',
+                                    fontWeight: 600,
+                                }}>
+                                    one-tap suggestion
+                                </div>
+                                <div style={{
+                                    fontWeight: 500,
+                                    color: 'var(--text-primary)',
+                                    marginBottom: '4px',
+                                }}>
+                                    Cap {suggestion.suggestion.tag_name} at ₹{suggestion.suggestion.target_amount.toLocaleString('en-IN')} this week
+                                </div>
+                                <div style={{
+                                    fontSize: '0.78rem',
+                                    color: 'var(--text-secondary)',
+                                    lineHeight: 1.45,
+                                }}>
+                                    {suggestion.suggestion.rationale}
+                                </div>
+                            </button>
+                        )}
+
                         <KindOption
                             label="Skip a category"
                             sub="Don't spend on one category this week"

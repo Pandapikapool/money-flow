@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     fetchInsights,
@@ -111,7 +112,7 @@ export default function FlowPage() {
             {/* Header */}
             <header style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                 <img src="/logo.svg" alt="" width="44" height="44" style={{ flexShrink: 0 }} />
-                <div>
+                <div style={{ flex: 1 }}>
                     <h1 style={{
                         fontSize: '1.5rem',
                         fontWeight: 600,
@@ -129,6 +130,10 @@ export default function FlowPage() {
                     }}>
                         a calm look at this week
                     </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <Link to="/flow/story" style={subLink}>Story</Link>
+                    <Link to="/flow/journal" style={subLink}>Journal</Link>
                 </div>
             </header>
 
@@ -209,3 +214,13 @@ export default function FlowPage() {
         </div>
     );
 }
+
+const subLink: React.CSSProperties = {
+    color: 'var(--text-secondary)',
+    textDecoration: 'none',
+    fontSize: '0.85rem',
+    padding: '6px 12px',
+    border: '1px solid var(--border-color)',
+    borderRadius: '8px',
+    background: 'transparent',
+};
