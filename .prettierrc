@@ -5,5 +5,11 @@
     "semi": true,
     "singleQuote": false,
     "arrowParens": "always",
-    "endOfLine": "lf"
+    "endOfLine": "lf",
+    "overrides": [
+        {
+            "files": "frontend/**/*.{ts,tsx}",
+            "options": { "singleQuote": true }
+        }
+    ]
 }

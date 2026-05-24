@@ -1,15 +1,15 @@
 import { pool } from "../../core/db";
 
 export interface QueryParams {
-    category?: string;        // tag name (case-insensitive); undefined or "all" = no filter
-    from?: string;            // YYYY-MM-DD
-    to?: string;              // YYYY-MM-DD
+    category?: string; // tag name (case-insensitive); undefined or "all" = no filter
+    from?: string; // YYYY-MM-DD
+    to?: string; // YYYY-MM-DD
     amount_min?: number;
     amount_max?: number;
 }
 
 export interface MonthlyRow {
-    month: string;            // YYYY-MM
+    month: string; // YYYY-MM
     total: number;
     count: number;
 }
@@ -21,7 +21,13 @@ export interface TopCategory {
 }
 
 export interface QueryResult {
-    scope: { category: string; from?: string; to?: string; amount_min?: number; amount_max?: number };
+    scope: {
+        category: string;
+        from?: string;
+        to?: string;
+        amount_min?: number;
+        amount_max?: number;
+    };
     total: number;
     count: number;
     min: number;
@@ -32,11 +38,11 @@ export interface QueryResult {
 }
 
 export async function querySpending(userId: string, params: QueryParams): Promise<QueryResult> {
-    const conditions: string[] = ['e.user_id = $1'];
+    const conditions: string[] = ["e.user_id = $1"];
     const values: any[] = [userId];
     let p = 2;
 
-    if (params.category && params.category.toLowerCase() !== 'all') {
+    if (params.category && params.category.toLowerCase() !== "all") {
         conditions.push(`LOWER(t.name) = LOWER($${p++})`);
         values.push(params.category);
     }
@@ -57,7 +63,7 @@ export async function querySpending(userId: string, params: QueryParams): Promis
         values.push(params.amount_max);
     }
 
-    const where = conditions.join(' AND ');
+    const where = conditions.join(" AND ");
 
     const aggR = await pool.query(
         `SELECT COUNT(*)                              AS count,
@@ -68,7 +74,7 @@ export async function querySpending(userId: string, params: QueryParams): Promis
          FROM expenses e
          JOIN tags t ON t.id = e.tag_id
          WHERE ${where}`,
-        values,
+        values
     );
     const agg = aggR.rows[0];
 
@@ -81,11 +87,11 @@ export async function querySpending(userId: string, params: QueryParams): Promis
          WHERE ${where}
          GROUP BY DATE_TRUNC('month', e.date)
          ORDER BY DATE_TRUNC('month', e.date) ASC`,
-        values,
+        values
     );
 
     let topCategories: TopCategory[] | undefined;
-    if (!params.category || params.category.toLowerCase() === 'all') {
+    if (!params.category || params.category.toLowerCase() === "all") {
         const topR = await pool.query(
             `SELECT t.name                          AS tag,
                     ROUND(SUM(e.amount)::numeric, 0) AS total,
@@ -96,9 +102,9 @@ export async function querySpending(userId: string, params: QueryParams): Promis
              GROUP BY t.name
              ORDER BY SUM(e.amount) DESC
              LIMIT 5`,
-            values,
+            values
         );
-        topCategories = topR.rows.map(r => ({
+        topCategories = topR.rows.map((r) => ({
             tag: r.tag,
             total: Number(r.total),
             count: Number(r.count),
@@ -107,7 +113,7 @@ export async function querySpending(userId: string, params: QueryParams): Promis
 
     return {
         scope: {
-            category: params.category || 'all',
+            category: params.category || "all",
             from: params.from,
             to: params.to,
             amount_min: params.amount_min,
@@ -118,7 +124,7 @@ export async function querySpending(userId: string, params: QueryParams): Promis
         min: Number(agg.min),
         max: Number(agg.max),
         avg: Math.round(Number(agg.avg)),
-        monthly: monthsR.rows.map(r => ({
+        monthly: monthsR.rows.map((r) => ({
             month: r.month,
             total: Number(r.total),
             count: Number(r.count),

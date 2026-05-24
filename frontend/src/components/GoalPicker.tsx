@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchTags, type Tag } from "../lib/api";
-import { fetchGoalSuggestion } from "../lib/flowcraft";
-import type { CreateGoalPayload, GoalKind } from "../lib/flowcraft";
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { fetchTags, type Tag } from '../lib/api';
+import { fetchGoalSuggestion } from '../lib/flowcraft';
+import type { CreateGoalPayload, GoalKind } from '../lib/flowcraft';
 
 interface Props {
     onCreate: (payload: CreateGoalPayload) => void;
@@ -92,24 +92,31 @@ export default function GoalPicker({ onCreate, onClose }: Props) {
                 animation: 'gpFadeIn 0.15s ease',
             }}
         >
-            <div className="glass-panel" style={{
-                padding: '24px',
-                maxWidth: '420px',
-                width: '100%',
-                animation: 'gpSlideUp 0.2s ease',
-            }}>
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '16px',
-                }}>
-                    <h3 style={{
-                        margin: 0,
-                        fontSize: '1rem',
-                        color: 'var(--text-primary)',
-                        fontWeight: 600,
-                    }}>
+            <div
+                className="glass-panel"
+                style={{
+                    padding: '24px',
+                    maxWidth: '420px',
+                    width: '100%',
+                    animation: 'gpSlideUp 0.2s ease',
+                }}
+            >
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '16px',
+                    }}
+                >
+                    <h3
+                        style={{
+                            margin: 0,
+                            fontSize: '1rem',
+                            color: 'var(--text-primary)',
+                            fontWeight: 600,
+                        }}
+                    >
                         {kind ? 'A small goal' : 'Pick a small goal'}
                     </h3>
                     <button
@@ -124,7 +131,9 @@ export default function GoalPicker({ onCreate, onClose }: Props) {
                             padding: '4px 8px',
                             lineHeight: 1,
                         }}
-                    >×</button>
+                    >
+                        ×
+                    </button>
                 </div>
 
                 {!kind && (
@@ -142,31 +151,43 @@ export default function GoalPicker({ onCreate, onClose }: Props) {
                                     transition: 'background 0.15s ease',
                                     width: '100%',
                                 }}
-                                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(232, 180, 184, 0.22)')}
-                                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(232, 180, 184, 0.12)')}
+                                onMouseEnter={(e) =>
+                                    (e.currentTarget.style.background = 'rgba(232, 180, 184, 0.22)')
+                                }
+                                onMouseLeave={(e) =>
+                                    (e.currentTarget.style.background = 'rgba(232, 180, 184, 0.12)')
+                                }
                             >
-                                <div style={{
-                                    fontSize: '0.7rem',
-                                    color: 'var(--accent-warning)',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.08em',
-                                    marginBottom: '4px',
-                                    fontWeight: 600,
-                                }}>
+                                <div
+                                    style={{
+                                        fontSize: '0.7rem',
+                                        color: 'var(--accent-warning)',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.08em',
+                                        marginBottom: '4px',
+                                        fontWeight: 600,
+                                    }}
+                                >
                                     one-tap suggestion
                                 </div>
-                                <div style={{
-                                    fontWeight: 500,
-                                    color: 'var(--text-primary)',
-                                    marginBottom: '4px',
-                                }}>
-                                    Cap {suggestion.suggestion.tag_name} at ₹{suggestion.suggestion.target_amount.toLocaleString('en-IN')} this week
+                                <div
+                                    style={{
+                                        fontWeight: 500,
+                                        color: 'var(--text-primary)',
+                                        marginBottom: '4px',
+                                    }}
+                                >
+                                    Cap {suggestion.suggestion.tag_name} at ₹
+                                    {suggestion.suggestion.target_amount.toLocaleString('en-IN')}{' '}
+                                    this week
                                 </div>
-                                <div style={{
-                                    fontSize: '0.78rem',
-                                    color: 'var(--text-secondary)',
-                                    lineHeight: 1.45,
-                                }}>
+                                <div
+                                    style={{
+                                        fontSize: '0.78rem',
+                                        color: 'var(--text-secondary)',
+                                        lineHeight: 1.45,
+                                    }}
+                                >
                                     {suggestion.suggestion.rationale}
                                 </div>
                             </button>
@@ -198,8 +219,10 @@ export default function GoalPicker({ onCreate, onClose }: Props) {
                             onChange={(e) => setTagId(e.target.value ? Number(e.target.value) : '')}
                         >
                             <option value="">Pick one…</option>
-                            {tags.map(t => (
-                                <option key={t.id} value={t.id}>{t.name}</option>
+                            {tags.map((t) => (
+                                <option key={t.id} value={t.id}>
+                                    {t.name}
+                                </option>
                             ))}
                         </select>
                     </div>
@@ -211,11 +234,15 @@ export default function GoalPicker({ onCreate, onClose }: Props) {
                             <label style={fieldLabelStyle}>Category</label>
                             <select
                                 value={tagId}
-                                onChange={(e) => setTagId(e.target.value ? Number(e.target.value) : '')}
+                                onChange={(e) =>
+                                    setTagId(e.target.value ? Number(e.target.value) : '')
+                                }
                             >
                                 <option value="">Pick one…</option>
-                                {tags.map(t => (
-                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                {tags.map((t) => (
+                                    <option key={t.id} value={t.id}>
+                                        {t.name}
+                                    </option>
                                 ))}
                             </select>
                         </div>
@@ -235,25 +262,26 @@ export default function GoalPicker({ onCreate, onClose }: Props) {
                 {kind === 'quiet-days' && (
                     <div>
                         <label style={fieldLabelStyle}>How many quiet days?</label>
-                        <select
-                            value={count}
-                            onChange={(e) => setCount(e.target.value)}
-                        >
-                            {[1, 2, 3, 4, 5, 6, 7].map(n => (
-                                <option key={n} value={n}>{n} {n === 1 ? 'day' : 'days'}</option>
+                        <select value={count} onChange={(e) => setCount(e.target.value)}>
+                            {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                                <option key={n} value={n}>
+                                    {n} {n === 1 ? 'day' : 'days'}
+                                </option>
                             ))}
                         </select>
                     </div>
                 )}
 
                 {error && (
-                    <p style={{
-                        fontSize: '0.82rem',
-                        color: 'var(--accent-warning)',
-                        marginTop: '10px',
-                        marginBottom: 0,
-                        fontStyle: 'italic',
-                    }}>
+                    <p
+                        style={{
+                            fontSize: '0.82rem',
+                            color: 'var(--accent-warning)',
+                            marginTop: '10px',
+                            marginBottom: 0,
+                            fontStyle: 'italic',
+                        }}
+                    >
                         {error}
                     </p>
                 )}
@@ -261,7 +289,10 @@ export default function GoalPicker({ onCreate, onClose }: Props) {
                 {kind && (
                     <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
                         <button
-                            onClick={() => { setKind(null); setError(''); }}
+                            onClick={() => {
+                                setKind(null);
+                                setError('');
+                            }}
                             style={{
                                 background: 'transparent',
                                 color: 'var(--text-secondary)',
@@ -336,17 +367,21 @@ const KindOption = ({ label, sub, onClick }: KindOptionProps) => (
         onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(201, 166, 107, 0.16)')}
         onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(201, 166, 107, 0.08)')}
     >
-        <div style={{
-            fontWeight: 500,
-            color: 'var(--text-primary)',
-            marginBottom: '2px',
-        }}>
+        <div
+            style={{
+                fontWeight: 500,
+                color: 'var(--text-primary)',
+                marginBottom: '2px',
+            }}
+        >
             {label}
         </div>
-        <div style={{
-            fontSize: '0.8rem',
-            color: 'var(--text-secondary)',
-        }}>
+        <div
+            style={{
+                fontSize: '0.8rem',
+                color: 'var(--text-secondary)',
+            }}
+        >
             {sub}
         </div>
     </button>

@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { fetchActiveGoal } from "../lib/flowcraft";
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { fetchActiveGoal } from '../lib/flowcraft';
 
 const DISMISS_KEY = 'flowcraft.overview.widget.dismissedAt';
 const DISMISS_HOURS = 48; // re-appear after this long
@@ -46,19 +46,29 @@ export default function OverviewFlowWidget() {
     };
 
     return (
-        <div style={{
-            padding: '14px 18px',
-            marginBottom: '20px',
-            background: 'rgba(201, 166, 107, 0.10)',
-            border: '1px solid rgba(201, 166, 107, 0.30)',
-            borderRadius: 'var(--radius-md)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '14px',
-            flexWrap: 'wrap',
-        }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: '1 1 240px', minWidth: 0 }}>
+        <div
+            style={{
+                padding: '14px 18px',
+                marginBottom: '20px',
+                background: 'rgba(201, 166, 107, 0.10)',
+                border: '1px solid rgba(201, 166, 107, 0.30)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '14px',
+                flexWrap: 'wrap',
+            }}
+        >
+            <div
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    flex: '1 1 240px',
+                    minWidth: 0,
+                }}
+            >
                 <img
                     src="/mascot.svg"
                     alt=""
@@ -68,18 +78,22 @@ export default function OverviewFlowWidget() {
                     draggable={false}
                 />
                 <div style={{ minWidth: 0 }}>
-                    <div style={{
-                        fontSize: '0.92rem',
-                        color: 'var(--text-primary)',
-                        fontWeight: 500,
-                    }}>
+                    <div
+                        style={{
+                            fontSize: '0.92rem',
+                            color: 'var(--text-primary)',
+                            fontWeight: 500,
+                        }}
+                    >
                         Want a small goal this week?
                     </div>
-                    <div style={{
-                        fontSize: '0.78rem',
-                        color: 'var(--text-secondary)',
-                        marginTop: '2px',
-                    }}>
+                    <div
+                        style={{
+                            fontSize: '0.78rem',
+                            color: 'var(--text-secondary)',
+                            marginTop: '2px',
+                        }}
+                    >
                         Skippable. Garden gets a small bonus if you hold it.
                     </div>
                 </div>
@@ -113,7 +127,9 @@ export default function OverviewFlowWidget() {
                         lineHeight: 1,
                         opacity: 0.6,
                     }}
-                >×</button>
+                >
+                    ×
+                </button>
             </div>
         </div>
     );

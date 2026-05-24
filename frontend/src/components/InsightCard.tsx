@@ -1,4 +1,4 @@
-import type { Insight, InsightTone } from "../lib/flowcraft";
+import type { Insight, InsightTone } from '../lib/flowcraft';
 
 interface Props {
     insight: Insight;
@@ -7,47 +7,55 @@ interface Props {
 }
 
 const toneStyles: Record<InsightTone, { accent: string; tint: string }> = {
-    'calm':              { accent: '#A8B5A0', tint: 'rgba(168, 181, 160, 0.10)' },
-    'gentle-attention':  { accent: '#C9A66B', tint: 'rgba(201, 166, 107, 0.10)' },
-    'compassionate':     { accent: '#E8B4B8', tint: 'rgba(232, 180, 184, 0.10)' },
+    calm: { accent: '#A8B5A0', tint: 'rgba(168, 181, 160, 0.10)' },
+    'gentle-attention': { accent: '#C9A66B', tint: 'rgba(201, 166, 107, 0.10)' },
+    compassionate: { accent: '#E8B4B8', tint: 'rgba(232, 180, 184, 0.10)' },
 };
 
 export default function InsightCard({ insight, onPrimaryAction, onDismiss }: Props) {
     const tone = toneStyles[insight.tone] ?? toneStyles.calm;
 
     return (
-        <div style={{
-            padding: '20px',
-            background: tone.tint,
-            border: `1px solid ${tone.accent}55`,
-            borderRadius: '14px',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-        }}>
-            <div style={{
-                fontSize: '0.95rem',
-                fontWeight: 600,
-                color: 'var(--text-primary)',
-                letterSpacing: '-0.01em',
-            }}>
+        <div
+            style={{
+                padding: '20px',
+                background: tone.tint,
+                border: `1px solid ${tone.accent}55`,
+                borderRadius: '14px',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+            }}
+        >
+            <div
+                style={{
+                    fontSize: '0.95rem',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    letterSpacing: '-0.01em',
+                }}
+            >
                 {insight.title}
             </div>
-            <div style={{
-                fontSize: '0.9rem',
-                lineHeight: 1.55,
-                color: 'var(--text-secondary)',
-            }}>
+            <div
+                style={{
+                    fontSize: '0.9rem',
+                    lineHeight: 1.55,
+                    color: 'var(--text-secondary)',
+                }}
+            >
                 {insight.body}
             </div>
             {insight.impact && (
-                <div style={{
-                    fontSize: '0.8rem',
-                    color: tone.accent,
-                    fontWeight: 500,
-                }}>
+                <div
+                    style={{
+                        fontSize: '0.8rem',
+                        color: tone.accent,
+                        fontWeight: 500,
+                    }}
+                >
                     {insight.impact}
                 </div>
             )}

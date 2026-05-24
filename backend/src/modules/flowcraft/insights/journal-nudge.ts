@@ -24,16 +24,16 @@ export async function buildJournalNudge(ctx: InsightContext): Promise<Insight | 
 
     if (result.rows.length === 0) return null;
     const row = result.rows[0];
-    const mood = String(row.mood).replace('mood:', '');
+    const mood = String(row.mood).replace("mood:", "");
 
     return {
-        kind: 'journal-nudge',
-        tone: 'compassionate',
-        title: 'A one-line reflection?',
+        kind: "journal-nudge",
+        tone: "compassionate",
+        title: "A one-line reflection?",
         body: `You tagged "${row.statement}" as ${mood}. If a sentence comes easily, jot it down. If not, leave it.`,
         action: {
-            label: 'One-line journal',
-            href: '/flow/journal',
+            label: "One-line journal",
+            href: "/flow/journal",
             payload: { expenseId: Number(row.id) },
         },
     };

@@ -22,7 +22,7 @@ export async function buildKeepJoy(ctx: InsightContext): Promise<Insight | null>
          GROUP BY t.name
          ORDER BY COUNT(*) DESC
          LIMIT 1`,
-        [userId],
+        [userId]
     );
 
     if (result.rows.length === 0) return null;
@@ -33,9 +33,9 @@ export async function buildKeepJoy(ctx: InsightContext): Promise<Insight | null>
     if (times < 3) return null;
 
     return {
-        kind: 'keep-joy',
-        tone: 'compassionate',
-        title: 'Keep this one',
-        body: `${row.tag} has been your most-tagged joy spend lately — ₹${total.toLocaleString('en-IN')} across ${times} times. Worth keeping.`,
+        kind: "keep-joy",
+        tone: "compassionate",
+        title: "Keep this one",
+        body: `${row.tag} has been your most-tagged joy spend lately — ₹${total.toLocaleString("en-IN")} across ${times} times. Worth keeping.`,
     };
 }

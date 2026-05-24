@@ -19,14 +19,14 @@ type Builder = (ctx: InsightContext) => Promise<Insight | null>;
 export class RuleBasedEngine implements InsightEngine {
     async generateInsights(ctx: InsightContext): Promise<Insight[]> {
         const builders: Builder[] = [
-            buildGoalHeld,        // celebration first when applicable
-            buildNoCheckDay,      // permission-to-skip card sits high if it fires
+            buildGoalHeld, // celebration first when applicable
+            buildNoCheckDay, // permission-to-skip card sits high if it fires
             buildFreelyYours,
             buildUsual,
             buildWon,
             buildKeepJoy,
             buildFutureYou,
-            buildUnfoundedWorry,  // statistical reassurance
+            buildUnfoundedWorry, // statistical reassurance
             buildQuietlyBigger,
             buildHeavierWeekdays,
             buildSmallSwap,
@@ -43,7 +43,7 @@ export class RuleBasedEngine implements InsightEngine {
                     console.error(`Insight builder ${b.name} failed:`, err);
                     return null;
                 }
-            }),
+            })
         );
 
         return results.filter((x): x is Insight => x !== null);

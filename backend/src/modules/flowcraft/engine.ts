@@ -3,22 +3,22 @@
 // could later implement the same interface without changing callers.
 
 export type InsightKind =
-    | 'usual'
-    | 'won'
-    | 'recurring'
-    | 'freely-yours'
-    | 'quietly-bigger'
-    | 'heavier-weekdays'
-    | 'goal-held'
-    | 'unused-sub'
-    | 'small-swap'
-    | 'keep-joy'
-    | 'no-check-day'
-    | 'unfounded-worry'
-    | 'future-you'
-    | 'journal-nudge';
+    | "usual"
+    | "won"
+    | "recurring"
+    | "freely-yours"
+    | "quietly-bigger"
+    | "heavier-weekdays"
+    | "goal-held"
+    | "unused-sub"
+    | "small-swap"
+    | "keep-joy"
+    | "no-check-day"
+    | "unfounded-worry"
+    | "future-you"
+    | "journal-nudge";
 
-export type InsightTone = 'calm' | 'gentle-attention' | 'compassionate';
+export type InsightTone = "calm" | "gentle-attention" | "compassionate";
 
 export interface InsightAction {
     label: string;

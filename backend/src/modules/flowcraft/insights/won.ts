@@ -17,9 +17,7 @@ export async function buildWon(ctx: InsightContext): Promise<Insight | null> {
         [userId]
     );
 
-    const seen = new Map<string, number>(
-        result.rows.map(r => [r.d as string, Number(r.total)])
-    );
+    const seen = new Map<string, number>(result.rows.map((r) => [r.d as string, Number(r.total)]));
 
     const today = new Date();
     const fullDays: { date: string; total: number }[] = [];
@@ -30,27 +28,31 @@ export async function buildWon(ctx: InsightContext): Promise<Insight | null> {
         fullDays.push({ date: iso, total: seen.get(iso) ?? 0 });
     }
 
-    const noSpendDay = fullDays.find(d => d.total === 0);
+    const noSpendDay = fullDays.find((d) => d.total === 0);
     if (noSpendDay) {
-        const dayName = new Date(noSpendDay.date + "T00:00:00").toLocaleDateString('en-IN', { weekday: 'long' });
+        const dayName = new Date(noSpendDay.date + "T00:00:00").toLocaleDateString("en-IN", {
+            weekday: "long",
+        });
         return {
-            kind: 'won',
-            tone: 'compassionate',
-            title: 'You already won this week',
+            kind: "won",
+            tone: "compassionate",
+            title: "You already won this week",
             body: `${dayName} passed without a single charge. A quiet day, already in your column.`,
         };
     }
 
-    const nonZero = fullDays.filter(d => d.total > 0);
+    const nonZero = fullDays.filter((d) => d.total > 0);
     if (nonZero.length === 0) return null;
     const avg = nonZero.reduce((a, b) => a + b.total, 0) / nonZero.length;
     const lowest = nonZero.reduce((a, b) => (a.total < b.total ? a : b));
     if (lowest.total < avg * 0.45) {
-        const dayName = new Date(lowest.date + "T00:00:00").toLocaleDateString('en-IN', { weekday: 'long' });
+        const dayName = new Date(lowest.date + "T00:00:00").toLocaleDateString("en-IN", {
+            weekday: "long",
+        });
         return {
-            kind: 'won',
-            tone: 'compassionate',
-            title: 'You already won this week',
+            kind: "won",
+            tone: "compassionate",
+            title: "You already won this week",
             body: `${dayName} was notably quiet — spending stayed small. Worth noticing.`,
         };
     }

@@ -33,9 +33,9 @@ export async function buildFreelyYours(ctx: InsightContext): Promise<Insight | n
     const weeklySafeRounded = Math.round(weeklySafe);
 
     return {
-        kind: 'freely-yours',
-        tone: 'calm',
-        title: 'Freely yours this week',
-        body: `About ₹${weeklySafeRounded.toLocaleString('en-IN')} sits within reach this week without nudging the month off-track. Yours to keep, spend, or rest.`,
+        kind: "freely-yours",
+        tone: "calm",
+        title: "Freely yours this week",
+        body: `About ₹${weeklySafeRounded.toLocaleString("en-IN")} sits within reach this week without nudging the month off-track. Yours to keep, spend, or rest.`,
     };
 }

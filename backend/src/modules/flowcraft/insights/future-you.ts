@@ -21,7 +21,7 @@ export async function buildFutureYou(ctx: InsightContext): Promise<Insight | nul
 
     const budgetR = await pool.query(
         `SELECT amount FROM monthly_budgets WHERE user_id = $1 AND year = $2 AND month = $3`,
-        [userId, year, month],
+        [userId, year, month]
     );
     if (budgetR.rows.length === 0) return null;
     const budget = Number(budgetR.rows[0].amount);
@@ -33,7 +33,7 @@ export async function buildFutureYou(ctx: InsightContext): Promise<Insight | nul
          WHERE user_id = $1
            AND EXTRACT(YEAR FROM date) = $2
            AND EXTRACT(MONTH FROM date) = $3`,
-        [userId, year, month],
+        [userId, year, month]
     );
     const spent = Number(spentR.rows[0].total);
     if (spent <= 0) return null;
@@ -43,12 +43,12 @@ export async function buildFutureYou(ctx: InsightContext): Promise<Insight | nul
     // Only show when the future looks calm. Past-tense, no warnings.
     if (projected > budget * 1.05) return null;
 
-    const monthName = today.toLocaleDateString('en-IN', { month: 'long' });
+    const monthName = today.toLocaleDateString("en-IN", { month: "long" });
 
     return {
-        kind: 'future-you',
-        tone: 'calm',
-        title: 'Future-you is okay',
-        body: `At current pace, ${monthName} ends around ₹${projected.toLocaleString('en-IN')} — comfortably within the month. Nothing to steer.`,
+        kind: "future-you",
+        tone: "calm",
+        title: "Future-you is okay",
+        body: `At current pace, ${monthName} ends around ₹${projected.toLocaleString("en-IN")} — comfortably within the month. Nothing to steer.`,
     };
 }

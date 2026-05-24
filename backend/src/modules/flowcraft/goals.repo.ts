@@ -1,7 +1,7 @@
 import { pool } from "../../core/db";
 
-export type GoalKind = 'skip-category' | 'cap-category' | 'quiet-days';
-export type GoalStatus = 'active' | 'held' | 'missed' | 'cancelled';
+export type GoalKind = "skip-category" | "cap-category" | "quiet-days";
+export type GoalStatus = "active" | "held" | "missed" | "cancelled";
 
 export interface Goal {
     id: number;
@@ -37,7 +37,7 @@ const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000;
 export function mondayOf(date: Date): Date {
     const ist = new Date(date.getTime() + IST_OFFSET_MS);
     ist.setUTCHours(0, 0, 0, 0);
-    const day = ist.getUTCDay();        // 0=Sun, 1=Mon, ..., 6=Sat
+    const day = ist.getUTCDay(); // 0=Sun, 1=Mon, ..., 6=Sat
     const diff = day === 0 ? -6 : 1 - day;
     ist.setUTCDate(ist.getUTCDate() + diff);
     return ist;
@@ -61,10 +61,10 @@ function parseGoal(row: any): Goal {
 // someone else's tag (currently single-user, but the check is cheap and
 // the right place to enforce when auth lands).
 export async function tagBelongsToUser(userId: string, tagId: number): Promise<boolean> {
-    const r = await pool.query(
-        `SELECT 1 FROM tags WHERE id = $1 AND user_id = $2 LIMIT 1`,
-        [tagId, userId],
-    );
+    const r = await pool.query(`SELECT 1 FROM tags WHERE id = $1 AND user_id = $2 LIMIT 1`, [
+        tagId,
+        userId,
+    ]);
     return r.rows.length > 0;
 }
 
@@ -76,7 +76,7 @@ export async function createGoal(
         target_amount?: number | null;
         target_count?: number | null;
     },
-    today: Date = new Date(),
+    today: Date = new Date()
 ): Promise<Goal> {
     const weekStart = mondayOf(today);
     const result = await pool.query(
@@ -91,7 +91,7 @@ export async function createGoal(
             payload.target_amount ?? null,
             payload.target_count ?? null,
             toIsoDate(weekStart),
-        ],
+        ]
     );
     return parseGoal(result.rows[0]);
 }
@@ -101,30 +101,36 @@ export async function cancelGoal(userId: string, goalId: number): Promise<void> 
         `UPDATE flowcraft_goals
          SET status = 'cancelled', completed_at = NOW()
          WHERE id = $1 AND user_id = $2 AND status = 'active'`,
-        [goalId, userId],
+        [goalId, userId]
     );
 }
 
-export async function getActiveGoal(userId: string, today: Date = new Date()): Promise<Goal | null> {
+export async function getActiveGoal(
+    userId: string,
+    today: Date = new Date()
+): Promise<Goal | null> {
     const weekStart = mondayOf(today);
     const result = await pool.query(
         `SELECT * FROM flowcraft_goals
          WHERE user_id = $1 AND status = 'active' AND week_of = $2
          ORDER BY id DESC
          LIMIT 1`,
-        [userId, toIsoDate(weekStart)],
+        [userId, toIsoDate(weekStart)]
     );
     return result.rows.length > 0 ? parseGoal(result.rows[0]) : null;
 }
 
-export async function getHeldGoalForWeek(userId: string, today: Date = new Date()): Promise<Goal | null> {
+export async function getHeldGoalForWeek(
+    userId: string,
+    today: Date = new Date()
+): Promise<Goal | null> {
     const weekStart = mondayOf(today);
     const result = await pool.query(
         `SELECT * FROM flowcraft_goals
          WHERE user_id = $1 AND status = 'held' AND week_of = $2
          ORDER BY completed_at DESC NULLS LAST, id DESC
          LIMIT 1`,
-        [userId, toIsoDate(weekStart)],
+        [userId, toIsoDate(weekStart)]
     );
     return result.rows.length > 0 ? parseGoal(result.rows[0]) : null;
 }
@@ -133,19 +139,19 @@ export async function evaluateGoal(goal: Goal, today: Date = new Date()): Promis
     // Guard: skip-/cap-category goals need a live target tag. If the tag
     // was deleted (FK ON DELETE SET NULL), the goal becomes unevaluable —
     // return a neutral non-evaluable progress so it can't silently auto-hold.
-    if ((goal.kind === 'skip-category' || goal.kind === 'cap-category') && !goal.target_tag_id) {
+    if ((goal.kind === "skip-category" || goal.kind === "cap-category") && !goal.target_tag_id) {
         return {
             goal,
             numerator: 0,
             denominator: 0,
             held: false,
             missed: false,
-            display: 'category no longer exists',
-            headline: 'goal needs a category',
+            display: "category no longer exists",
+            headline: "goal needs a category",
         };
     }
 
-    const weekStart = new Date(goal.week_of + 'T00:00:00.000Z');
+    const weekStart = new Date(goal.week_of + "T00:00:00.000Z");
     const weekEnd = new Date(weekStart);
     weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
     weekEnd.setUTCHours(23, 59, 59, 999);
@@ -160,13 +166,13 @@ export async function evaluateGoal(goal: Goal, today: Date = new Date()): Promis
         tagName = r.rows[0]?.name;
     }
 
-    if (goal.kind === 'skip-category') {
+    if (goal.kind === "skip-category") {
         const r = await pool.query(
             `SELECT COALESCE(SUM(amount), 0) AS total
              FROM expenses
              WHERE user_id = $1 AND tag_id = $2
                AND date >= $3::date AND date <= $4::date`,
-            [goal.user_id, goal.target_tag_id, weekStartStr, weekEndStr],
+            [goal.user_id, goal.target_tag_id, weekStartStr, weekEndStr]
         );
         const spent = Number(r.rows[0].total);
         const held = spent === 0 && weekOver;
@@ -177,19 +183,22 @@ export async function evaluateGoal(goal: Goal, today: Date = new Date()): Promis
             denominator: 0,
             held,
             missed,
-            display: spent === 0 ? 'still clear' : `₹${Math.round(spent).toLocaleString('en-IN')} so far`,
-            headline: `Skip ${tagName ?? 'a category'} this week`,
+            display:
+                spent === 0
+                    ? "still clear"
+                    : `₹${Math.round(spent).toLocaleString("en-IN")} so far`,
+            headline: `Skip ${tagName ?? "a category"} this week`,
             tag_name: tagName,
         };
     }
 
-    if (goal.kind === 'cap-category') {
+    if (goal.kind === "cap-category") {
         const r = await pool.query(
             `SELECT COALESCE(SUM(amount), 0) AS total
              FROM expenses
              WHERE user_id = $1 AND tag_id = $2
                AND date >= $3::date AND date <= $4::date`,
-            [goal.user_id, goal.target_tag_id, weekStartStr, weekEndStr],
+            [goal.user_id, goal.target_tag_id, weekStartStr, weekEndStr]
         );
         const spent = Number(r.rows[0].total);
         const cap = Number(goal.target_amount ?? 0);
@@ -201,13 +210,13 @@ export async function evaluateGoal(goal: Goal, today: Date = new Date()): Promis
             denominator: cap,
             held,
             missed,
-            display: `₹${Math.round(spent).toLocaleString('en-IN')} / ₹${Math.round(cap).toLocaleString('en-IN')}`,
-            headline: `${tagName ?? 'category'} under ₹${Math.round(cap).toLocaleString('en-IN')} this week`,
+            display: `₹${Math.round(spent).toLocaleString("en-IN")} / ₹${Math.round(cap).toLocaleString("en-IN")}`,
+            headline: `${tagName ?? "category"} under ₹${Math.round(cap).toLocaleString("en-IN")} this week`,
             tag_name: tagName,
         };
     }
 
-    if (goal.kind === 'quiet-days') {
+    if (goal.kind === "quiet-days") {
         const upTo = today < weekEnd ? today : weekEnd;
         const upToStr = toIsoDate(upTo);
         const r = await pool.query(
@@ -221,7 +230,7 @@ export async function evaluateGoal(goal: Goal, today: Date = new Date()): Promis
             SELECT COUNT(*) AS quiet_count
             FROM days
             WHERE d NOT IN (SELECT date FROM spent_days)`,
-            [goal.user_id, weekStartStr, upToStr],
+            [goal.user_id, weekStartStr, upToStr]
         );
         const quietCount = Number(r.rows[0].quiet_count);
         const target = Number(goal.target_count ?? 0);
@@ -247,8 +256,8 @@ export async function evaluateGoal(goal: Goal, today: Date = new Date()): Promis
         denominator: 0,
         held: false,
         missed: false,
-        display: 'unknown',
-        headline: 'unknown goal',
+        display: "unknown",
+        headline: "unknown goal",
     };
 }
 
@@ -258,7 +267,7 @@ export async function evaluateGoal(goal: Goal, today: Date = new Date()): Promis
 // without the garden bump (or vice versa). Compare-and-set on the flag
 // prevents double-apply under concurrent calls.
 export async function applyHeldBonus(goal: Goal): Promise<boolean> {
-    if (goal.status !== 'held') return false;
+    if (goal.status !== "held") return false;
     if (goal.bonus_applied) return false;
 
     const result = await pool.query(
@@ -274,7 +283,7 @@ export async function applyHeldBonus(goal: Goal): Promise<boolean> {
         FROM flag_set f
         WHERE s.user_id = f.user_id
         RETURNING s.user_id`,
-        [goal.id],
+        [goal.id]
     );
 
     return (result.rowCount ?? 0) > 0;
@@ -286,26 +295,26 @@ export async function applyHeldBonus(goal: Goal): Promise<boolean> {
 export async function syncGoalStatus(
     goalId: number,
     userId: string,
-    today: Date = new Date(),
+    today: Date = new Date()
 ): Promise<{ goal: Goal; progress: GoalProgress; justAppliedBonus: boolean } | null> {
-    const fetch = await pool.query(
-        `SELECT * FROM flowcraft_goals WHERE id = $1 AND user_id = $2`,
-        [goalId, userId],
-    );
+    const fetch = await pool.query(`SELECT * FROM flowcraft_goals WHERE id = $1 AND user_id = $2`, [
+        goalId,
+        userId,
+    ]);
     if (fetch.rows.length === 0) return null;
 
     let goal = parseGoal(fetch.rows[0]);
     const progress = await evaluateGoal(goal, today);
 
     let justAppliedBonus = false;
-    if (goal.status === 'active') {
+    if (goal.status === "active") {
         if (progress.held) {
             const upd = await pool.query(
                 `UPDATE flowcraft_goals
                  SET status = 'held', completed_at = NOW()
                  WHERE id = $1 AND status = 'active'
                  RETURNING *`,
-                [goalId],
+                [goalId]
             );
             if (upd.rows.length > 0) {
                 goal = parseGoal(upd.rows[0]);
@@ -317,7 +326,7 @@ export async function syncGoalStatus(
                  SET status = 'missed', completed_at = NOW()
                  WHERE id = $1 AND status = 'active'
                  RETURNING *`,
-                [goalId],
+                [goalId]
             );
             if (upd.rows.length > 0) {
                 goal = parseGoal(upd.rows[0]);
@@ -329,7 +338,10 @@ export async function syncGoalStatus(
 }
 
 // Convenience: sync whichever active goal exists for the user this week.
-export async function syncActiveGoalForUser(userId: string, today: Date = new Date()): Promise<void> {
+export async function syncActiveGoalForUser(
+    userId: string,
+    today: Date = new Date()
+): Promise<void> {
     const goal = await getActiveGoal(userId, today);
     if (!goal) return;
     await syncGoalStatus(goal.id, userId, today);
@@ -338,7 +350,7 @@ export async function syncActiveGoalForUser(userId: string, today: Date = new Da
 export interface GoalSuggestion {
     top_categories: { tag_id: number; tag_name: string; last_30d_total: number }[];
     suggestion: {
-        kind: 'cap-category';
+        kind: "cap-category";
         target_tag_id: number;
         target_amount: number;
         tag_name: string;
@@ -361,7 +373,7 @@ export async function getGoalSuggestion(userId: string): Promise<GoalSuggestion>
          GROUP BY t.id, t.name
          ORDER BY SUM(e.amount) DESC
          LIMIT 3`,
-        [userId],
+        [userId]
     );
 
     const top_categories = r.rows.map((row: any) => ({
@@ -383,11 +395,11 @@ export async function getGoalSuggestion(userId: string): Promise<GoalSuggestion>
     return {
         top_categories,
         suggestion: {
-            kind: 'cap-category',
+            kind: "cap-category",
             target_tag_id: top.tag_id,
             target_amount: suggestedCap,
             tag_name: top.tag_name,
-            rationale: `${top.tag_name} was your largest category over the last 30 days (₹${top.last_30d_total.toLocaleString('en-IN')}). A weekly cap around ₹${suggestedCap.toLocaleString('en-IN')} would be a soft step lighter.`,
+            rationale: `${top.tag_name} was your largest category over the last 30 days (₹${top.last_30d_total.toLocaleString("en-IN")}). A weekly cap around ₹${suggestedCap.toLocaleString("en-IN")} would be a soft step lighter.`,
         },
     };
 }

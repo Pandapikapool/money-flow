@@ -26,7 +26,7 @@ export async function buildUsual(ctx: InsightContext): Promise<Insight | null> {
 
     if (result.rows.length < 3) return null;
 
-    const totals = result.rows.map(r => Number(r.total));
+    const totals = result.rows.map((r) => Number(r.total));
     const mean = totals.reduce((a, b) => a + b, 0) / totals.length;
     if (mean <= 0) return null;
 
@@ -37,9 +37,9 @@ export async function buildUsual(ctx: InsightContext): Promise<Insight | null> {
     if (cv >= 0.18) return null;
 
     return {
-        kind: 'usual',
-        tone: 'calm',
-        title: 'Same as usual',
-        body: 'The last few weeks have looked steady — within their normal range. Nothing demanding attention.',
+        kind: "usual",
+        tone: "calm",
+        title: "Same as usual",
+        body: "The last few weeks have looked steady — within their normal range. Nothing demanding attention.",
     };
 }

@@ -36,7 +36,7 @@ export async function buildUnfoundedWorry(ctx: InsightContext): Promise<Insight 
                (SELECT mean FROM stats)::numeric                                  AS mean,
                (SELECT weeks_present FROM stats)::int                             AS weeks_present,
                (SELECT COUNT(*) FROM weekly WHERE total <= (SELECT mean FROM stats) * 1.3)::int AS in_range`,
-        [userId],
+        [userId]
     );
 
     if (result.rows.length === 0) return null;
@@ -46,12 +46,12 @@ export async function buildUnfoundedWorry(ctx: InsightContext): Promise<Insight 
 
     // Require a substantial sample and a strongly-consistent pattern.
     if (weeksPresent < 8) return null;
-    if (inRange < weeksPresent - 1) return null;   // at most 1 week out of range
+    if (inRange < weeksPresent - 1) return null; // at most 1 week out of range
 
     return {
-        kind: 'unfounded-worry',
-        tone: 'compassionate',
-        title: 'Steadier than it feels',
+        kind: "unfounded-worry",
+        tone: "compassionate",
+        title: "Steadier than it feels",
         body: `${row.tag} has stayed in its usual range ${inRange} of the last ${weeksPresent} weeks. The pattern is consistent — the worry isn't quite earned.`,
     };
 }

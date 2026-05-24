@@ -1,7 +1,7 @@
 import { pool } from "../../../core/db";
 import type { Insight, InsightContext } from "../engine";
 
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 // Surfaces the weekday with the highest average daily spend over the last
 // 60 days, but only if it's notably above the true overall daily average
@@ -26,7 +26,7 @@ export async function buildHeavierWeekdays(ctx: InsightContext): Promise<Insight
         FROM per_day
         GROUP BY dow
         ORDER BY avg_total DESC`,
-        [userId],
+        [userId]
     );
 
     if (result.rows.length < 5) return null;
@@ -40,9 +40,9 @@ export async function buildHeavierWeekdays(ctx: InsightContext): Promise<Insight
     if (overallAvg <= 0 || heaviest.avg < overallAvg * 1.3) return null;
 
     return {
-        kind: 'heavier-weekdays',
-        tone: 'calm',
-        title: 'Heavier weekdays',
-        body: `${DAY_NAMES[heaviest.dow]}s have averaged about ₹${heaviest.avg.toLocaleString('en-IN')} a day across the last 60 days — heavier than the others. Just a pattern, useful to know.`,
+        kind: "heavier-weekdays",
+        tone: "calm",
+        title: "Heavier weekdays",
+        body: `${DAY_NAMES[heaviest.dow]}s have averaged about ₹${heaviest.avg.toLocaleString("en-IN")} a day across the last 60 days — heavier than the others. Just a pattern, useful to know.`,
     };
 }

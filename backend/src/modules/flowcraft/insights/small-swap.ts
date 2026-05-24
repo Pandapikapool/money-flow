@@ -25,7 +25,7 @@ export async function buildSmallSwap(ctx: InsightContext): Promise<Insight | nul
             AND AVG(amount) BETWEEN 30 AND 400
          ORDER BY SUM(amount) DESC
          LIMIT 1`,
-        [userId],
+        [userId]
     );
 
     if (result.rows.length === 0) return null;
@@ -33,12 +33,12 @@ export async function buildSmallSwap(ctx: InsightContext): Promise<Insight | nul
     const times = Number(row.times);
     const total = Number(row.total);
     const saving = Math.round(total / 2);
-    const sample = String(row.sample ?? '').replace(/["']/g, '');
+    const sample = String(row.sample ?? "").replace(/["']/g, "");
 
     return {
-        kind: 'small-swap',
-        tone: 'gentle-attention',
-        title: 'Small swap',
-        body: `"${sample}" came up ${times} times last month (about ₹${total.toLocaleString('en-IN')}). Half as often would leave about ₹${saving.toLocaleString('en-IN')} in your pocket. Just an option.`,
+        kind: "small-swap",
+        tone: "gentle-attention",
+        title: "Small swap",
+        body: `"${sample}" came up ${times} times last month (about ₹${total.toLocaleString("en-IN")}). Half as often would leave about ₹${saving.toLocaleString("en-IN")} in your pocket. Just an option.`,
     };
 }

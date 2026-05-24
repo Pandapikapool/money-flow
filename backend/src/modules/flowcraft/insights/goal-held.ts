@@ -14,9 +14,9 @@ export async function buildGoalHeld(ctx: InsightContext): Promise<Insight | null
     const progress = await evaluateGoal(goal, today);
 
     return {
-        kind: 'goal-held',
-        tone: 'compassionate',
-        title: 'You held it',
+        kind: "goal-held",
+        tone: "compassionate",
+        title: "You held it",
         body: goal.bonus_applied
             ? `${progress.headline} — held. Garden grew a little extra.`
             : `${progress.headline} — held. Nice work.`,

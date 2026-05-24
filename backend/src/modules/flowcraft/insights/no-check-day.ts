@@ -23,11 +23,11 @@ export async function buildNoCheckDay(ctx: InsightContext): Promise<Insight | nu
             LIMIT 4
         )
         SELECT total FROM weeks`,
-        [userId],
+        [userId]
     );
 
     if (weeksR.rows.length < 3) return null;
-    const totals = weeksR.rows.map(r => Number(r.total));
+    const totals = weeksR.rows.map((r) => Number(r.total));
     const mean = totals.reduce((a, b) => a + b, 0) / totals.length;
     if (mean <= 0) return null;
     const variance = totals.reduce((acc, v) => acc + (v - mean) ** 2, 0) / totals.length;
@@ -43,15 +43,15 @@ export async function buildNoCheckDay(ctx: InsightContext): Promise<Insight | nu
            AND (no_check_day_offered_at IS NULL
                 OR no_check_day_offered_at < NOW() - INTERVAL '7 days')
          RETURNING 1`,
-        [userId],
+        [userId]
     );
 
     if ((claim.rowCount ?? 0) === 0) return null;
 
     return {
-        kind: 'no-check-day',
-        tone: 'compassionate',
-        title: 'No-check day',
-        body: 'Numbers are fine; the last few weeks have been steady. Permission to skip checking today, if you want.',
+        kind: "no-check-day",
+        tone: "compassionate",
+        title: "No-check day",
+        body: "Numbers are fine; the last few weeks have been steady. Permission to skip checking today, if you want.",
     };
 }

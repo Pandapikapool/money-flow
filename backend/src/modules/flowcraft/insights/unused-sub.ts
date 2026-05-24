@@ -30,7 +30,7 @@ export async function buildUnusedSub(ctx: InsightContext): Promise<Insight | nul
             AND (CURRENT_DATE - MAX(e.date)) > (fr.cadence_days * 1.5)
          ORDER BY (CURRENT_DATE - MAX(e.date)) DESC
          LIMIT 1`,
-        [userId],
+        [userId]
     );
 
     if (result.rows.length === 0) return null;
@@ -38,12 +38,12 @@ export async function buildUnusedSub(ctx: InsightContext): Promise<Insight | nul
     const days = Number(row.days_since);
     const amount = Math.round(Number(row.amount));
     // Strip any embedded quotes from the statement to keep the rendered body clean.
-    const sample = String(row.statement_sample ?? '').replace(/["']/g, '');
+    const sample = String(row.statement_sample ?? "").replace(/["']/g, "");
 
     return {
-        kind: 'unused-sub',
-        tone: 'gentle-attention',
-        title: 'Quiet for a while',
-        body: `"${sample}" used to repeat (~₹${amount.toLocaleString('en-IN')}). Hasn't shown up in ${days} days. Worth a glance.`,
+        kind: "unused-sub",
+        tone: "gentle-attention",
+        title: "Quiet for a while",
+        body: `"${sample}" used to repeat (~₹${amount.toLocaleString("en-IN")}). Hasn't shown up in ${days} days. Worth a glance.`,
     };
 }

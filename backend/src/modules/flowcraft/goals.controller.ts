@@ -3,18 +3,18 @@ import { Request, Response } from "express";
 import { getUserId } from "../../core/userContext";
 import * as repo from "./goals.repo";
 
-const CreateGoalSchema = z.discriminatedUnion('kind', [
+const CreateGoalSchema = z.discriminatedUnion("kind", [
     z.object({
-        kind: z.literal('skip-category'),
+        kind: z.literal("skip-category"),
         target_tag_id: z.number().int().positive(),
     }),
     z.object({
-        kind: z.literal('cap-category'),
+        kind: z.literal("cap-category"),
         target_tag_id: z.number().int().positive(),
         target_amount: z.number().positive().max(10_000_000),
     }),
     z.object({
-        kind: z.literal('quiet-days'),
+        kind: z.literal("quiet-days"),
         target_count: z.number().int().min(1).max(7),
     }),
 ]);
@@ -44,7 +44,7 @@ export async function create(req: Request, res: Response) {
         }
 
         // Ownership check for goal kinds that reference a tag.
-        if (parsed.data.kind === 'skip-category' || parsed.data.kind === 'cap-category') {
+        if (parsed.data.kind === "skip-category" || parsed.data.kind === "cap-category") {
             const owned = await repo.tagBelongsToUser(userId, parsed.data.target_tag_id);
             if (!owned) {
                 return res.status(400).json({ error: "Tag does not exist for this user" });

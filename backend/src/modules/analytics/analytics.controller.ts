@@ -5,8 +5,14 @@ import * as repo from "./analytics.repo";
 
 const QuerySchema = z.object({
     category: z.string().min(1).max(100).optional(),
-    from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-    to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    from: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .optional(),
+    to: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .optional(),
     amount_min: z.coerce.number().nonnegative().optional(),
     amount_max: z.coerce.number().positive().max(1e9).optional(),
 });

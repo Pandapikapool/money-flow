@@ -1,4 +1,4 @@
-import { API_BASE } from "./api";
+import { API_BASE } from './api';
 
 export type InsightKind =
     | 'usual'
@@ -44,13 +44,13 @@ export interface FlowcraftState {
 
 export async function fetchInsights(): Promise<Insight[]> {
     const res = await fetch(`${API_BASE}/flowcraft/insights`);
-    if (!res.ok) throw new Error("Failed to load insights");
+    if (!res.ok) throw new Error('Failed to load insights');
     return res.json();
 }
 
 export async function fetchFlowcraftState(): Promise<FlowcraftState> {
     const res = await fetch(`${API_BASE}/flowcraft/state`);
-    if (!res.ok) throw new Error("Failed to load state");
+    if (!res.ok) throw new Error('Failed to load state');
     return res.json();
 }
 
@@ -61,20 +61,20 @@ export async function confirmRecurring(payload: {
     cadenceDays: number;
 }): Promise<void> {
     const res = await fetch(`${API_BASE}/flowcraft/recurring/confirm`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error("Failed to confirm recurring");
+    if (!res.ok) throw new Error('Failed to confirm recurring');
 }
 
 export async function dismissRecurring(signature: string): Promise<void> {
     const res = await fetch(`${API_BASE}/flowcraft/recurring/dismiss`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ signature }),
     });
-    if (!res.ok) throw new Error("Failed to dismiss recurring");
+    if (!res.ok) throw new Error('Failed to dismiss recurring');
 }
 
 export async function addJournalEntry(opts: {
@@ -84,11 +84,11 @@ export async function addJournalEntry(opts: {
     mood?: string;
 }): Promise<{ id: number }> {
     const res = await fetch(`${API_BASE}/flowcraft/journal`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(opts),
     });
-    if (!res.ok) throw new Error("Failed to add journal entry");
+    if (!res.ok) throw new Error('Failed to add journal entry');
     return res.json();
 }
 
@@ -103,7 +103,7 @@ export interface JournalEntry {
 
 export async function fetchJournalEntries(): Promise<JournalEntry[]> {
     const res = await fetch(`${API_BASE}/flowcraft/journal`);
-    if (!res.ok) throw new Error("Failed to load journal entries");
+    if (!res.ok) throw new Error('Failed to load journal entries');
     return res.json();
 }
 
@@ -120,7 +120,7 @@ export interface WeekStory {
 
 export async function fetchWeekStory(weekOffset: number = 0): Promise<WeekStory> {
     const res = await fetch(`${API_BASE}/flowcraft/story?week_offset=${weekOffset}`);
-    if (!res.ok) throw new Error("Failed to load week story");
+    if (!res.ok) throw new Error('Failed to load week story');
     return res.json();
 }
 
@@ -139,14 +139,20 @@ export interface GoalSuggestion {
 
 export async function fetchGoalSuggestion(): Promise<GoalSuggestion> {
     const res = await fetch(`${API_BASE}/flowcraft/goals/suggestion`);
-    if (!res.ok) throw new Error("Failed to load goal suggestion");
+    if (!res.ok) throw new Error('Failed to load goal suggestion');
     return res.json();
 }
 
 // === Analytics ===
 
 export interface AnalyticsResult {
-    scope: { category: string; from?: string; to?: string; amount_min?: number; amount_max?: number };
+    scope: {
+        category: string;
+        from?: string;
+        to?: string;
+        amount_min?: number;
+        amount_max?: number;
+    };
     total: number;
     count: number;
     min: number;
@@ -170,7 +176,7 @@ export async function fetchAnalyticsQuery(params: {
     if (params.amount_min !== undefined) sp.set('amount_min', String(params.amount_min));
     if (params.amount_max !== undefined) sp.set('amount_max', String(params.amount_max));
     const res = await fetch(`${API_BASE}/analytics/query?${sp.toString()}`);
-    if (!res.ok) throw new Error("Failed to run analytics query");
+    if (!res.ok) throw new Error('Failed to run analytics query');
     return res.json();
 }
 
@@ -216,21 +222,21 @@ export type CreateGoalPayload =
 
 export async function fetchActiveGoal(): Promise<ActiveGoalResponse | null> {
     const res = await fetch(`${API_BASE}/flowcraft/goals/active`);
-    if (!res.ok) throw new Error("Failed to load active goal");
+    if (!res.ok) throw new Error('Failed to load active goal');
     return res.json();
 }
 
 export async function createGoal(payload: CreateGoalPayload): Promise<Goal> {
     const res = await fetch(`${API_BASE}/flowcraft/goals`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error("Failed to create goal");
+    if (!res.ok) throw new Error('Failed to create goal');
     return res.json();
 }
 
 export async function cancelGoal(id: number): Promise<void> {
-    const res = await fetch(`${API_BASE}/flowcraft/goals/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Failed to cancel goal");
+    const res = await fetch(`${API_BASE}/flowcraft/goals/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to cancel goal');
 }

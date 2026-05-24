@@ -50,25 +50,26 @@ export async function buildRecurring(ctx: InsightContext): Promise<Insight | nul
     const lastSeen = new Date(row.last_seen);
     const occurrences = Number(row.occurrences);
     const spanDays = Math.round((lastSeen.getTime() - firstSeen.getTime()) / (1000 * 60 * 60 * 24));
-    const cadenceDays = occurrences > 1 ? Math.max(1, Math.round(spanDays / (occurrences - 1))) : 30;
+    const cadenceDays =
+        occurrences > 1 ? Math.max(1, Math.round(spanDays / (occurrences - 1))) : 30;
     const amount = Math.round(Number(row.avg_amt));
 
     return {
-        kind: 'recurring',
-        tone: 'gentle-attention',
-        title: 'Looks recurring',
-        body: `"${row.sample}" has appeared ${occurrences} times — about ₹${amount.toLocaleString('en-IN')} ${cadenceLabel(cadenceDays)}. Mark it as a regular?`,
+        kind: "recurring",
+        tone: "gentle-attention",
+        title: "Looks recurring",
+        body: `"${row.sample}" has appeared ${occurrences} times — about ₹${amount.toLocaleString("en-IN")} ${cadenceLabel(cadenceDays)}. Mark it as a regular?`,
         action: {
-            label: 'Mark as recurring',
+            label: "Mark as recurring",
             payload: { signature: row.sig, sample: row.sample, amount, cadenceDays },
         },
     };
 }
 
 function cadenceLabel(days: number): string {
-    if (days <= 8) return 'each week';
-    if (days >= 25 && days <= 35) return 'each month';
-    if (days >= 85 && days <= 100) return 'each quarter';
-    if (days >= 350 && days <= 380) return 'each year';
+    if (days <= 8) return "each week";
+    if (days >= 25 && days <= 35) return "each month";
+    if (days >= 85 && days <= 100) return "each quarter";
+    if (days >= 350 && days <= 380) return "each year";
     return `every ~${days} days`;
 }

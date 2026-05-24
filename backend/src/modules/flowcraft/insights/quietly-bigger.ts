@@ -39,7 +39,7 @@ export async function buildQuietlyBigger(ctx: InsightContext): Promise<Insight |
           AND (recent - prior) >= 200
         ORDER BY (recent - prior) DESC
         LIMIT 1`,
-        [userId],
+        [userId]
     );
 
     if (result.rows.length === 0) return null;
@@ -49,9 +49,9 @@ export async function buildQuietlyBigger(ctx: InsightContext): Promise<Insight |
     const pct = Number(row.pct_change);
 
     return {
-        kind: 'quietly-bigger',
-        tone: 'gentle-attention',
-        title: 'Quietly bigger',
-        body: `${row.tag} was a larger slice this month — last 30 days ₹${recent.toLocaleString('en-IN')}, prior 30 days ₹${prior.toLocaleString('en-IN')} (about ${pct}% more). Noted, not alarming.`,
+        kind: "quietly-bigger",
+        tone: "gentle-attention",
+        title: "Quietly bigger",
+        body: `${row.tag} was a larger slice this month — last 30 days ₹${recent.toLocaleString("en-IN")}, prior 30 days ₹${prior.toLocaleString("en-IN")} (about ${pct}% more). Noted, not alarming.`,
     };
 }

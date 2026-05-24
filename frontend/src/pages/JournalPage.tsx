@@ -1,17 +1,14 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-    addJournalEntry,
-    fetchJournalEntries,
-} from "../lib/flowcraft";
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { addJournalEntry, fetchJournalEntries } from '../lib/flowcraft';
 
 const PROMPTS = [
-    "Why did I buy this?",
-    "Was it worth it?",
-    "How did I feel?",
-    "What could I do next time?",
-    "Anything else…",
+    'Why did I buy this?',
+    'Was it worth it?',
+    'How did I feel?',
+    'What could I do next time?',
+    'Anything else…',
 ];
 
 const MOODS = ['joy', 'calm', 'stress', 'social', 'convenience', 'health', 'impulse'];
@@ -28,11 +25,12 @@ export default function JournalPage() {
     });
 
     const addMut = useMutation({
-        mutationFn: () => addJournalEntry({
-            answer,
-            prompt,
-            mood: mood || undefined,
-        }),
+        mutationFn: () =>
+            addJournalEntry({
+                answer,
+                prompt,
+                mood: mood || undefined,
+            }),
         onSuccess: () => {
             setAnswer('');
             setMood('');
@@ -43,38 +41,58 @@ export default function JournalPage() {
     const canSave = answer.trim().length > 0 && !addMut.isPending;
 
     return (
-        <div style={{
-            maxWidth: '720px',
-            margin: '0 auto',
-            padding: '8px 0 40px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '20px',
-        }}>
-            <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+        <div
+            style={{
+                maxWidth: '720px',
+                margin: '0 auto',
+                padding: '8px 0 40px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '20px',
+            }}
+        >
+            <header
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                }}
+            >
                 <div>
-                    <h1 style={{
-                        fontSize: '1.4rem',
-                        fontWeight: 600,
-                        margin: 0,
-                        color: 'var(--text-primary)',
-                        fontFamily: 'Georgia, "Times New Roman", serif',
-                        letterSpacing: '-0.01em',
-                    }}>
+                    <h1
+                        style={{
+                            fontSize: '1.4rem',
+                            fontWeight: 600,
+                            margin: 0,
+                            color: 'var(--text-primary)',
+                            fontFamily: 'Georgia, "Times New Roman", serif',
+                            letterSpacing: '-0.01em',
+                        }}
+                    >
                         Journal
                     </h1>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    <div
+                        style={{
+                            fontSize: '0.85rem',
+                            color: 'var(--text-secondary)',
+                            marginTop: '2px',
+                        }}
+                    >
                         small notes to future-you
                     </div>
                 </div>
-                <Link to="/flow" style={{
-                    color: 'var(--text-secondary)',
-                    textDecoration: 'none',
-                    fontSize: '0.9rem',
-                    padding: '6px 12px',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '8px',
-                }}>
+                <Link
+                    to="/flow"
+                    style={{
+                        color: 'var(--text-secondary)',
+                        textDecoration: 'none',
+                        fontSize: '0.9rem',
+                        padding: '6px 12px',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '8px',
+                    }}
+                >
                     ← Flow
                 </Link>
             </header>
@@ -87,7 +105,11 @@ export default function JournalPage() {
                     onChange={(e) => setPrompt(e.target.value)}
                     style={{ marginBottom: '14px' }}
                 >
-                    {PROMPTS.map(p => <option key={p} value={p}>{p}</option>)}
+                    {PROMPTS.map((p) => (
+                        <option key={p} value={p}>
+                            {p}
+                        </option>
+                    ))}
                 </select>
 
                 <label style={labelStyle}>
@@ -113,9 +135,13 @@ export default function JournalPage() {
                     }}
                 />
 
-                <label style={labelStyle}>Mood <span style={{ opacity: 0.6 }}>(optional)</span></label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '18px' }}>
-                    {MOODS.map(m => (
+                <label style={labelStyle}>
+                    Mood <span style={{ opacity: 0.6 }}>(optional)</span>
+                </label>
+                <div
+                    style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '18px' }}
+                >
+                    {MOODS.map((m) => (
                         <button
                             key={m}
                             type="button"
@@ -154,13 +180,15 @@ export default function JournalPage() {
                     {addMut.isPending ? 'Saving…' : 'Save'}
                 </button>
                 {addMut.isError && (
-                    <p style={{
-                        fontSize: '0.82rem',
-                        color: 'var(--accent-warning)',
-                        marginTop: '10px',
-                        marginBottom: 0,
-                        fontStyle: 'italic',
-                    }}>
+                    <p
+                        style={{
+                            fontSize: '0.82rem',
+                            color: 'var(--accent-warning)',
+                            marginTop: '10px',
+                            marginBottom: 0,
+                            fontStyle: 'italic',
+                        }}
+                    >
                         Something blocked the save. Try once more?
                     </p>
                 )}
@@ -168,68 +196,89 @@ export default function JournalPage() {
 
             {/* Past entries */}
             <section>
-                <h2 style={{
-                    fontSize: '0.78rem',
-                    color: 'var(--text-secondary)',
-                    fontWeight: 500,
-                    margin: '0 0 12px',
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                }}>
+                <h2
+                    style={{
+                        fontSize: '0.78rem',
+                        color: 'var(--text-secondary)',
+                        fontWeight: 500,
+                        margin: '0 0 12px',
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                    }}
+                >
                     Past entries
                 </h2>
                 {isLoading && (
-                    <div style={{
-                        color: 'var(--text-secondary)',
-                        fontStyle: 'italic',
-                        fontSize: '0.9rem',
-                    }}>
+                    <div
+                        style={{
+                            color: 'var(--text-secondary)',
+                            fontStyle: 'italic',
+                            fontSize: '0.9rem',
+                        }}
+                    >
                         Loading…
                     </div>
                 )}
                 {!isLoading && (!entries || entries.length === 0) && (
-                    <div className="glass-panel" style={{
-                        padding: '20px',
-                        textAlign: 'center',
-                        color: 'var(--text-secondary)',
-                        fontStyle: 'italic',
-                    }}>
+                    <div
+                        className="glass-panel"
+                        style={{
+                            padding: '20px',
+                            textAlign: 'center',
+                            color: 'var(--text-secondary)',
+                            fontStyle: 'italic',
+                        }}
+                    >
                         No entries yet. That's allowed.
                     </div>
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {entries?.map(e => (
-                        <article key={e.id} className="glass-panel" style={{ padding: '16px 18px' }}>
-                            <div style={{
-                                fontSize: '0.78rem',
-                                color: 'var(--text-secondary)',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                marginBottom: '6px',
-                            }}>
+                    {entries?.map((e) => (
+                        <article
+                            key={e.id}
+                            className="glass-panel"
+                            style={{ padding: '16px 18px' }}
+                        >
+                            <div
+                                style={{
+                                    fontSize: '0.78rem',
+                                    color: 'var(--text-secondary)',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    marginBottom: '6px',
+                                }}
+                            >
                                 <span>
                                     {new Date(e.created_at).toLocaleDateString('en-IN', {
-                                        day: 'numeric', month: 'short', year: 'numeric',
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric',
                                     })}
                                 </span>
-                                {e.mood && <span style={{ textTransform: 'capitalize' }}>· {e.mood}</span>}
+                                {e.mood && (
+                                    <span style={{ textTransform: 'capitalize' }}>· {e.mood}</span>
+                                )}
                             </div>
                             {e.prompt && (
-                                <div style={{
-                                    fontSize: '0.85rem',
-                                    color: 'var(--text-secondary)',
-                                    fontStyle: 'italic',
-                                    marginBottom: '6px',
-                                }}>
+                                <div
+                                    style={{
+                                        fontSize: '0.85rem',
+                                        color: 'var(--text-secondary)',
+                                        fontStyle: 'italic',
+                                        marginBottom: '6px',
+                                    }}
+                                >
                                     {e.prompt}
                                 </div>
                             )}
-                            <div style={{
-                                fontSize: '0.95rem',
-                                color: 'var(--text-primary)',
-                                lineHeight: 1.55,
-                                whiteSpace: 'pre-wrap',
-                            }}>
+                            <div
+                                style={{
+                                    fontSize: '0.95rem',
+                                    color: 'var(--text-primary)',
+                                    lineHeight: 1.55,
+                                    whiteSpace: 'pre-wrap',
+                                }}
+                            >
                                 {e.answer}
                             </div>
                         </article>

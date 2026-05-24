@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     fetchInsights,
     fetchFlowcraftState,
@@ -11,12 +11,12 @@ import {
     dismissRecurring,
     type Insight,
     type CreateGoalPayload,
-} from "../lib/flowcraft";
-import InsightCard from "../components/InsightCard";
-import Mascot from "../components/Mascot";
-import Garden from "../components/Garden";
-import GoalCard from "../components/GoalCard";
-import GoalPicker from "../components/GoalPicker";
+} from '../lib/flowcraft';
+import InsightCard from '../components/InsightCard';
+import Mascot from '../components/Mascot';
+import Garden from '../components/Garden';
+import GoalCard from '../components/GoalCard';
+import GoalPicker from '../components/GoalPicker';
 
 export default function FlowPage() {
     const queryClient = useQueryClient();
@@ -59,8 +59,12 @@ export default function FlowPage() {
     });
 
     const confirmMut = useMutation({
-        mutationFn: (payload: { signature: string; sample: string; amount: number; cadenceDays: number }) =>
-            confirmRecurring(payload),
+        mutationFn: (payload: {
+            signature: string;
+            sample: string;
+            amount: number;
+            cadenceDays: number;
+        }) => confirmRecurring(payload),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['flowcraft-insights'] }),
     });
 
@@ -92,48 +96,58 @@ export default function FlowPage() {
 
     const coinMessage = (() => {
         if (!insights) return undefined;
-        if (insights.length === 0) return "Quiet here. Nothing demanding your attention.";
-        const compassionate = insights.find(i => i.tone === 'compassionate');
+        if (insights.length === 0) return 'Quiet here. Nothing demanding your attention.';
+        const compassionate = insights.find((i) => i.tone === 'compassionate');
         if (compassionate) return compassionate.body;
-        const calm = insights.find(i => i.kind === 'usual');
+        const calm = insights.find((i) => i.kind === 'usual');
         if (calm) return "Looks steady. I'd rest if I were you.";
         return undefined;
     })();
 
     return (
-        <div style={{
-            maxWidth: '760px',
-            margin: '0 auto',
-            padding: '8px 0 40px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '24px',
-        }}>
+        <div
+            style={{
+                maxWidth: '760px',
+                margin: '0 auto',
+                padding: '8px 0 40px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '24px',
+            }}
+        >
             {/* Header */}
             <header style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                 <img src="/logo.svg" alt="" width="44" height="44" style={{ flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
-                    <h1 style={{
-                        fontSize: '1.5rem',
-                        fontWeight: 600,
-                        margin: 0,
-                        color: 'var(--text-primary)',
-                        fontFamily: 'Georgia, "Times New Roman", serif',
-                        letterSpacing: '-0.01em',
-                    }}>
+                    <h1
+                        style={{
+                            fontSize: '1.5rem',
+                            fontWeight: 600,
+                            margin: 0,
+                            color: 'var(--text-primary)',
+                            fontFamily: 'Georgia, "Times New Roman", serif',
+                            letterSpacing: '-0.01em',
+                        }}
+                    >
                         Flow
                     </h1>
-                    <div style={{
-                        fontSize: '0.85rem',
-                        color: 'var(--text-secondary)',
-                        marginTop: '2px',
-                    }}>
+                    <div
+                        style={{
+                            fontSize: '0.85rem',
+                            color: 'var(--text-secondary)',
+                            marginTop: '2px',
+                        }}
+                    >
                         a calm look at this week
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                    <Link to="/flow/story" style={subLink}>Story</Link>
-                    <Link to="/flow/journal" style={subLink}>Journal</Link>
+                    <Link to="/flow/story" style={subLink}>
+                        Story
+                    </Link>
+                    <Link to="/flow/journal" style={subLink}>
+                        Journal
+                    </Link>
                 </div>
             </header>
 
@@ -145,14 +159,17 @@ export default function FlowPage() {
             />
 
             {/* Garden + Mascot tile */}
-            <section className="glass-panel" style={{
-                padding: '28px 24px',
-                display: 'flex',
-                flexWrap: 'wrap',
-                justifyContent: 'space-around',
-                alignItems: 'flex-end',
-                gap: '24px',
-            }}>
+            <section
+                className="glass-panel"
+                style={{
+                    padding: '28px 24px',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    justifyContent: 'space-around',
+                    alignItems: 'flex-end',
+                    gap: '24px',
+                }}
+            >
                 {state ? (
                     <Garden stage={state.garden_stage} variant={state.garden_variant} />
                 ) : (
@@ -165,33 +182,40 @@ export default function FlowPage() {
 
             {/* Insights stream */}
             <section style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <h2 style={{
-                    fontSize: '0.85rem',
-                    color: 'var(--text-secondary)',
-                    fontWeight: 500,
-                    margin: 0,
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase',
-                }}>
+                <h2
+                    style={{
+                        fontSize: '0.85rem',
+                        color: 'var(--text-secondary)',
+                        fontWeight: 500,
+                        margin: 0,
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                    }}
+                >
                     This week
                 </h2>
                 {insightsLoading && (
-                    <div style={{
-                        color: 'var(--text-secondary)',
-                        fontSize: '0.9rem',
-                        padding: '16px 0',
-                        fontStyle: 'italic',
-                    }}>
+                    <div
+                        style={{
+                            color: 'var(--text-secondary)',
+                            fontSize: '0.9rem',
+                            padding: '16px 0',
+                            fontStyle: 'italic',
+                        }}
+                    >
                         Loading quietly…
                     </div>
                 )}
                 {insights && insights.length === 0 && (
-                    <div className="glass-panel" style={{
-                        padding: '24px',
-                        textAlign: 'center',
-                        color: 'var(--text-secondary)',
-                        fontStyle: 'italic',
-                    }}>
+                    <div
+                        className="glass-panel"
+                        style={{
+                            padding: '24px',
+                            textAlign: 'center',
+                            color: 'var(--text-secondary)',
+                            fontStyle: 'italic',
+                        }}
+                    >
                         Nothing to surface today. That's allowed.
                     </div>
                 )}

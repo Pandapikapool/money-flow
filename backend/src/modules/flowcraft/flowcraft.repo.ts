@@ -12,19 +12,15 @@ export interface FlowcraftState {
 }
 
 export async function getState(userId: string): Promise<FlowcraftState> {
-    const result = await pool.query(
-        `SELECT * FROM flowcraft_state WHERE user_id = $1`,
-        [userId]
-    );
+    const result = await pool.query(`SELECT * FROM flowcraft_state WHERE user_id = $1`, [userId]);
     if (result.rows.length === 0) {
         await pool.query(
             `INSERT INTO flowcraft_state (user_id) VALUES ($1) ON CONFLICT DO NOTHING`,
             [userId]
         );
-        const reread = await pool.query(
-            `SELECT * FROM flowcraft_state WHERE user_id = $1`,
-            [userId]
-        );
+        const reread = await pool.query(`SELECT * FROM flowcraft_state WHERE user_id = $1`, [
+            userId,
+        ]);
         return reread.rows[0];
     }
     return result.rows[0];
@@ -122,7 +118,7 @@ export async function listJournal(userId: string, limit: number = 30): Promise<a
 
 export interface WeekStory {
     week_of: string;
-    week_label: string;          // e.g. "May 19 – 25, 2026"
+    week_label: string; // e.g. "May 19 – 25, 2026"
     total: number;
     count: number;
     top_categories: { tag: string; total: number; count: number }[];
@@ -142,32 +138,35 @@ function mondayOf(date: Date): Date {
     return ist;
 }
 
-const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_NAMES_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 // Weekly story: pulled on demand, never auto-opened.
 // weekOffset: 0 = current week, 1 = last week, 2 = two weeks ago...
 export async function getWeekStory(
     userId: string,
     weekOffset: number = 0,
-    today: Date = new Date(),
+    today: Date = new Date()
 ): Promise<WeekStory> {
     const target = new Date(today.getTime() - weekOffset * 7 * 86400 * 1000);
     const weekStart = mondayOf(target);
     const weekStartStr = weekStart.toISOString().slice(0, 10);
-    const weekEndStr = new Date(weekStart.getTime() + 6 * 86400 * 1000)
-        .toISOString().slice(0, 10);
+    const weekEndStr = new Date(weekStart.getTime() + 6 * 86400 * 1000).toISOString().slice(0, 10);
 
-    const weekStartLabel = new Date(weekStart.getTime()).toLocaleDateString(
-        'en-IN', { day: 'numeric', month: 'short' });
-    const weekEndLabel = new Date(weekStart.getTime() + 6 * 86400 * 1000)
-        .toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    const weekStartLabel = new Date(weekStart.getTime()).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+    });
+    const weekEndLabel = new Date(weekStart.getTime() + 6 * 86400 * 1000).toLocaleDateString(
+        "en-IN",
+        { day: "numeric", month: "short", year: "numeric" }
+    );
     const week_label = `${weekStartLabel} – ${weekEndLabel}`;
 
     const aggR = await pool.query(
         `SELECT COUNT(*) AS count, COALESCE(SUM(amount), 0) AS total
          FROM expenses
          WHERE user_id = $1 AND date >= $2::date AND date <= $3::date`,
-        [userId, weekStartStr, weekEndStr],
+        [userId, weekStartStr, weekEndStr]
     );
     const total = Number(aggR.rows[0].total);
     const count = Number(aggR.rows[0].count);
@@ -182,7 +181,7 @@ export async function getWeekStory(
          GROUP BY t.name
          ORDER BY SUM(e.amount) DESC
          LIMIT 3`,
-        [userId, weekStartStr, weekEndStr],
+        [userId, weekStartStr, weekEndStr]
     );
 
     const dayR = await pool.query(
@@ -190,7 +189,7 @@ export async function getWeekStory(
          FROM expenses
          WHERE user_id = $1 AND date >= $2::date AND date <= $3::date
          GROUP BY date`,
-        [userId, weekStartStr, weekEndStr],
+        [userId, weekStartStr, weekEndStr]
     );
     const dayMap = new Map<string, number>(
         dayR.rows.map((r: any) => [r.d as string, Number(r.total)])
@@ -204,13 +203,15 @@ export async function getWeekStory(
         by_day.push({ date: ds, weekday: wd, total: dayMap.get(ds) ?? 0 });
     }
 
-    const biggest = by_day.reduce(
-        (a, b) => (b.total > a.total ? b : a),
-        { date: '', weekday: '', total: 0 },
-    );
-    const biggest_day = biggest.total > 0
-        ? { date: biggest.date, weekday: biggest.weekday, total: biggest.total }
-        : null;
+    const biggest = by_day.reduce((a, b) => (b.total > a.total ? b : a), {
+        date: "",
+        weekday: "",
+        total: 0,
+    });
+    const biggest_day =
+        biggest.total > 0
+            ? { date: biggest.date, weekday: biggest.weekday, total: biggest.total }
+            : null;
 
     const moodR = await pool.query(
         `SELECT st.name AS mood, COUNT(*) AS n
@@ -222,10 +223,10 @@ export async function getWeekStory(
            AND st.name LIKE 'mood:%'
          GROUP BY st.name
          ORDER BY COUNT(*) DESC`,
-        [userId, weekStartStr, weekEndStr],
+        [userId, weekStartStr, weekEndStr]
     );
     const mood_counts = moodR.rows.map((r: any) => ({
-        mood: String(r.mood).replace('mood:', ''),
+        mood: String(r.mood).replace("mood:", ""),
         count: Number(r.n),
     }));
 
