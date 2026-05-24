@@ -4,7 +4,7 @@ import type { Insight, InsightContext } from "../engine";
 // "You already won this week" — find a no-spend day or a notably quiet day
 // in the past 7 days. Past-tense, undeniable, no nudge to "do more".
 export async function buildWon(ctx: InsightContext): Promise<Insight | null> {
-    const { userId } = ctx;
+    const { userId, today } = ctx;
 
     const result = await pool.query(
         `SELECT date::text AS d, COALESCE(SUM(amount), 0) AS total
@@ -17,9 +17,11 @@ export async function buildWon(ctx: InsightContext): Promise<Insight | null> {
         [userId]
     );
 
+    // No spending at all in the window — no contrast to celebrate, stay silent.
+    if (result.rows.length === 0) return null;
+
     const seen = new Map<string, number>(result.rows.map((r) => [r.d as string, Number(r.total)]));
 
-    const today = new Date();
     const fullDays: { date: string; total: number }[] = [];
     for (let i = 6; i >= 0; i--) {
         const d = new Date(today);
