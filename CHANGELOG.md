@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-05-24
+
+The FlowCraft calm layer — a quiet, anxiety-friendly view bolted onto money-flow, plus the supporting infrastructure (zod, vitest on both packages, CI, Prettier, opt-in pre-push hook, four DB migrations, four custom Claude Code subagents) and an app-wide Tea Ceremony palette refresh. Released as a single minor bump because the changes are purely additive — no breaking API changes, no removed routes, no schema changes that affect existing data.
+
+### Added (2026-05-24 — Bullet-journal Essential/Comfort/Treat + rotating prompts)
+- ExpenseForm now offers a single human-centered axis when amount > ₹100 (non-fuel): **Essential / Comfort / Treat**, stored as `meta.kind`. Replaces the earlier `planned` + `energy` pair with one function-first dimension (no "did you need it?" guilt frame). Earlier rows with `planned`/`energy` keys remain valid JSONB.
+- Notes placeholder rotates per-form-open through six self-compassionate bullet-journal openers (*"What did this do for you?"*, *"How does it land now?"*, *"One word for how it felt."*, …).
+- Soft-prompt threshold unified at > ₹100 (mood + kind + rotating note hint all share the same gate). Notes-required stays at > ₹250 non-fuel / > ₹1,500 fuel.
+- Chip contrast tightened: 1.5 px borders, tinted unselected backgrounds (~10% alpha of the chip colour), slightly deeper hues so chips read against glass.
+
 ### Added (2026-05-24 — Final FlowCraft slice: 14/14 insights + extensible meta + frontend tests)
 - **Two final calm insights**, completing the 14-card library:
   - *small-swap* (gentle-attention): highest-frequency cheap repeat in last 30d (₹30–₹400 each, ≥6 occurrences). Suggests halving the frequency with a concrete monthly saving number. *"Just an option."*
