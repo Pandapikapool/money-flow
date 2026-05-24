@@ -1,17 +1,25 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     fetchInsights,
     fetchFlowcraftState,
+    fetchActiveGoal,
+    createGoal,
+    cancelGoal,
     confirmRecurring,
     dismissRecurring,
     type Insight,
+    type CreateGoalPayload,
 } from "../lib/flowcraft";
 import InsightCard from "../components/InsightCard";
 import Mascot from "../components/Mascot";
 import Garden from "../components/Garden";
+import GoalCard from "../components/GoalCard";
+import GoalPicker from "../components/GoalPicker";
 
 export default function FlowPage() {
     const queryClient = useQueryClient();
+    const [pickerOpen, setPickerOpen] = useState(false);
 
     const { data: insights, isLoading: insightsLoading } = useQuery({
         queryKey: ['flowcraft-insights'],
@@ -23,19 +31,41 @@ export default function FlowPage() {
         queryFn: fetchFlowcraftState,
     });
 
+    const { data: activeGoal } = useQuery({
+        queryKey: ['flowcraft-active-goal'],
+        queryFn: fetchActiveGoal,
+    });
+
+    const invalidateAll = () => {
+        queryClient.invalidateQueries({ queryKey: ['flowcraft-insights'] });
+        queryClient.invalidateQueries({ queryKey: ['flowcraft-state'] });
+        queryClient.invalidateQueries({ queryKey: ['flowcraft-active-goal'] });
+    };
+
+    const createGoalMut = useMutation({
+        mutationFn: (payload: CreateGoalPayload) => createGoal(payload),
+        onSuccess: () => {
+            setPickerOpen(false);
+            invalidateAll();
+        },
+    });
+
+    const cancelGoalMut = useMutation({
+        mutationFn: (id: number) => cancelGoal(id),
+        onSuccess: () => {
+            invalidateAll();
+        },
+    });
+
     const confirmMut = useMutation({
         mutationFn: (payload: { signature: string; sample: string; amount: number; cadenceDays: number }) =>
             confirmRecurring(payload),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['flowcraft-insights'] });
-        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['flowcraft-insights'] }),
     });
 
     const dismissMut = useMutation({
         mutationFn: (signature: string) => dismissRecurring(signature),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['flowcraft-insights'] });
-        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['flowcraft-insights'] }),
     });
 
     const handlePrimary = (insight: Insight) => {
@@ -46,12 +76,7 @@ export default function FlowPage() {
                 amount: number;
                 cadenceDays: number;
             };
-            confirmMut.mutate({
-                signature: p.signature,
-                sample: p.sample,
-                amount: p.amount,
-                cadenceDays: p.cadenceDays,
-            });
+            confirmMut.mutate(p);
         } else if (insight.action?.href) {
             window.location.href = insight.action.href;
         }
@@ -64,7 +89,6 @@ export default function FlowPage() {
         }
     };
 
-    // Coin's weekly observation — pick the most compassionate insight, or a default
     const coinMessage = (() => {
         if (!insights) return undefined;
         if (insights.length === 0) return "Quiet here. Nothing demanding your attention.";
@@ -107,6 +131,13 @@ export default function FlowPage() {
                     </div>
                 </div>
             </header>
+
+            {/* Goal tile */}
+            <GoalCard
+                activeGoal={activeGoal ?? null}
+                onPickClicked={() => setPickerOpen(true)}
+                onCancel={(id) => cancelGoalMut.mutate(id)}
+            />
 
             {/* Garden + Mascot tile */}
             <section className="glass-panel" style={{
@@ -168,6 +199,13 @@ export default function FlowPage() {
                     />
                 ))}
             </section>
+
+            {pickerOpen && (
+                <GoalPicker
+                    onCreate={(payload) => createGoalMut.mutate(payload)}
+                    onClose={() => setPickerOpen(false)}
+                />
+            )}
         </div>
     );
 }

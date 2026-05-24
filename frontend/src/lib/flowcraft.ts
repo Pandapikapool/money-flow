@@ -91,3 +91,64 @@ export async function addJournalEntry(opts: {
     if (!res.ok) throw new Error("Failed to add journal entry");
     return res.json();
 }
+
+// === Goals ===
+
+export type GoalKind = 'skip-category' | 'cap-category' | 'quiet-days';
+export type GoalStatus = 'active' | 'held' | 'missed' | 'cancelled';
+
+export interface Goal {
+    id: number;
+    user_id: string;
+    kind: GoalKind;
+    target_tag_id: number | null;
+    target_amount: number | null;
+    target_count: number | null;
+    week_of: string;
+    status: GoalStatus;
+    bonus_applied: boolean;
+    created_at: string;
+    completed_at: string | null;
+}
+
+export interface GoalProgress {
+    goal: Goal;
+    numerator: number;
+    denominator: number;
+    held: boolean;
+    missed: boolean;
+    display: string;
+    headline: string;
+    tag_name?: string;
+}
+
+export interface ActiveGoalResponse {
+    goal: Goal;
+    progress: GoalProgress;
+}
+
+export type CreateGoalPayload =
+    | { kind: 'skip-category'; target_tag_id: number }
+    | { kind: 'cap-category'; target_tag_id: number; target_amount: number }
+    | { kind: 'quiet-days'; target_count: number };
+
+export async function fetchActiveGoal(): Promise<ActiveGoalResponse | null> {
+    const res = await fetch(`${API_BASE}/flowcraft/goals/active`);
+    if (!res.ok) throw new Error("Failed to load active goal");
+    return res.json();
+}
+
+export async function createGoal(payload: CreateGoalPayload): Promise<Goal> {
+    const res = await fetch(`${API_BASE}/flowcraft/goals`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error("Failed to create goal");
+    return res.json();
+}
+
+export async function cancelGoal(id: number): Promise<void> {
+    const res = await fetch(`${API_BASE}/flowcraft/goals/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed to cancel goal");
+}
