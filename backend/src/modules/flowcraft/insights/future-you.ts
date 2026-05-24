@@ -7,6 +7,10 @@ import type { Insight, InsightContext } from "../engine";
 // quietly-bigger and the freely-yours math. Positive-only by design.
 export async function buildFutureYou(ctx: InsightContext): Promise<Insight | null> {
     const { userId, today } = ctx;
+    // Uses local-time Date math — fine because the backend is assumed
+    // to run in IST alongside the Postgres server. If the runtime ever
+    // moves to UTC, replace with explicit IST-offset math (see mondayOf
+    // in goals.repo).
     const year = today.getFullYear();
     const month = today.getMonth() + 1;
     const dayOfMonth = today.getDate();

@@ -11,6 +11,8 @@ import { buildFutureYou } from "./insights/future-you";
 import { buildNoCheckDay } from "./insights/no-check-day";
 import { buildKeepJoy } from "./insights/keep-joy";
 import { buildUnusedSub } from "./insights/unused-sub";
+import { buildSmallSwap } from "./insights/small-swap";
+import { buildUnfoundedWorry } from "./insights/unfounded-worry";
 
 type Builder = (ctx: InsightContext) => Promise<Insight | null>;
 
@@ -24,8 +26,10 @@ export class RuleBasedEngine implements InsightEngine {
             buildWon,
             buildKeepJoy,
             buildFutureYou,
+            buildUnfoundedWorry,  // statistical reassurance
             buildQuietlyBigger,
             buildHeavierWeekdays,
+            buildSmallSwap,
             buildUnusedSub,
             buildRecurring,
             buildJournalNudge,

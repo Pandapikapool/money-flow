@@ -9,7 +9,10 @@ export const pool = new Pool({
     password: "",
 });
 
+// Log idle-client errors instead of exiting the process.
+// process.exit(-1) here would tear down the test runner on any stray
+// pool event during a `vitest` run; better to surface and let the
+// existing connection retry semantics handle the rest.
 pool.on("error", (err) => {
-    console.error("Unexpected error on idle client", err);
-    process.exit(-1);
+    console.error("Unexpected error on idle pg client:", err);
 });
