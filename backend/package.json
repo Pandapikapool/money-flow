@@ -8,7 +8,9 @@
     "dev": "nodemon src/server.ts",
     "build": "tsc",
     "setup-db": "ts-node setup_db.ts",
-    "clean-expenses": "ts-node ../utils/clean_expenses.ts"
+    "clean-expenses": "ts-node ../utils/clean_expenses.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "personal-finance",
@@ -31,6 +33,7 @@
     "@types/pg": "^8.10.9",
     "nodemon": "^3.0.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.7"
   }
 }
