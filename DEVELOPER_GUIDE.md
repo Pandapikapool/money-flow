@@ -420,7 +420,31 @@ See individual route files in `backend/src/modules/` for complete API documentat
 2. Run migration manually or update setup script
 3. Update TypeScript types if needed
 
+## Pre-push hook (optional)
+
+A `.githooks/pre-push` script runs `tsc --noEmit` and `npm test` on both
+packages before any `git push`. To enable it on your clone (one-time):
+
+```bash
+git config core.hooksPath .githooks
+```
+
+The same checks run in CI on every push and PR; the hook just catches
+issues a few seconds earlier. Disable with `git config --unset core.hooksPath`.
+
 ## Testing
+
+Both packages use **vitest**.
+
+```bash
+cd backend && npm test          # single run
+cd backend && npm run test:watch # watch mode
+cd frontend && npm test
+```
+
+Backend tests live next to source as `*.test.ts` (vitest config picks up
+`src/**/*.test.ts`). Frontend uses the same convention with `src/**/*.test.{ts,tsx}`.
+CI runs both on every push and PR (see `.github/workflows/ci.yml`).
 
 See [TEST_GUIDE.md](TEST_GUIDE.md) for detailed testing scenarios.
 
