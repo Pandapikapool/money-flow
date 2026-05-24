@@ -1,5 +1,11 @@
 export const API_BASE = "http://localhost:3000";
 
+export interface ExpenseMeta {
+    planned?: boolean;
+    energy?: 1 | 2 | 3 | 4 | 5;
+    [key: string]: unknown;
+}
+
 export interface Expense {
     id: number;
     user_id: string;
@@ -8,6 +14,7 @@ export interface Expense {
     statement: string;
     tag_id: number;
     notes?: string;
+    meta?: ExpenseMeta;
 }
 
 export interface Tag {
@@ -29,6 +36,7 @@ export interface CreateExpenseData {
     tag_id: number;
     special_tag_ids?: number[];
     notes?: string;
+    meta?: ExpenseMeta;
 }
 
 export interface SpecialTag {

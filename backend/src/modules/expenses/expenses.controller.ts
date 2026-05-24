@@ -17,14 +17,17 @@ export async function listExpenses(req: Request, res: Response) {
 export async function createExpense(req: Request, res: Response) {
     try {
         const userId = getUserId();
-        const { date, amount, statement, tag_id, special_tag_ids, notes } = req.body;
+        const { date, amount, statement, tag_id, special_tag_ids, notes, meta } = req.body;
 
         // Basic validation
         if (!amount || !statement || !tag_id) {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-        const expense = await repo.create(userId, { date, amount, statement, tag_id, special_tag_ids, notes });
+        const expense = await repo.create(userId, {
+            date, amount, statement, tag_id, special_tag_ids, notes,
+            meta: meta && typeof meta === 'object' ? meta : undefined,
+        });
         res.status(201).json(expense);
     } catch (error) {
         console.error("Create error:", error);

@@ -23,6 +23,16 @@ export interface MonthlyBudget {
     notes?: string;
 }
 
+// Optional quantitative dimensions captured alongside an expense.
+// Stored in expenses.meta (JSONB). Keys are open-ended; the form
+// currently captures `planned`, but more (energy, etc.) can be added
+// without a schema migration.
+export interface ExpenseMeta {
+    planned?: boolean;
+    energy?: 1 | 2 | 3 | 4 | 5;
+    [key: string]: unknown;
+}
+
 export interface Expense {
     id: number;
     user_id: string;
@@ -34,6 +44,7 @@ export interface Expense {
     statement: string;
     tag_id: number | null;
     notes: string | null;
+    meta: ExpenseMeta;
     created_at?: Date;
 }
 
@@ -44,6 +55,7 @@ export interface CreateExpenseParams {
     tag_id: number;
     special_tag_ids?: number[];
     notes?: string;
+    meta?: ExpenseMeta;
 }
 
 export interface UpdateExpenseParams {
@@ -53,4 +65,5 @@ export interface UpdateExpenseParams {
     tag_id?: number;
     special_tag_ids?: number[];
     notes?: string;
+    meta?: ExpenseMeta;
 }

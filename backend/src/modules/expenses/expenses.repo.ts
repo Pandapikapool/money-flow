@@ -25,18 +25,21 @@ export async function list(userId: string, year?: string, month?: string): Promi
 }
 
 export async function create(userId: string, params: CreateExpenseParams): Promise<Expense> {
-    const { date, amount, statement, tag_id, special_tag_ids, notes } = params;
+    const { date, amount, statement, tag_id, special_tag_ids, notes, meta } = params;
 
     const client = await pool.connect();
     try {
         await client.query("BEGIN");
 
         const query = `
-            INSERT INTO expenses (user_id, date, amount, statement, tag_id, notes)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO expenses (user_id, date, amount, statement, tag_id, notes, meta)
+            VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
             RETURNING *
         `;
-        const result = await client.query(query, [userId, date, amount, statement, tag_id, notes]);
+        const result = await client.query(query, [
+            userId, date, amount, statement, tag_id, notes,
+            JSON.stringify(meta ?? {}),
+        ]);
         const expense = result.rows[0];
 
         if (special_tag_ids && special_tag_ids.length > 0) {
@@ -86,6 +89,10 @@ export async function update(userId: string, id: number, params: UpdateExpensePa
         if (params.notes !== undefined) {
             fields.push(`notes = $${paramIdx++}`);
             values.push(params.notes);
+        }
+        if (params.meta !== undefined) {
+            fields.push(`meta = $${paramIdx++}::jsonb`);
+            values.push(JSON.stringify(params.meta));
         }
 
         if (fields.length === 0 && !params.special_tag_ids) {

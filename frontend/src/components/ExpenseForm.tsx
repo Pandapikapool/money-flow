@@ -33,6 +33,9 @@ export default function ExpenseForm({ onSuccess }: Props) {
 
     const [notes, setNotes] = useState('');
     const [noteWarning, setNoteWarning] = useState(false);
+    // Quantitative dimension: was this spend planned ahead, or in the moment?
+    // null = no answer (default); true = planned; false = impulse.
+    const [planned, setPlanned] = useState<boolean | null>(null);
 
     const [loading, setLoading] = useState(false);
 
@@ -48,6 +51,7 @@ export default function ExpenseForm({ onSuccess }: Props) {
     const amountNum = parseFloat(amount) || 0;
     const isFuelLike = FUEL_RE.test(tagName);
     const showMood = amountNum > 100 && !isFuelLike;
+    const showPlanned = amountNum > 200 && !isFuelLike;
     const notesNeeded =
         (amountNum > 250 && !isFuelLike) ||
         (amountNum > 1500 && isFuelLike);
@@ -88,6 +92,7 @@ export default function ExpenseForm({ onSuccess }: Props) {
                 tag_id: finalTagId,
                 special_tag_ids: selectedSpecialTagIds,
                 notes,
+                meta: planned !== null ? { planned } : undefined,
             });
 
             setAmount('');
@@ -96,6 +101,7 @@ export default function ExpenseForm({ onSuccess }: Props) {
             setSelectedSpecialTagIds([]);
             setNotes('');
             setNoteWarning(false);
+            setPlanned(null);
 
             onSuccess();
         } catch (err) {
@@ -206,6 +212,42 @@ export default function ExpenseForm({ onSuccess }: Props) {
                                 >
                                     {moodLabel(mt.name)}
                                 </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Planned vs impulse — appears once amount > 200 on a non-fuel category */}
+            {showPlanned && (
+                <div style={{ marginBottom: '16px', animation: 'efFadeIn 0.22s ease-out' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        Planned ahead? <span style={{ opacity: 0.6 }}>(optional, helps later analysis)</span>
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        {[
+                            { label: 'Planned', value: true },
+                            { label: 'In the moment', value: false },
+                        ].map(opt => {
+                            const isSelected = planned === opt.value;
+                            return (
+                                <button
+                                    type="button"
+                                    key={String(opt.value)}
+                                    onClick={() => setPlanned(isSelected ? null : opt.value)}
+                                    style={{
+                                        padding: '6px 14px',
+                                        borderRadius: '16px',
+                                        cursor: 'pointer',
+                                        fontSize: '0.85rem',
+                                        border: '1px solid #A8B5A0',
+                                        background: isSelected ? '#A8B5A0' : 'transparent',
+                                        color: isSelected ? '#fff' : '#A8B5A0',
+                                        transition: 'all 0.15s ease',
+                                    }}
+                                >
+                                    {opt.label}
+                                </button>
                             );
                         })}
                     </div>
