@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (2026-05-24 — Story, Journal, Ask-box + more insights + tooling)
+- **Journal page** (`/flow/journal`): minimal page with prompt picker (5 short prompts), 500-char-cap answer, optional mood chip (joy, calm, stress, social, convenience, health, impulse). Past entries listed reverse-chrono with date · mood · prompt · answer. Closes the broken nav from the `journal-nudge` insight which had been linking to a 404.
+- **Weekly money story** (`/flow/story`): pull-only summary of any past week. Total tile, 7-bar by-day chart with biggest day picked out in ochre, top categories with proportional bars, mood chips with counts. Prev/Next week navigation (clamped 0..52). Backed by new `GET /flowcraft/story?week_offset=N` endpoint.
+- **Quick-ask box on Overview**: two dropdowns (category + period preset) → instant total/count/avg/max stats + top categories + monthly bars. Backed by new `GET /analytics/query` endpoint (zod-validated). Lets the user answer their own "how much on X" question without going through Claude.
+- **One-tap goal suggestion**: GoalPicker now opens with a soft tile suggesting a cap-category goal for the largest-spending category over the last 30 days, rationale included. Tap and the goal is created instantly. Backed by new `GET /flowcraft/goals/suggestion` endpoint.
+- **Story / Journal nav** added to the `/flow` header so the two new pull-only subpages are discoverable.
+- **Four more calm insight builders**, bringing the library to 12 of 12 originally specified:
+  - *future-you* (calm): projects current-month spend forward at the observed daily pace; only fires when projection is within ~5% of budget (positive-only by design).
+  - *no-check-day* (compassionate): once per 7+ days when weekly variance < 18%, surfaces explicit permission to skip checking today. Records the offer atomically so concurrent calls can't double-emit.
+  - *keep-joy* (compassionate): when a category has 3+ `mood:joy` tagged spends in 90 days, surfaces with permission to keep — counter to typical finance apps that would suggest cutting it.
+  - *unused-sub* (gentle-attention): a confirmed recurring whose actual last occurrence in expenses is > 1.5× its cadence. Often signals stopped subscriptions.
+- **Migration 0003** adds a partial unique index `flowcraft_goals(user_id, week_of) WHERE status = 'active'` — promotes the "one active goal per week" app rule to a DB invariant.
+- **Tag-ownership check** added to goals.controller.create: skip/cap goals reject `target_tag_id` that doesn't belong to the user. Single-user today; the right place for the check when auth lands.
+- **GET /analytics/query** endpoint (new `analytics` module): facets — category, from, to, amount_min, amount_max. Returns total, count, min, max, avg, monthly breakdown, top 5 categories.
+- **GET /flowcraft/goals/suggestion** endpoint: top 3 spending categories last 30 days + a recommended cap-category goal at ~75% of weekly run-rate, rounded to ₹50, floor ₹100.
+- **GET /flowcraft/story** endpoint: weekly summary for any week (week_offset 0..52).
+- **Recharts palette**: Overview and PortfolioPage chart `COLORS` arrays unified to the Tea Ceremony palette (ochre, sage, dusk-pink, slate-lavender, warm sand, deeper sage) — no more bright red wedges in any pie.
+
+### Changed (2026-05-24 — calm-tone tightening on existing flows)
+- `flowcraft.controller.confirmRecurring` and `dismissRecurring` now use zod schemas (signature required, amount > 0, cadenceDays integer 1..366), closing the silent fallback where amount=0 / cadenceDays=0 coerced to defaults.
+
+### Fixed (2026-05-24 — Auditor pass on the big batch)
+- `insights/unused-sub`: SQL now derives last-seen via LEFT JOIN expenses on the normalized signature (the prior query read `flowcraft_recurring.last_seen` but the confirm/dismiss flow doesn't update that column — insight could never fire).
+- `insights/no-check-day`: check + offer recording collapsed into one atomic UPDATE...RETURNING. Concurrent `/insights` calls can no longer both emit the card.
+- `MoneyStoryPage`: prev-week button at offset 52 now visually dims (opacity, no border, not-allowed cursor) instead of just being silently disabled. aria-labels on both week-nav buttons.
+- `OverviewAskBox`: aria-label="Category" and aria-label="Time period" on the two selects.
+- `.github/workflows/ci.yml`: triggers expanded from `branches: [main]` to `branches: ['**']` so CI runs on every branch + PR (the active feature branch was previously skipped).
+
+### Added (2026-05-24 — Tooling)
+- **vitest** dev dep + minimal `vitest.config.ts`. First test file: `goals.repo.test.ts` covers `mondayOf` with 5 cases including the IST-vs-UTC regression the Auditor named earlier (Sun-in-UTC but Mon-in-IST). `npm test` runs once, `npm run test:watch` for dev.
+- **Prettier** config at root (`.prettierrc`, `.prettierignore`): 4-space, 100 col, double quotes, semicolons, LF. Not run across the codebase here (would create a massive diff); run `npx prettier --write` per package when ready.
+- **GitHub Actions CI** (`.github/workflows/ci.yml`): two parallel jobs — backend (tsc + tests) and frontend (tsc). npm cache keyed per package-lock. Runs on push + PR to any branch.
+
 ### Added (2026-05-24 — FlowCraft Goals + Theme Facelift)
 - **Tiny goals** (`flowcraft_goals` table): three calm goal kinds — *skip a category*, *cap a category*, *N quiet days* — one active per week. Holding a goal grants a +3 garden bonus (atomic, idempotent). Missing it closes silently with no shame copy.
 - **Goal endpoints** (`/flowcraft/goals/{active,POST,DELETE :id}`): zod-validated discriminated union; creating a new goal auto-cancels any prior active goal for the same week.
