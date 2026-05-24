@@ -11,12 +11,19 @@ export async function getInsights(req: Request, res: Response) {
         const userId = getUserId();
         const today = new Date();
 
-        // Side effects, in order:
-        // 1. Water the garden if user logged anything today (idempotent per-day).
-        await repo.waterIfDue(userId);
-        // 2. Sync the active goal — may transition to held/missed and apply
-        //    the +3 garden bonus (idempotent via bonus_applied flag).
-        await goalsRepo.syncActiveGoalForUser(userId, today);
+        // Side effects, in order. Wrapped per-step so a side-effect failure
+        // never blocks insight delivery — insights are the contract; garden
+        // bumps and goal sync are bonus.
+        try {
+            await repo.waterIfDue(userId);
+        } catch (err) {
+            console.error('waterIfDue failed (non-fatal):', err);
+        }
+        try {
+            await goalsRepo.syncActiveGoalForUser(userId, today);
+        } catch (err) {
+            console.error('syncActiveGoalForUser failed (non-fatal):', err);
+        }
 
         const insights = await engine.generateInsights({ userId, today });
         res.json(insights);

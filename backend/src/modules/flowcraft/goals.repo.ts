@@ -28,13 +28,19 @@ export interface GoalProgress {
     tag_name?: string;
 }
 
+// IST-aware: shifts the instant into IST clock-time before bucketing so
+// the returned Monday matches Postgres CURRENT_DATE (server is IST).
+// Without this, requests between Mon 00:00 and Mon 05:30 IST land in the
+// previous week.
+const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000;
+
 export function mondayOf(date: Date): Date {
-    const d = new Date(date);
-    d.setUTCHours(0, 0, 0, 0);
-    const day = d.getUTCDay();        // 0=Sun, 1=Mon, ..., 6=Sat
+    const ist = new Date(date.getTime() + IST_OFFSET_MS);
+    ist.setUTCHours(0, 0, 0, 0);
+    const day = ist.getUTCDay();        // 0=Sun, 1=Mon, ..., 6=Sat
     const diff = day === 0 ? -6 : 1 - day;
-    d.setUTCDate(d.getUTCDate() + diff);
-    return d;
+    ist.setUTCDate(ist.getUTCDate() + diff);
+    return ist;
 }
 
 function toIsoDate(d: Date): string {
@@ -112,6 +118,21 @@ export async function getHeldGoalForWeek(userId: string, today: Date = new Date(
 }
 
 export async function evaluateGoal(goal: Goal, today: Date = new Date()): Promise<GoalProgress> {
+    // Guard: skip-/cap-category goals need a live target tag. If the tag
+    // was deleted (FK ON DELETE SET NULL), the goal becomes unevaluable —
+    // return a neutral non-evaluable progress so it can't silently auto-hold.
+    if ((goal.kind === 'skip-category' || goal.kind === 'cap-category') && !goal.target_tag_id) {
+        return {
+            goal,
+            numerator: 0,
+            denominator: 0,
+            held: false,
+            missed: false,
+            display: 'category no longer exists',
+            headline: 'goal needs a category',
+        };
+    }
+
     const weekStart = new Date(goal.week_of + 'T00:00:00.000Z');
     const weekEnd = new Date(weekStart);
     weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
@@ -220,28 +241,31 @@ export async function evaluateGoal(goal: Goal, today: Date = new Date()): Promis
 }
 
 // Atomically apply the +3 garden bonus the first time a goal is held.
-// Uses a conditional UPDATE...RETURNING for the flag to avoid races.
+// Single CTE statement: flag flip and garden bump happen in one Postgres
+// statement, so a process crash mid-flight cannot leave the flag set
+// without the garden bump (or vice versa). Compare-and-set on the flag
+// prevents double-apply under concurrent calls.
 export async function applyHeldBonus(goal: Goal): Promise<boolean> {
     if (goal.status !== 'held') return false;
     if (goal.bonus_applied) return false;
 
-    const upd = await pool.query(
-        `UPDATE flowcraft_goals
-         SET bonus_applied = TRUE
-         WHERE id = $1 AND bonus_applied = FALSE
-         RETURNING id`,
+    const result = await pool.query(
+        `WITH flag_set AS (
+            UPDATE flowcraft_goals
+            SET bonus_applied = TRUE
+            WHERE id = $1 AND bonus_applied = FALSE
+            RETURNING user_id
+        )
+        UPDATE flowcraft_state s
+        SET garden_stage = LEAST(s.garden_stage + 3, 30),
+            updated_at = NOW()
+        FROM flag_set f
+        WHERE s.user_id = f.user_id
+        RETURNING s.user_id`,
         [goal.id],
     );
-    if (upd.rows.length === 0) return false;
 
-    await pool.query(
-        `UPDATE flowcraft_state
-         SET garden_stage = LEAST(garden_stage + 3, 30),
-             updated_at = NOW()
-         WHERE user_id = $1`,
-        [goal.user_id],
-    );
-    return true;
+    return (result.rowCount ?? 0) > 0;
 }
 
 // Sync an active goal's status based on current week's expenses.
