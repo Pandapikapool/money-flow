@@ -18,6 +18,7 @@ import { formatCurrency } from "../lib/format";
 import { exportYearData, downloadSampleTemplate } from "../lib/export";
 import { importFromFile } from "../lib/import";
 import OverviewFlowWidget from "../components/OverviewFlowWidget";
+import OverviewAskBox from "../components/OverviewAskBox";
 
 const COLORS = ['#4caf50', '#2196f3', '#ff9800', '#e91e63', '#9c27b0', '#00bcd4'];
 
@@ -424,6 +425,9 @@ export default function Overview() {
 
             {/* FlowCraft widget — shows only when no active goal + not dismissed recently */}
             <OverviewFlowWidget />
+
+            {/* Quick-ask analytics — facet the data without leaving the page */}
+            <OverviewAskBox />
 
             {/* Net Worth Hero */}
             <div className="glass-panel" style={{
