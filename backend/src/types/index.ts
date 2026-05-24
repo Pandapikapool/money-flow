@@ -23,6 +23,23 @@ export interface MonthlyBudget {
     notes?: string;
 }
 
+// Optional human-centered dimensions captured alongside an expense.
+// Stored in expenses.meta (JSONB). Keys are open-ended.
+//
+// `kind` is the one structured dimension we keep on the form: function
+// over judgment — "what did this do for me?" rather than "did I need it?".
+//   essential — had to
+//   comfort   — nice-to-have, made life a little better
+//   treat     — chosen pleasure
+//
+// (Earlier iterations captured `planned` and `energy`. Both have been
+// retired from the form in favour of `kind`. JSONB is open-ended, so
+// older rows with those keys remain valid and are simply ignored.)
+export interface ExpenseMeta {
+    kind?: "essential" | "comfort" | "treat";
+    [key: string]: unknown;
+}
+
 export interface Expense {
     id: number;
     user_id: string;
@@ -34,6 +51,7 @@ export interface Expense {
     statement: string;
     tag_id: number | null;
     notes: string | null;
+    meta: ExpenseMeta;
     created_at?: Date;
 }
 
@@ -44,6 +62,7 @@ export interface CreateExpenseParams {
     tag_id: number;
     special_tag_ids?: number[];
     notes?: string;
+    meta?: ExpenseMeta;
 }
 
 export interface UpdateExpenseParams {
@@ -53,4 +72,5 @@ export interface UpdateExpenseParams {
     tag_id?: number;
     special_tag_ids?: number[];
     notes?: string;
+    meta?: ExpenseMeta;
 }

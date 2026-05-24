@@ -1,0 +1,15 @@
+{
+    "tabWidth": 4,
+    "printWidth": 100,
+    "trailingComma": "es5",
+    "semi": true,
+    "singleQuote": false,
+    "arrowParens": "always",
+    "endOfLine": "lf",
+    "overrides": [
+        {
+            "files": "frontend/**/*.{ts,tsx}",
+            "options": { "singleQuote": true }
+        }
+    ]
+}

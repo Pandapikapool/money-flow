@@ -1,12 +1,21 @@
 import * as XLSX from 'xlsx';
 import {
-    createTag, createSpecialTag, setBudget, createExpense, updateExpense,
-    createAccount, createHistoryEntry,
-    createAsset, createAssetHistoryEntry,
-    createPlan, createPlanHistoryEntry,
-    createLifeXpBucket, addContribution,
+    createTag,
+    createSpecialTag,
+    setBudget,
+    createExpense,
+    updateExpense,
+    createAccount,
+    createHistoryEntry,
+    createAsset,
+    createAssetHistoryEntry,
+    createPlan,
+    createPlanHistoryEntry,
+    createLifeXpBucket,
+    addContribution,
     createFixedReturn,
-    createSIP, addSIPInstallment,
+    createSIP,
+    addSIPInstallment,
     createRecurringDeposit,
     createStock,
 } from './api';
@@ -18,7 +27,20 @@ export interface ImportResult {
     errors: string[];
 }
 
-const MONTH_NAMES = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+const MONTH_NAMES = [
+    'january',
+    'february',
+    'march',
+    'april',
+    'may',
+    'june',
+    'july',
+    'august',
+    'september',
+    'october',
+    'november',
+    'december',
+];
 
 function getSheetRows(workbook: XLSX.WorkBook, sheetName: string): unknown[][] {
     const sheet = workbook.Sheets[sheetName];
@@ -136,7 +158,10 @@ export async function importFromFile(file: File): Promise<ImportResult> {
             const specialTagsStr = str(row(r, 4));
             const specialTagIds: number[] = [];
             if (specialTagsStr) {
-                for (const name of specialTagsStr.split(',').map(s => s.trim()).filter(Boolean)) {
+                for (const name of specialTagsStr
+                    .split(',')
+                    .map((s) => s.trim())
+                    .filter(Boolean)) {
                     let id = specialTagNameToId[name];
                     if (!id) {
                         try {
@@ -144,7 +169,9 @@ export async function importFromFile(file: File): Promise<ImportResult> {
                             specialTagNameToId[name] = created.id;
                             id = created.id;
                         } catch (e) {
-                            errors.push(`Expense row ${i + 1} (special tag "${name}"): ${(e as Error).message}`);
+                            errors.push(
+                                `Expense row ${i + 1} (special tag "${name}"): ${(e as Error).message}`
+                            );
                         }
                         if (id) specialTagIds.push(id);
                     } else {
@@ -160,7 +187,7 @@ export async function importFromFile(file: File): Promise<ImportResult> {
                     statement,
                     tag_id: tagNameToId[tagName] ?? 0,
                     special_tag_ids: specialTagIds.length ? specialTagIds : undefined,
-                    notes: notes || undefined
+                    notes: notes || undefined,
                 });
                 if (specialTagIds.length > 0) {
                     await updateExpense(created.id, { special_tag_ids: specialTagIds });
@@ -256,7 +283,15 @@ export async function importFromFile(file: File): Promise<ImportResult> {
             const next_premium_date = str(row(r, 6)) || undefined;
             const notes = str(row(r, 7)) || undefined;
             try {
-                const created = await createPlan(name, cover_amount, premium_amount, premium_frequency, expiry_date, next_premium_date, notes);
+                const created = await createPlan(
+                    name,
+                    cover_amount,
+                    premium_amount,
+                    premium_frequency,
+                    expiry_date,
+                    next_premium_date,
+                    notes
+                );
                 planNameToId[name] = created.id;
                 counts['Plans'] = (counts['Plans'] || 0) + 1;
             } catch (e) {
@@ -276,7 +311,13 @@ export async function importFromFile(file: File): Promise<ImportResult> {
             const planId = planNameToId[planName];
             if (!planId) continue;
             try {
-                await createPlanHistoryEntry(planId, dateVal, cover_amount, premium_amount, str(row(r, 5)) || undefined);
+                await createPlanHistoryEntry(
+                    planId,
+                    dateVal,
+                    cover_amount,
+                    premium_amount,
+                    str(row(r, 5)) || undefined
+                );
                 counts['Plan History'] = (counts['Plan History'] || 0) + 1;
             } catch (e) {
                 errors.push(`Plan history "${planName}" ${dateVal}: ${(e as Error).message}`);
@@ -296,7 +337,14 @@ export async function importFromFile(file: File): Promise<ImportResult> {
             const next_contribution_date = str(row(r, 6)) || undefined;
             const notes = str(row(r, 8)) || undefined;
             try {
-                const created = await createLifeXpBucket(name, target_amount, isRepetitive, frequency, next_contribution_date, notes);
+                const created = await createLifeXpBucket(
+                    name,
+                    target_amount,
+                    isRepetitive,
+                    frequency,
+                    next_contribution_date,
+                    notes
+                );
                 lifeXpNameToId[name] = created.id;
                 counts['Life XP'] = (counts['Life XP'] || 0) + 1;
             } catch (e) {
@@ -334,7 +382,14 @@ export async function importFromFile(file: File): Promise<ImportResult> {
             const maturity_date = str(row(r, 5));
             if (!start_date || !maturity_date) continue;
             try {
-                await createFixedReturn(name, invested_amount, interest_rate, start_date, maturity_date, str(row(r, 10)) || undefined);
+                await createFixedReturn(
+                    name,
+                    invested_amount,
+                    interest_rate,
+                    start_date,
+                    maturity_date,
+                    str(row(r, 10)) || undefined
+                );
                 counts['Fixed Returns'] = (counts['Fixed Returns'] || 0) + 1;
             } catch (e) {
                 errors.push(`Fixed return "${name}": ${(e as Error).message}`);
@@ -353,7 +408,16 @@ export async function importFromFile(file: File): Promise<ImportResult> {
             const current_nav = num(row(r, 6));
             if (!start_date) continue;
             try {
-                const created = await createSIP(name, sip_amount, start_date, current_nav || 1, str(row(r, 12)) || undefined, num(row(r, 2)) || undefined, num(row(r, 5)), num(row(r, 7)));
+                const created = await createSIP(
+                    name,
+                    sip_amount,
+                    start_date,
+                    current_nav || 1,
+                    str(row(r, 12)) || undefined,
+                    num(row(r, 2)) || undefined,
+                    num(row(r, 5)),
+                    num(row(r, 7))
+                );
                 sipNameToId[name] = created.id;
                 counts['SIPs'] = (counts['SIPs'] || 0) + 1;
             } catch (e) {
@@ -374,7 +438,14 @@ export async function importFromFile(file: File): Promise<ImportResult> {
             const sipId = sipNameToId[sipName];
             if (!sipId) continue;
             try {
-                await addSIPInstallment(sipId, amount, nav || amount, dateVal, type === 'lumpsum' ? 'lumpsum' : 'sip', str(row(r, 7)) || undefined);
+                await addSIPInstallment(
+                    sipId,
+                    amount,
+                    nav || amount,
+                    dateVal,
+                    type === 'lumpsum' ? 'lumpsum' : 'sip',
+                    str(row(r, 7)) || undefined
+                );
                 counts['SIP Transactions'] = (counts['SIP Transactions'] || 0) + 1;
             } catch (e) {
                 errors.push(`SIP transaction "${sipName}" ${dateVal}: ${(e as Error).message}`);
@@ -394,7 +465,16 @@ export async function importFromFile(file: File): Promise<ImportResult> {
             const total_installments = num(row(r, 6));
             if (!start_date || total_installments < 1) continue;
             try {
-                await createRecurringDeposit(name, installment_amount, frequency, interest_rate, start_date, total_installments, undefined, str(row(r, 13)) || undefined);
+                await createRecurringDeposit(
+                    name,
+                    installment_amount,
+                    frequency,
+                    interest_rate,
+                    start_date,
+                    total_installments,
+                    undefined,
+                    str(row(r, 13)) || undefined
+                );
                 counts['Recurring Deposits'] = (counts['Recurring Deposits'] || 0) + 1;
             } catch (e) {
                 errors.push(`RD "${name}": ${(e as Error).message}`);
@@ -405,7 +485,7 @@ export async function importFromFile(file: File): Promise<ImportResult> {
         const stocksSheets: { name: string; market: 'indian' | 'us' | 'crypto' }[] = [
             { name: 'Stocks - Indian', market: 'indian' },
             { name: 'Stocks - US', market: 'us' },
-            { name: 'Stocks - Crypto', market: 'crypto' }
+            { name: 'Stocks - Crypto', market: 'crypto' },
         ];
         for (const { name: sheetName, market } of stocksSheets) {
             const rows = getSheetRows(workbook, sheetName);
@@ -420,7 +500,16 @@ export async function importFromFile(file: File): Promise<ImportResult> {
                 const invested_value = quantity * (buy_price || 0) || quantity;
                 const current_price = num(row(r, 6)) || buy_price;
                 try {
-                    await createStock(market, symbol, stockName, quantity, invested_value, buy_date, current_price, str(row(r, 10)) || undefined);
+                    await createStock(
+                        market,
+                        symbol,
+                        stockName,
+                        quantity,
+                        invested_value,
+                        buy_date,
+                        current_price,
+                        str(row(r, 10)) || undefined
+                    );
                     counts['Stocks'] = (counts['Stocks'] || 0) + 1;
                 } catch (e) {
                     errors.push(`Stock ${market} "${symbol}": ${(e as Error).message}`);
@@ -435,6 +524,6 @@ export async function importFromFile(file: File): Promise<ImportResult> {
         success: errors.length === 0,
         year,
         counts,
-        errors
+        errors,
     };
 }

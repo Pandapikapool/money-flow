@@ -294,3 +294,112 @@ CREATE TABLE IF NOT EXISTS recurring_deposits (
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
+-- FlowCraft layer: calm insights, garden state, mascot, journal, recurring detection.
+-- Idempotent — safe to re-run.
+
+-- Detected recurring transactions (subscriptions, bills)
+CREATE TABLE IF NOT EXISTS flowcraft_recurring (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    signature TEXT NOT NULL,            -- normalized statement (lowercased, trimmed)
+    statement_sample TEXT,              -- one human-readable example
+    amount NUMERIC(12, 2),              -- typical amount
+    cadence_days INTEGER,               -- detected interval, e.g. 30 for monthly
+    confidence NUMERIC(3, 2),           -- 0.00..1.00
+    last_seen DATE,
+    occurrences INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'detected',     -- 'detected' | 'confirmed' | 'dismissed'
+    user_action TEXT,                   -- 'keep' | 'pause-reminder' | null
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(user_id, signature)
+);
+
+-- Optional, skippable journal entries
+CREATE TABLE IF NOT EXISTS flowcraft_journal (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    expense_id INTEGER REFERENCES expenses(id) ON DELETE CASCADE,
+    week_of DATE,                       -- Monday of the week for weekly entries
+    prompt TEXT,                        -- which prompt triggered it
+    answer TEXT,                        -- max 500 chars (enforced in app)
+    mood TEXT,                          -- one-word feeling
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- FlowCraft state (one row per user — single-user app = single row)
+CREATE TABLE IF NOT EXISTS flowcraft_state (
+    user_id TEXT PRIMARY KEY,
+    garden_stage INTEGER DEFAULT 0,     -- monotonic; never decreases
+    garden_variant TEXT DEFAULT 'sapling',
+    last_water DATE,                    -- last day a log happened
+    coin_mood TEXT DEFAULT 'sleepy',
+    weekly_observation_seen_at TIMESTAMP,
+    no_check_day_offered_at DATE,
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Insight history (avoids repeating the same card too often)
+CREATE TABLE IF NOT EXISTS flowcraft_insight_history (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    payload JSONB,
+    shown_at TIMESTAMP DEFAULT NOW(),
+    user_action TEXT,
+    acted_payload JSONB
+);
+
+CREATE INDEX IF NOT EXISTS idx_flowcraft_insight_history_user_kind
+    ON flowcraft_insight_history(user_id, kind, shown_at DESC);
+
+-- Seed mood/context tags into existing special_tags taxonomy (idempotent)
+INSERT INTO special_tags (user_id, name) VALUES
+    ('default', 'mood:stress'),
+    ('default', 'mood:joy'),
+    ('default', 'mood:social'),
+    ('default', 'mood:convenience'),
+    ('default', 'mood:health'),
+    ('default', 'mood:impulse')
+ON CONFLICT (user_id, name) DO NOTHING;
+
+-- Initialize state row for the default user (idempotent)
+INSERT INTO flowcraft_state (user_id) VALUES ('default')
+ON CONFLICT (user_id) DO NOTHING;
+-- FlowCraft tiny-goals layer.
+-- A goal is a soft intention for the current week. Missing it is silent
+-- (no shame copy, no penalty). Holding it gives the garden a +3 bonus.
+-- Idempotent — safe to re-run.
+
+CREATE TABLE IF NOT EXISTS flowcraft_goals (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    kind TEXT NOT NULL,                          -- 'skip-category' | 'cap-category' | 'quiet-days'
+    target_tag_id INTEGER REFERENCES tags(id) ON DELETE SET NULL,
+    target_amount NUMERIC(12, 2),                -- for cap-category
+    target_count INTEGER,                        -- for quiet-days
+    week_of DATE NOT NULL,                       -- Monday of the goal week
+    status TEXT NOT NULL DEFAULT 'active',       -- 'active' | 'held' | 'missed' | 'cancelled'
+    bonus_applied BOOLEAN NOT NULL DEFAULT FALSE,-- prevents double-applying garden bonus
+    created_at TIMESTAMP DEFAULT NOW(),
+    completed_at TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_flowcraft_goals_user_active
+    ON flowcraft_goals(user_id, status, week_of DESC);
+-- Database-level invariant: at most one active goal per user per week.
+-- The app's create-then-cancel flow already enforces this, but a partial
+-- unique index makes it a hard guarantee under concurrent writes.
+-- Idempotent — safe to re-run.
+
+CREATE UNIQUE INDEX IF NOT EXISTS flowcraft_goals_one_active_per_week
+    ON flowcraft_goals(user_id, week_of)
+    WHERE status = 'active';
+-- Extensible meta sidecar on expenses for optional quantitative dimensions
+-- (planned vs impulse, energy 1-5, anything else added later). Stored as
+-- JSONB so the schema doesn't need a new migration each time a dimension
+-- is introduced. Defaults to '{}' so existing rows are valid.
+-- Idempotent.
+
+ALTER TABLE expenses
+    ADD COLUMN IF NOT EXISTS meta JSONB NOT NULL DEFAULT '{}'::jsonb;

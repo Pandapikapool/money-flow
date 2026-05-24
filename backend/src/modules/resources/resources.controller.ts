@@ -22,7 +22,7 @@ export async function createAccount(req: Request, res: Response) {
         const account = await repo.createAccount(getUserId(), name, Number(balance || 0));
 
         // Initial history entry
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split("T")[0];
         await repo.addAccountHistory(account.id, today, account.balance, "Initial Balance");
 
         res.status(201).json(account);
@@ -78,7 +78,8 @@ export async function createHistoryEntry(req: Request, res: Response) {
         const { id } = req.params;
         const { date, balance, notes } = req.body;
 
-        if (!date || balance === undefined) return res.status(400).json({ error: "Date and Balance are required" });
+        if (!date || balance === undefined)
+            return res.status(400).json({ error: "Date and Balance are required" });
 
         const entry = await repo.addAccountHistory(Number(id), date, Number(balance), notes);
         res.status(201).json(entry);
@@ -99,7 +100,7 @@ export async function updateHistoryEntry(req: Request, res: Response) {
         if (!entry) return res.status(404).json({ error: "History entry not found" });
 
         // Note: If this was the *latest* entry, we might want to update the main account balance too.
-        // But for now, we treat history edits as historical corrections primarily. 
+        // But for now, we treat history edits as historical corrections primarily.
         // Users should use the main edit for "today".
 
         res.json(entry);
@@ -154,7 +155,13 @@ export async function updateAsset(req: Request, res: Response) {
         if (!name) return res.status(400).json({ error: "Name is required" });
         if (value === undefined) return res.status(400).json({ error: "Value is required" });
 
-        const asset = await repo.updateAssetWithHistory(getUserId(), Number(id), name, Number(value), notes);
+        const asset = await repo.updateAssetWithHistory(
+            getUserId(),
+            Number(id),
+            name,
+            Number(value),
+            notes
+        );
         if (!asset) return res.status(404).json({ error: "Asset not found" });
 
         res.json(asset);
@@ -193,7 +200,8 @@ export async function createAssetHistoryEntry(req: Request, res: Response) {
         const { id } = req.params;
         const { date, value, notes } = req.body;
 
-        if (!date || value === undefined) return res.status(400).json({ error: "Date and Value are required" });
+        if (!date || value === undefined)
+            return res.status(400).json({ error: "Date and Value are required" });
 
         const entry = await repo.addAssetHistory(Number(id), date, Number(value), notes);
         res.status(201).json(entry);
@@ -245,7 +253,16 @@ export async function listPlans(req: Request, res: Response) {
 
 export async function createPlan(req: Request, res: Response) {
     try {
-        const { name, cover_amount, premium_amount, premium_frequency, expiry_date, next_premium_date, notes, custom_frequency_days } = req.body;
+        const {
+            name,
+            cover_amount,
+            premium_amount,
+            premium_frequency,
+            expiry_date,
+            next_premium_date,
+            notes,
+            custom_frequency_days,
+        } = req.body;
         if (!name) return res.status(400).json({ error: "Name is required" });
 
         const plan = await repo.createPlan(
@@ -253,7 +270,7 @@ export async function createPlan(req: Request, res: Response) {
             name,
             Number(cover_amount || 0),
             Number(premium_amount || 0),
-            premium_frequency || 'yearly',
+            premium_frequency || "yearly",
             expiry_date,
             next_premium_date,
             notes,
@@ -261,8 +278,14 @@ export async function createPlan(req: Request, res: Response) {
         );
 
         // Initial history entry
-        const today = new Date().toISOString().split('T')[0];
-        await repo.addPlanHistory(plan.id, today, plan.cover_amount, plan.premium_amount, "Initial entry");
+        const today = new Date().toISOString().split("T")[0];
+        await repo.addPlanHistory(
+            plan.id,
+            today,
+            plan.cover_amount,
+            plan.premium_amount,
+            "Initial entry"
+        );
 
         res.status(201).json(plan);
     } catch (e) {
@@ -274,10 +297,20 @@ export async function createPlan(req: Request, res: Response) {
 export async function updatePlan(req: Request, res: Response) {
     try {
         const { id } = req.params;
-        const { name, cover_amount, premium_amount, premium_frequency, expiry_date, next_premium_date, notes, custom_frequency_days } = req.body;
+        const {
+            name,
+            cover_amount,
+            premium_amount,
+            premium_frequency,
+            expiry_date,
+            next_premium_date,
+            notes,
+            custom_frequency_days,
+        } = req.body;
 
         if (!name) return res.status(400).json({ error: "Name is required" });
-        if (cover_amount === undefined) return res.status(400).json({ error: "Cover amount is required" });
+        if (cover_amount === undefined)
+            return res.status(400).json({ error: "Cover amount is required" });
 
         const plan = await repo.updatePlan(
             getUserId(),
@@ -285,7 +318,7 @@ export async function updatePlan(req: Request, res: Response) {
             name,
             Number(cover_amount),
             Number(premium_amount || 0),
-            premium_frequency || 'yearly',
+            premium_frequency || "yearly",
             expiry_date,
             next_premium_date,
             notes,
@@ -329,9 +362,16 @@ export async function createPlanHistoryEntry(req: Request, res: Response) {
         const { id } = req.params;
         const { date, cover_amount, premium_amount, notes } = req.body;
 
-        if (!date || cover_amount === undefined) return res.status(400).json({ error: "Date and Cover amount are required" });
+        if (!date || cover_amount === undefined)
+            return res.status(400).json({ error: "Date and Cover amount are required" });
 
-        const entry = await repo.addPlanHistory(Number(id), date, Number(cover_amount), Number(premium_amount || 0), notes);
+        const entry = await repo.addPlanHistory(
+            Number(id),
+            date,
+            Number(cover_amount),
+            Number(premium_amount || 0),
+            notes
+        );
         res.status(201).json(entry);
     } catch (e) {
         console.error(e);
@@ -344,9 +384,16 @@ export async function updatePlanHistoryEntry(req: Request, res: Response) {
         const { id } = req.params;
         const { cover_amount, premium_amount, notes, date } = req.body;
 
-        if (cover_amount === undefined) return res.status(400).json({ error: "Cover amount is required" });
+        if (cover_amount === undefined)
+            return res.status(400).json({ error: "Cover amount is required" });
 
-        const entry = await repo.updatePlanHistory(Number(id), Number(cover_amount), Number(premium_amount || 0), notes, date);
+        const entry = await repo.updatePlanHistory(
+            Number(id),
+            Number(cover_amount),
+            Number(premium_amount || 0),
+            notes,
+            date
+        );
         if (!entry) return res.status(404).json({ error: "History entry not found" });
 
         res.json(entry);
@@ -381,7 +428,15 @@ export async function listLifeXpBuckets(req: Request, res: Response) {
 
 export async function createLifeXpBucket(req: Request, res: Response) {
     try {
-        const { name, target_amount, is_repetitive, contribution_frequency, next_contribution_date, notes, custom_frequency_days } = req.body;
+        const {
+            name,
+            target_amount,
+            is_repetitive,
+            contribution_frequency,
+            next_contribution_date,
+            notes,
+            custom_frequency_days,
+        } = req.body;
         if (!name) return res.status(400).json({ error: "Name is required" });
 
         const bucket = await repo.createLifeXpBucket(
@@ -405,10 +460,19 @@ export async function createLifeXpBucket(req: Request, res: Response) {
 export async function updateLifeXpBucket(req: Request, res: Response) {
     try {
         const { id } = req.params;
-        const { name, target_amount, is_repetitive, contribution_frequency, next_contribution_date, notes, custom_frequency_days } = req.body;
+        const {
+            name,
+            target_amount,
+            is_repetitive,
+            contribution_frequency,
+            next_contribution_date,
+            notes,
+            custom_frequency_days,
+        } = req.body;
 
         if (!name) return res.status(400).json({ error: "Name is required" });
-        if (target_amount === undefined) return res.status(400).json({ error: "Target amount is required" });
+        if (target_amount === undefined)
+            return res.status(400).json({ error: "Target amount is required" });
 
         const bucket = await repo.updateLifeXpBucket(
             getUserId(),
@@ -528,7 +592,12 @@ export async function markContributionDone(req: Request, res: Response) {
 
         if (amount === undefined) return res.status(400).json({ error: "Amount is required" });
 
-        const result = await repo.markContributionDone(getUserId(), Number(id), Number(amount), notes);
+        const result = await repo.markContributionDone(
+            getUserId(),
+            Number(id),
+            Number(amount),
+            notes
+        );
         res.json(result);
     } catch (e) {
         console.error(e);
@@ -561,8 +630,18 @@ export async function createFixedReturn(req: Request, res: Response) {
     try {
         const { name, invested_amount, interest_rate, start_date, maturity_date, notes } = req.body;
 
-        if (!name || invested_amount === undefined || interest_rate === undefined || !start_date || !maturity_date) {
-            return res.status(400).json({ error: "Name, invested amount, interest rate, start date, and maturity date are required" });
+        if (
+            !name ||
+            invested_amount === undefined ||
+            interest_rate === undefined ||
+            !start_date ||
+            !maturity_date
+        ) {
+            return res
+                .status(400)
+                .json({
+                    error: "Name, invested amount, interest rate, start date, and maturity date are required",
+                });
         }
 
         const item = await repo.createFixedReturn(
@@ -587,7 +666,13 @@ export async function updateFixedReturn(req: Request, res: Response) {
         const { id } = req.params;
         const { name, invested_amount, interest_rate, start_date, maturity_date, notes } = req.body;
 
-        if (!name || invested_amount === undefined || interest_rate === undefined || !start_date || !maturity_date) {
+        if (
+            !name ||
+            invested_amount === undefined ||
+            interest_rate === undefined ||
+            !start_date ||
+            !maturity_date
+        ) {
             return res.status(400).json({ error: "All fields are required" });
         }
 
@@ -601,7 +686,8 @@ export async function updateFixedReturn(req: Request, res: Response) {
             maturity_date,
             notes
         );
-        if (!item) return res.status(404).json({ error: "Fixed return not found or already closed" });
+        if (!item)
+            return res.status(404).json({ error: "Fixed return not found or already closed" });
 
         res.json(item);
     } catch (e) {
@@ -616,7 +702,9 @@ export async function closeFixedReturn(req: Request, res: Response) {
         const { actual_withdrawal, closed_date } = req.body;
 
         if (actual_withdrawal === undefined || !closed_date) {
-            return res.status(400).json({ error: "Actual withdrawal and closed date are required" });
+            return res
+                .status(400)
+                .json({ error: "Actual withdrawal and closed date are required" });
         }
 
         const item = await repo.closeFixedReturn(
@@ -640,7 +728,9 @@ export async function updateClosedFixedReturn(req: Request, res: Response) {
         const { actual_withdrawal, closed_date, notes } = req.body;
 
         if (actual_withdrawal === undefined || !closed_date) {
-            return res.status(400).json({ error: "Actual withdrawal and closed date are required" });
+            return res
+                .status(400)
+                .json({ error: "Actual withdrawal and closed date are required" });
         }
 
         const item = await repo.updateClosedFixedReturn(
@@ -695,10 +785,22 @@ export async function getSIPSummary(req: Request, res: Response) {
 
 export async function createSIP(req: Request, res: Response) {
     try {
-        const { name, sip_amount, start_date, current_nav, notes, scheme_code, total_units, invested_amount, investment_type } = req.body;
+        const {
+            name,
+            sip_amount,
+            start_date,
+            current_nav,
+            notes,
+            scheme_code,
+            total_units,
+            invested_amount,
+            investment_type,
+        } = req.body;
 
         if (!name || sip_amount === undefined || !start_date || current_nav === undefined) {
-            return res.status(400).json({ error: "Name, SIP amount, start date, and current NAV are required" });
+            return res
+                .status(400)
+                .json({ error: "Name, SIP amount, start date, and current NAV are required" });
         }
 
         const item = await repo.createSIP(
@@ -756,11 +858,7 @@ export async function updateSIPNav(req: Request, res: Response) {
             return res.status(400).json({ error: "Current NAV is required" });
         }
 
-        const item = await repo.updateSIPNav(
-            getUserId(),
-            Number(id),
-            Number(current_nav)
-        );
+        const item = await repo.updateSIPNav(getUserId(), Number(id), Number(current_nav));
         if (!item) return res.status(404).json({ error: "SIP not found" });
 
         res.json(item);
@@ -779,11 +877,7 @@ export async function updateSIPTotalUnits(req: Request, res: Response) {
             return res.status(400).json({ error: "Total units is required" });
         }
 
-        const item = await repo.updateSIPTotalUnits(
-            getUserId(),
-            Number(id),
-            Number(total_units)
-        );
+        const item = await repo.updateSIPTotalUnits(getUserId(), Number(id), Number(total_units));
         if (!item) return res.status(404).json({ error: "SIP not found" });
 
         res.json(item);
@@ -808,7 +902,7 @@ export async function addSIPInstallment(req: Request, res: Response) {
             Number(amount),
             Number(nav),
             date,
-            type || 'sip',
+            type || "sip",
             notes
         );
         if (!item) return res.status(404).json({ error: "SIP not found or already redeemed" });
@@ -915,10 +1009,30 @@ export async function getRDSummary(req: Request, res: Response) {
 
 export async function createRecurringDeposit(req: Request, res: Response) {
     try {
-        const { name, installment_amount, frequency, interest_rate, start_date, total_installments, custom_frequency_days, notes } = req.body;
+        const {
+            name,
+            installment_amount,
+            frequency,
+            interest_rate,
+            start_date,
+            total_installments,
+            custom_frequency_days,
+            notes,
+        } = req.body;
 
-        if (!name || installment_amount === undefined || !frequency || interest_rate === undefined || !start_date || total_installments === undefined) {
-            return res.status(400).json({ error: "Name, installment amount, frequency, interest rate, start date, and total installments are required" });
+        if (
+            !name ||
+            installment_amount === undefined ||
+            !frequency ||
+            interest_rate === undefined ||
+            !start_date ||
+            total_installments === undefined
+        ) {
+            return res
+                .status(400)
+                .json({
+                    error: "Name, installment amount, frequency, interest rate, start date, and total installments are required",
+                });
         }
 
         const item = await repo.createRecurringDeposit(
@@ -942,9 +1056,25 @@ export async function createRecurringDeposit(req: Request, res: Response) {
 export async function updateRecurringDeposit(req: Request, res: Response) {
     try {
         const { id } = req.params;
-        const { name, installment_amount, frequency, interest_rate, start_date, total_installments, custom_frequency_days, notes } = req.body;
+        const {
+            name,
+            installment_amount,
+            frequency,
+            interest_rate,
+            start_date,
+            total_installments,
+            custom_frequency_days,
+            notes,
+        } = req.body;
 
-        if (!name || installment_amount === undefined || !frequency || interest_rate === undefined || !start_date || total_installments === undefined) {
+        if (
+            !name ||
+            installment_amount === undefined ||
+            !frequency ||
+            interest_rate === undefined ||
+            !start_date ||
+            total_installments === undefined
+        ) {
             return res.status(400).json({ error: "All fields are required" });
         }
 
@@ -960,7 +1090,8 @@ export async function updateRecurringDeposit(req: Request, res: Response) {
             custom_frequency_days ? Number(custom_frequency_days) : undefined,
             notes
         );
-        if (!item) return res.status(404).json({ error: "Recurring deposit not found or not ongoing" });
+        if (!item)
+            return res.status(404).json({ error: "Recurring deposit not found or not ongoing" });
 
         res.json(item);
     } catch (e) {
@@ -973,7 +1104,8 @@ export async function markRDInstallmentPaid(req: Request, res: Response) {
     try {
         const { id } = req.params;
         const item = await repo.markRDInstallmentPaid(getUserId(), Number(id));
-        if (!item) return res.status(404).json({ error: "Recurring deposit not found or not ongoing" });
+        if (!item)
+            return res.status(404).json({ error: "Recurring deposit not found or not ongoing" });
         res.json(item);
     } catch (e) {
         console.error(e);
@@ -987,7 +1119,9 @@ export async function closeRecurringDeposit(req: Request, res: Response) {
         const { actual_withdrawal, closed_date } = req.body;
 
         if (actual_withdrawal === undefined || !closed_date) {
-            return res.status(400).json({ error: "Actual withdrawal and closed date are required" });
+            return res
+                .status(400)
+                .json({ error: "Actual withdrawal and closed date are required" });
         }
 
         const item = await repo.closeRecurringDeposit(
@@ -1023,8 +1157,10 @@ export async function listStocks(req: Request, res: Response) {
     try {
         const { market } = req.params;
         const tileId = req.query.tile_id as string | undefined;
-        if (!['indian', 'us', 'crypto'].includes(market)) {
-            return res.status(400).json({ error: "Invalid market. Must be 'indian', 'us', or 'crypto'" });
+        if (!["indian", "us", "crypto"].includes(market)) {
+            return res
+                .status(400)
+                .json({ error: "Invalid market. Must be 'indian', 'us', or 'crypto'" });
         }
         const items = await repo.listStocks(getUserId(), market as repo.StockMarket, tileId);
         res.json(items);
@@ -1038,10 +1174,14 @@ export async function getStocksSummary(req: Request, res: Response) {
     try {
         const { market } = req.params;
         const tileId = req.query.tile_id as string | undefined;
-        if (!['indian', 'us', 'crypto'].includes(market)) {
+        if (!["indian", "us", "crypto"].includes(market)) {
             return res.status(400).json({ error: "Invalid market" });
         }
-        const summary = await repo.getStocksSummary(getUserId(), market as repo.StockMarket, tileId);
+        const summary = await repo.getStocksSummary(
+            getUserId(),
+            market as repo.StockMarket,
+            tileId
+        );
         res.json(summary);
     } catch (e) {
         console.error(e);
@@ -1052,17 +1192,20 @@ export async function getStocksSummary(req: Request, res: Response) {
 export async function createStock(req: Request, res: Response) {
     try {
         const { market } = req.params;
-        const { symbol, name, quantity, invested_value, buy_date, current_price, notes, tile_id } = req.body;
+        const { symbol, name, quantity, invested_value, buy_date, current_price, notes, tile_id } =
+            req.body;
 
-        if (!['indian', 'us', 'crypto'].includes(market)) {
+        if (!["indian", "us", "crypto"].includes(market)) {
             return res.status(400).json({ error: "Invalid market" });
         }
         if (!symbol || !name || quantity === undefined || invested_value === undefined) {
-            return res.status(400).json({ error: "Symbol, name, quantity, and invested value are required" });
+            return res
+                .status(400)
+                .json({ error: "Symbol, name, quantity, and invested value are required" });
         }
 
         // Use provided buy_date or default to today
-        const buyDate = buy_date || new Date().toISOString().split('T')[0];
+        const buyDate = buy_date || new Date().toISOString().split("T")[0];
 
         const item = await repo.createStock(
             getUserId(),
@@ -1089,12 +1232,15 @@ export async function updateStock(req: Request, res: Response) {
         const { symbol, name, quantity, invested_value, buy_date, notes, current_price } = req.body;
 
         if (!symbol || !name || quantity === undefined || invested_value === undefined) {
-            return res.status(400).json({ error: "Symbol, name, quantity, and invested value are required" });
+            return res
+                .status(400)
+                .json({ error: "Symbol, name, quantity, and invested value are required" });
         }
 
         // Get existing stock to preserve buy_date if not provided
         const existingStock = await repo.getStockById(getUserId(), Number(id));
-        const buyDate = buy_date || existingStock?.buy_date || new Date().toISOString().split('T')[0];
+        const buyDate =
+            buy_date || existingStock?.buy_date || new Date().toISOString().split("T")[0];
 
         const item = await repo.updateStock(
             getUserId(),

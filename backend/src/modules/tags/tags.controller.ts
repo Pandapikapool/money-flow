@@ -25,7 +25,8 @@ export async function createTag(req: Request, res: Response) {
         const tag = await repo.create(userId, name, page_type);
         res.status(201).json(tag);
     } catch (error: any) {
-        if (error.code === '23505') { // Unique violation
+        if (error.code === "23505") {
+            // Unique violation
             return res.status(409).json({ error: "Tag already exists" });
         }
         console.error("Create Tag Error:", error);
@@ -49,7 +50,7 @@ export async function updateTag(req: Request, res: Response) {
         }
         res.json(tag);
     } catch (error: any) {
-        if (error.code === '23505') {
+        if (error.code === "23505") {
             return res.status(409).json({ error: "Tag name conflict" });
         }
         console.error("Update Tag Error:", error);
@@ -74,7 +75,7 @@ export async function deleteTag(req: Request, res: Response) {
     } catch (error) {
         console.error("Delete Tag Error:", error);
         // TODO: Handle FK violation if tag is used in expenses (should likely fail or cascade depending on requirement)
-        // Product design says: "Rename / merge propagates historically". 
+        // Product design says: "Rename / merge propagates historically".
         // Delete behavior isn't explicitly detailed for used tags, but usually block or set null.
         // Schema doesn't have ON DELETE CASCADE for expense->tag_id, so this will fail if used. Good.
         res.status(500).json({ error: "Internal Server Error (Tag might be in use)" });

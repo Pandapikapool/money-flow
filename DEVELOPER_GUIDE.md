@@ -265,14 +265,68 @@ Key tables:
 - `expenses` - Expense records
 - `monthly_budgets` - Monthly budget limits
 - `tags` - Expense categories
-- `special_tags` - Additional tags (many-to-many)
+- `special_tags` - Additional tags (many-to-many; also holds `mood:*` context tags)
 - `accounts` - Liquid money accounts
 - `assets` - Owned assets
 - `investments` - Investment holdings
 - `plans` - Insurance/commitments
-- `life_xp` - Experience buckets
+- `life_xp_buckets` - Savings goal buckets (NOT gamification — naming predates FlowCraft)
+- `flowcraft_state` - One row per user; garden stage, mascot mood
+- `flowcraft_recurring` - Detected subscriptions/bills; user can confirm or dismiss
+- `flowcraft_journal` - Optional one-line journal entries
+- `flowcraft_insight_history` - Prevents the same insight from repeating daily
 
-See `backend/database/schema.sql` for full schema.
+See `backend/database/schema.sql` for full schema. Migrations live under `backend/database/migrations/`.
+
+## FlowCraft Layer
+
+The FlowCraft layer (`/flow`) is a calm view bolted onto the existing finance app. It deliberately uses different design rules from the rest of the app (no red, no streaks, no nudges, monotonic progression only). All new tables are prefixed `flowcraft_*` to keep the boundary visible at the schema level.
+
+### InsightEngine Interface
+
+Insights are pluggable. The default `RuleBasedEngine` ships in the app; an AI engine could implement the same interface later without changing any callers.
+
+```typescript
+// backend/src/modules/flowcraft/engine.ts
+export interface InsightEngine {
+  generateInsights(ctx: InsightContext): Promise<Insight[]>;
+}
+```
+
+Each insight lives in its own file under `backend/src/modules/flowcraft/insights/` and returns `Insight | null`. Adding one is two steps:
+
+1. Create `insights/your-insight.ts` exporting `buildYourInsight(ctx): Promise<Insight | null>`.
+2. Add it to the `builders` array in `rule-based.engine.ts`.
+
+To swap to AI later, write `ai.engine.ts` implementing `InsightEngine` and switch the import in `flowcraft.controller.ts`. The frontend never knows the difference.
+
+### Insight Tone System
+
+Three tones map to three card tints in `InsightCard.tsx`:
+
+| Tone               | Tint       | Use for                            |
+|--------------------|------------|------------------------------------|
+| `calm`             | sage       | reassurance, "same as usual"       |
+| `gentle-attention` | ochre      | "looks recurring", soft prompts    |
+| `compassionate`    | dusk-pink  | wins, journal nudges, kept-joy     |
+
+### Garden Mechanic
+
+`flowcraft_state.garden_stage` is **monotonic**. The only write path is `waterIfDue(userId)` in `flowcraft.repo.ts`, which increments by 1 if:
+- the user has logged any expense today, AND
+- `last_water` is null or before today.
+
+It is called as a side-effect of `GET /flowcraft/insights`. Skipping a day = nothing happens. Over-budget = nothing happens. The plant only grows. There is intentionally no decay mechanic.
+
+### Calm-design Hard Rules
+
+- **No red, anywhere.** Use dusk-pink (`#E8B4B8`) for gentle attention.
+- **No streaks visible.** Garden growth is the only persistent progress metric.
+- **No auto-opening modals or push notifications.** User pulls; app does not push.
+- **Copy**: past-tense and factual when summarizing ("Friday passed quiet"); tentative when suggesting ("you could mark this recurring"). Forbidden: *must, should, broken, critical, urgent, warning, failed*.
+- **Animation**: ease-out 200–300 ms, no springs, no bounce. Toasts cap at 2 stacked, 4 s.
+
+See `.claude/agents/coach.md` for the full tone guide — the Coach agent enforces these rules in its own output and is a useful reference.
 
 ## API Endpoints
 
@@ -299,6 +353,14 @@ See `backend/database/schema.sql` for full schema.
 - `PUT /resources/*/:id` - Update resource (supports name editing for assets, plans, life_xp)
 - `PUT /resources/sips/:id/units` - Update SIP total units
 - `DELETE /resources/*/:id` - Delete resource
+
+### FlowCraft
+- `GET /flowcraft/insights` - Generate calm insights for today. Side-effect: waters the garden (+1 stage) if user logged an expense today and not yet watered.
+- `GET /flowcraft/state` - Garden stage, mascot mood, last-water date
+- `POST /flowcraft/recurring/confirm` - Confirm a detected recurring transaction; body: `{ signature, sample, amount, cadenceDays }`
+- `POST /flowcraft/recurring/dismiss` - Dismiss a candidate so it never resurfaces; body: `{ signature }`
+- `GET /flowcraft/journal` - List recent journal entries (limit 30)
+- `POST /flowcraft/journal` - Add an entry; body: `{ answer, expenseId?, prompt?, mood? }` — answer max 500 chars
 
 See individual route files in `backend/src/modules/` for complete API documentation.
 
@@ -358,7 +420,31 @@ See individual route files in `backend/src/modules/` for complete API documentat
 2. Run migration manually or update setup script
 3. Update TypeScript types if needed
 
+## Pre-push hook (optional)
+
+A `.githooks/pre-push` script runs `tsc --noEmit` and `npm test` on both
+packages before any `git push`. To enable it on your clone (one-time):
+
+```bash
+git config core.hooksPath .githooks
+```
+
+The same checks run in CI on every push and PR; the hook just catches
+issues a few seconds earlier. Disable with `git config --unset core.hooksPath`.
+
 ## Testing
+
+Both packages use **vitest**.
+
+```bash
+cd backend && npm test          # single run
+cd backend && npm run test:watch # watch mode
+cd frontend && npm test
+```
+
+Backend tests live next to source as `*.test.ts` (vitest config picks up
+`src/**/*.test.ts`). Frontend uses the same convention with `src/**/*.test.{ts,tsx}`.
+CI runs both on every push and PR (see `.github/workflows/ci.yml`).
 
 See [TEST_GUIDE.md](TEST_GUIDE.md) for detailed testing scenarios.
 

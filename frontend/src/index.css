@@ -1,28 +1,26 @@
 :root {
-  /* Default Dark Theme Tokens */
-  --bg-app: #0f172a;
-  /* Slate 900 */
-  --bg-panel: rgba(30, 41, 59, 0.7);
-  /* Slate 800 with opacity */
-  --text-primary: #f8fafc;
-  /* Slate 50 */
-  --text-secondary: #94a3b8;
-  /* Slate 400 */
-  --border-color: rgba(255, 255, 255, 0.1);
-  --input-bg: rgba(0, 0, 0, 0.2);
+  /* === Tea Ceremony — calm warm palette (dark is default) === */
 
-  --accent-primary: #818cf8;
-  /* Indigo 400 */
-  --accent-success: #34d399;
-  /* Emerald 400 */
-  --accent-warning: #fbbf24;
-  /* Amber 400 */
-  --accent-danger: #f87171;
-  /* Red 400 */
+  --bg-app: #1F1B18;                          /* warm coffee */
+  --bg-panel: rgba(45, 39, 33, 0.65);
+  --text-primary: #F0EAE0;                    /* warm cream */
+  --text-secondary: #A89E92;                  /* warm grey */
+  --border-color: rgba(240, 234, 224, 0.10);
+  --input-bg: rgba(0, 0, 0, 0.25);
+
+  --accent-primary: #C9A66B;                  /* muted ochre */
+  --accent-success: #98A691;                  /* deeper sage on dark */
+  --accent-warning: #D08B96;                  /* dusk-pink (replaces amber) */
+  --accent-danger:  #C77D7D;                  /* warm clay (replaces bright red) */
+
+  /* Semantic tokens for FlowCraft layer (also usable app-wide) */
+  --tone-calm:              #A8B5A0;          /* sage */
+  --tone-attention:         #C9A66B;          /* ochre */
+  --tone-compassionate:     #D88B96;          /* dusk pink */
 
   /* Glassmorphism Tokens */
   --glass-border: 1px solid var(--border-color);
-  --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.25);
   --glass-blur: blur(12px);
 
   /* Spacing & Radius */
@@ -33,19 +31,19 @@
 }
 
 [data-theme='light'] {
-  --bg-app: #f8fafc;
-  /* Slate 50 */
-  --bg-panel: rgba(255, 255, 255, 0.7);
-  --text-primary: #1e293b;
-  /* Slate 800 */
-  --text-secondary: #64748b;
-  /* Slate 500 */
-  --border-color: rgba(0, 0, 0, 0.1);
-  --input-bg: rgba(255, 255, 255, 0.5);
+  --bg-app: #FAF7F2;                          /* warm cream */
+  --bg-panel: rgba(255, 252, 245, 0.65);
+  --text-primary: #2E2A26;                    /* deep ink */
+  --text-secondary: #7A6F66;                  /* mushroom */
+  --border-color: rgba(122, 111, 102, 0.15);
+  --input-bg: rgba(255, 252, 245, 0.55);
 
-  --accent-primary: #6366f1;
-  /* Indigo 500 (Darker for light mode) */
-  --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+  --accent-primary: #C9A66B;                  /* same ochre — consistent across themes */
+  --accent-success: #A8B5A0;                  /* sage */
+  --accent-warning: #D88B96;                  /* dusk-pink */
+  --accent-danger:  #B96B6B;                  /* deeper clay on light */
+
+  --glass-shadow: 0 4px 30px rgba(58, 46, 37, 0.06);
 }
 
 body {
@@ -55,17 +53,15 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f1f5f9;
-  /* Slate 100 - Neutral outer background */
+  background-color: #15110F;                  /* very dark warm (outer bg, dark default) */
   color: var(--text-primary);
   height: 100vh;
   width: 100vw;
   overflow: hidden;
 }
 
-[data-theme='dark'] body {
-  background-color: #020617;
-  /* Very dark slate for outer bg in dark mode */
+[data-theme='light'] body {
+  background-color: #F5EFE6;                  /* warm sand (outer bg, light) */
 }
 
 #root {

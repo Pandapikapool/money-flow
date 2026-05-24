@@ -1,0 +1,35 @@
+<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Coin the cat">
+  <title>Coin</title>
+  <defs>
+    <radialGradient id="body" cx="42%" cy="32%" r="68%">
+      <stop offset="0%" stop-color="#EFDCBE"/>
+      <stop offset="55%" stop-color="#D6B894"/>
+      <stop offset="100%" stop-color="#B59872"/>
+    </radialGradient>
+    <radialGradient id="belly" cx="50%" cy="40%" r="62%">
+      <stop offset="0%" stop-color="#F5E5C9"/>
+      <stop offset="100%" stop-color="#E5D2AC"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="64" cy="118" rx="40" ry="4" fill="#3A2E25" opacity="0.13"/>
+  <path d="M28 52 L34 14 L52 40 Z" fill="#B59872"/>
+  <path d="M33 46 L36 22 L46 40 Z" fill="#E8B4B8" opacity="0.85"/>
+  <path d="M100 52 L94 14 L76 40 Z" fill="#B59872"/>
+  <path d="M95 46 L92 22 L82 40 Z" fill="#E8B4B8" opacity="0.85"/>
+  <circle cx="64" cy="72" r="42" fill="url(#body)"/>
+  <ellipse cx="64" cy="84" rx="28" ry="20" fill="url(#belly)" opacity="0.85"/>
+  <ellipse cx="48" cy="52" rx="20" ry="14" fill="#FBF0DA" opacity="0.2"/>
+  <path d="M42 66 Q49 71 56 66" stroke="#3A2E25" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+  <path d="M72 66 Q79 71 86 66" stroke="#3A2E25" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+  <ellipse cx="38" cy="80" rx="5" ry="3.5" fill="#E8B4B8" opacity="0.55"/>
+  <ellipse cx="90" cy="80" rx="5" ry="3.5" fill="#E8B4B8" opacity="0.55"/>
+  <path d="M61 76 L67 76 L64 80 Z" fill="#D88B96"/>
+  <path d="M64 80 Q60 84 57 82" stroke="#3A2E25" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+  <path d="M64 80 Q68 84 71 82" stroke="#3A2E25" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+  <path d="M28 78 L42 80" stroke="#8A7560" stroke-width="0.8" stroke-linecap="round" opacity="0.55"/>
+  <path d="M26 82 L42 83" stroke="#8A7560" stroke-width="0.8" stroke-linecap="round" opacity="0.55"/>
+  <path d="M28 86 L42 86" stroke="#8A7560" stroke-width="0.8" stroke-linecap="round" opacity="0.55"/>
+  <path d="M100 78 L86 80" stroke="#8A7560" stroke-width="0.8" stroke-linecap="round" opacity="0.55"/>
+  <path d="M102 82 L86 83" stroke="#8A7560" stroke-width="0.8" stroke-linecap="round" opacity="0.55"/>
+  <path d="M100 86 L86 86" stroke="#8A7560" stroke-width="0.8" stroke-linecap="round" opacity="0.55"/>
+</svg>

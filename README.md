@@ -18,6 +18,7 @@ Money Flow helps you understand your finances by tracking:
 
 ## Key Features
 
+- ✅ **FlowCraft Calm Layer** (`/flow`): a quiet weekly view with rule-based insights, a monotonically-growing garden, and Coin the cat mascot — designed for an anxious mind. No XP, no streaks, no nudges. Pluggable `InsightEngine` makes future AI insights a one-file swap.
 - ✅ **Global Quick-Add** (`⌘K` from anywhere): add an expense without navigating away from your current page
 - ✅ **Net Worth Dashboard**: prominent hero card with total net worth, P&L, monthly budget status, and liquid cash
 - ✅ **Budget Forecast**: daily page shows "at current pace you'll spend X by month end" in real time

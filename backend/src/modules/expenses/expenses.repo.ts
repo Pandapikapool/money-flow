@@ -25,18 +25,26 @@ export async function list(userId: string, year?: string, month?: string): Promi
 }
 
 export async function create(userId: string, params: CreateExpenseParams): Promise<Expense> {
-    const { date, amount, statement, tag_id, special_tag_ids, notes } = params;
+    const { date, amount, statement, tag_id, special_tag_ids, notes, meta } = params;
 
     const client = await pool.connect();
     try {
         await client.query("BEGIN");
 
         const query = `
-            INSERT INTO expenses (user_id, date, amount, statement, tag_id, notes)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO expenses (user_id, date, amount, statement, tag_id, notes, meta)
+            VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
             RETURNING *
         `;
-        const result = await client.query(query, [userId, date, amount, statement, tag_id, notes]);
+        const result = await client.query(query, [
+            userId,
+            date,
+            amount,
+            statement,
+            tag_id,
+            notes,
+            JSON.stringify(meta ?? {}),
+        ]);
         const expense = result.rows[0];
 
         if (special_tag_ids && special_tag_ids.length > 0) {
@@ -57,7 +65,11 @@ export async function create(userId: string, params: CreateExpenseParams): Promi
     }
 }
 
-export async function update(userId: string, id: number, params: UpdateExpenseParams): Promise<Expense | null> {
+export async function update(
+    userId: string,
+    id: number,
+    params: UpdateExpenseParams
+): Promise<Expense | null> {
     const client = await pool.connect();
     try {
         await client.query("BEGIN");
@@ -87,6 +99,10 @@ export async function update(userId: string, id: number, params: UpdateExpensePa
             fields.push(`notes = $${paramIdx++}`);
             values.push(params.notes);
         }
+        if (params.meta !== undefined) {
+            fields.push(`meta = $${paramIdx++}::jsonb`);
+            values.push(JSON.stringify(params.meta));
+        }
 
         if (fields.length === 0 && !params.special_tag_ids) {
             await client.query("ROLLBACK");
@@ -107,14 +123,13 @@ export async function update(userId: string, id: number, params: UpdateExpensePa
         // Handle special tags update if provided
         if (params.special_tag_ids !== undefined) {
             // Delete existing special tags
-            await client.query(
-                "DELETE FROM expense_special_tags WHERE expense_id = $1",
-                [id]
-            );
+            await client.query("DELETE FROM expense_special_tags WHERE expense_id = $1", [id]);
 
             // Insert new special tags if any
             if (params.special_tag_ids.length > 0) {
-                const linkValues = params.special_tag_ids.map((stId) => `(${id}, ${stId})`).join(", ");
+                const linkValues = params.special_tag_ids
+                    .map((stId) => `(${id}, ${stId})`)
+                    .join(", ");
                 await client.query(`
                     INSERT INTO expense_special_tags (expense_id, special_tag_id)
                     VALUES ${linkValues}
@@ -125,10 +140,10 @@ export async function update(userId: string, id: number, params: UpdateExpensePa
         await client.query("COMMIT");
 
         // Fetch and return updated expense
-        const result = await client.query(
-            "SELECT * FROM expenses WHERE user_id = $1 AND id = $2",
-            [userId, id]
-        );
+        const result = await client.query("SELECT * FROM expenses WHERE user_id = $1 AND id = $2", [
+            userId,
+            id,
+        ]);
         return result.rows[0] || null;
     } catch (e) {
         await client.query("ROLLBACK");
@@ -152,7 +167,11 @@ export async function remove(userId: string, id: number): Promise<boolean> {
     return (result.rowCount || 0) > 0;
 }
 
-export async function removeByMonths(userId: string, year: number, months: number[]): Promise<number> {
+export async function removeByMonths(
+    userId: string,
+    year: number,
+    months: number[]
+): Promise<number> {
     if (months.length === 0) return 0;
 
     const client = await pool.connect();
@@ -160,7 +179,7 @@ export async function removeByMonths(userId: string, year: number, months: numbe
         await client.query("BEGIN");
 
         // First, get expense IDs that match the criteria
-        const monthPlaceholders = months.map((_, i) => `$${i + 3}`).join(',');
+        const monthPlaceholders = months.map((_, i) => `$${i + 3}`).join(",");
         const getIdsQuery = `
             SELECT id FROM expenses 
             WHERE user_id = $1 
@@ -176,7 +195,7 @@ export async function removeByMonths(userId: string, year: number, months: numbe
         }
 
         // Delete from expense_special_tags first (foreign key constraint)
-        const tagPlaceholders = expenseIds.map((_, i) => `$${i + 1}`).join(',');
+        const tagPlaceholders = expenseIds.map((_, i) => `$${i + 1}`).join(",");
         await client.query(
             `DELETE FROM expense_special_tags WHERE expense_id IN (${tagPlaceholders})`,
             expenseIds
@@ -208,7 +227,10 @@ export interface MonthlyAggregate {
     budget: number;
 }
 
-export async function getYearlyAggregates(userId: string, year: number): Promise<MonthlyAggregate[]> {
+export async function getYearlyAggregates(
+    userId: string,
+    year: number
+): Promise<MonthlyAggregate[]> {
     const query = `
     SELECT 
       m.month,
@@ -234,7 +256,7 @@ export async function getYearlyAggregates(userId: string, year: number): Promise
         month: Number(row.month),
         year: Number(row.year),
         spent: Number(row.spent),
-        budget: Number(row.budget)
+        budget: Number(row.budget),
     }));
 }
 

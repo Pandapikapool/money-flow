@@ -7,7 +7,11 @@ export async function list(userId: string): Promise<Tag[]> {
     return result.rows;
 }
 
-export async function create(userId: string, name: string, pageType: string = 'expense'): Promise<Tag> {
+export async function create(
+    userId: string,
+    name: string,
+    pageType: string = "expense"
+): Promise<Tag> {
     const query = `
     INSERT INTO tags (user_id, name, page_type)
     VALUES ($1, $2, $3)

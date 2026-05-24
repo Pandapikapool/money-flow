@@ -1,0 +1,21 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="money-flow">
+  <title>money-flow</title>
+  <defs>
+    <radialGradient id="drop" cx="38%" cy="32%" r="70%">
+      <stop offset="0%" stop-color="#E6F0D7"/>
+      <stop offset="55%" stop-color="#A8B5A0"/>
+      <stop offset="100%" stop-color="#7D8F6F"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#C9A66B" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#C9A66B" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="30" cy="42" rx="30" ry="10" fill="url(#halo)"/>
+  <ellipse cx="30" cy="42" rx="26" ry="7" fill="none" stroke="#C9A66B" stroke-width="0.8" opacity="0.28"/>
+  <ellipse cx="30" cy="42" rx="19" ry="5.2" fill="none" stroke="#C9A66B" stroke-width="1" opacity="0.52"/>
+  <ellipse cx="30" cy="42" rx="12" ry="3.4" fill="none" stroke="#C9A66B" stroke-width="1.2" opacity="0.78"/>
+  <ellipse cx="30" cy="42.5" rx="5.5" ry="1.6" fill="#3A2E25" opacity="0.2"/>
+  <circle cx="30" cy="30" r="5.8" fill="url(#drop)"/>
+  <ellipse cx="28" cy="27.5" rx="1.8" ry="1.2" fill="#F2F8E5" opacity="0.8"/>
+</svg>

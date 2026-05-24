@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Pre-push: typecheck both packages + run their tests.
+# Activate once per clone with:   git config core.hooksPath .githooks
+# CI runs the same checks; this just catches issues before they hit GitHub.
+
+set -e
+
+ROOT="$(git rev-parse --show-toplevel)"
+
+echo "→ Backend tsc + tests"
+(cd "$ROOT/backend" && npx tsc --noEmit && npm test --silent)
+
+echo "→ Frontend tsc + tests"
+(cd "$ROOT/frontend" && npx tsc --noEmit && npm test --silent)
+
+echo "✓ pre-push checks passed"

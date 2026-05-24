@@ -1,26 +1,33 @@
-import { useState, useEffect } from "react";
-import { fetchTags, fetchSpecialTags, createTag, createSpecialTag, type Tag, type SpecialTag } from "../../lib/api";
+import { useState, useEffect } from 'react';
+import {
+    fetchTags,
+    fetchSpecialTags,
+    createTag,
+    createSpecialTag,
+    type Tag,
+    type SpecialTag,
+} from '../../lib/api';
 
 // API functions for tag management (will add to api.ts)
-const API_BASE = "http://localhost:3000";
+const API_BASE = 'http://localhost:3000';
 
 async function deleteTag(id: number): Promise<void> {
-    const res = await fetch(`${API_BASE}/tags/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Failed to delete tag");
+    const res = await fetch(`${API_BASE}/tags/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete tag');
 }
 
 async function deleteSpecialTag(id: number): Promise<void> {
-    const res = await fetch(`${API_BASE}/special-tags/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Failed to delete special tag");
+    const res = await fetch(`${API_BASE}/special-tags/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete special tag');
 }
 
 async function renameTag(id: number, name: string): Promise<Tag> {
     const res = await fetch(`${API_BASE}/tags/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),
     });
-    if (!res.ok) throw new Error("Failed to rename tag");
+    if (!res.ok) throw new Error('Failed to rename tag');
     return res.json();
 }
 
@@ -30,12 +37,12 @@ export default function TagsPage() {
     const [loading, setLoading] = useState(true);
 
     // New tag form
-    const [newTagName, setNewTagName] = useState("");
-    const [newSpecialTagName, setNewSpecialTagName] = useState("");
+    const [newTagName, setNewTagName] = useState('');
+    const [newSpecialTagName, setNewSpecialTagName] = useState('');
 
     // Edit state
     const [editingTagId, setEditingTagId] = useState<number | null>(null);
-    const [editTagName, setEditTagName] = useState("");
+    const [editTagName, setEditTagName] = useState('');
 
     // Delete confirmation
     const [deletingTagId, setDeletingTagId] = useState<number | null>(null);
@@ -50,7 +57,7 @@ export default function TagsPage() {
         try {
             const [tagsData, specialTagsData] = await Promise.all([
                 fetchTags(),
-                fetchSpecialTags()
+                fetchSpecialTags(),
             ]);
             setTags(tagsData);
             setSpecialTags(specialTagsData);
@@ -66,10 +73,10 @@ export default function TagsPage() {
         if (!newTagName.trim()) return;
         try {
             await createTag(newTagName.trim());
-            setNewTagName("");
+            setNewTagName('');
             loadData();
         } catch (err) {
-            alert("Failed to create tag");
+            alert('Failed to create tag');
         }
     };
 
@@ -83,10 +90,10 @@ export default function TagsPage() {
         try {
             await renameTag(editingTagId, editTagName.trim());
             setEditingTagId(null);
-            setEditTagName("");
+            setEditTagName('');
             loadData();
         } catch (err) {
-            alert("Failed to rename tag");
+            alert('Failed to rename tag');
         }
     };
 
@@ -96,7 +103,7 @@ export default function TagsPage() {
             setDeletingTagId(null);
             loadData();
         } catch (err) {
-            alert("Failed to delete tag. It may be in use by expenses.");
+            alert('Failed to delete tag. It may be in use by expenses.');
         }
     };
 
@@ -105,10 +112,10 @@ export default function TagsPage() {
         if (!newSpecialTagName.trim()) return;
         try {
             await createSpecialTag(newSpecialTagName.trim());
-            setNewSpecialTagName("");
+            setNewSpecialTagName('');
             loadData();
         } catch (err) {
-            alert("Failed to create special tag");
+            alert('Failed to create special tag');
         }
     };
 
@@ -118,7 +125,7 @@ export default function TagsPage() {
             setDeletingSpecialTagId(null);
             loadData();
         } catch (err) {
-            alert("Failed to delete special tag");
+            alert('Failed to delete special tag');
         }
     };
 
@@ -126,7 +133,9 @@ export default function TagsPage() {
 
     return (
         <div style={{ maxWidth: '900px' }}>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: '600', marginBottom: '8px' }}>Tags Management</h1>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: '600', marginBottom: '8px' }}>
+                Tags Management
+            </h1>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>
                 Manage your expense categories and special tags
             </p>
@@ -136,7 +145,13 @@ export default function TagsPage() {
                 <h2 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '16px' }}>
                     Expense Tags ({tags.length})
                 </h2>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                <p
+                    style={{
+                        fontSize: '0.85rem',
+                        color: 'var(--text-secondary)',
+                        marginBottom: '20px',
+                    }}
+                >
                     Categories for organizing your expenses. Each expense must have one tag.
                 </p>
 
@@ -145,9 +160,9 @@ export default function TagsPage() {
                     <input
                         type="text"
                         value={newTagName}
-                        onChange={e => setNewTagName(e.target.value)}
+                        onChange={(e) => setNewTagName(e.target.value)}
                         placeholder="New tag name..."
-                        onKeyDown={e => e.key === 'Enter' && handleCreateTag()}
+                        onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
                         style={{ flex: 1 }}
                     />
                     <button
@@ -158,7 +173,7 @@ export default function TagsPage() {
                             color: '#fff',
                             border: 'none',
                             borderRadius: '6px',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
                         }}
                     >
                         Add Tag
@@ -167,12 +182,18 @@ export default function TagsPage() {
 
                 {/* Tags list */}
                 {tags.length === 0 ? (
-                    <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>
+                    <p
+                        style={{
+                            color: 'var(--text-secondary)',
+                            textAlign: 'center',
+                            padding: '20px',
+                        }}
+                    >
                         No tags yet. Create your first tag above.
                     </p>
                 ) : (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                        {tags.map(tag => (
+                        {tags.map((tag) => (
                             <div
                                 key={tag.id}
                                 style={{
@@ -182,7 +203,7 @@ export default function TagsPage() {
                                     padding: '8px 12px',
                                     background: 'var(--bg-panel)',
                                     borderRadius: '8px',
-                                    border: '1px solid var(--border-color)'
+                                    border: '1px solid var(--border-color)',
                                 }}
                             >
                                 {editingTagId === tag.id ? (
@@ -190,32 +211,102 @@ export default function TagsPage() {
                                         <input
                                             type="text"
                                             value={editTagName}
-                                            onChange={e => setEditTagName(e.target.value)}
-                                            onKeyDown={e => e.key === 'Enter' && saveEditTag()}
+                                            onChange={(e) => setEditTagName(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && saveEditTag()}
                                             autoFocus
-                                            style={{ width: '120px', padding: '4px 8px', fontSize: '0.9rem' }}
+                                            style={{
+                                                width: '120px',
+                                                padding: '4px 8px',
+                                                fontSize: '0.9rem',
+                                            }}
                                         />
-                                        <button onClick={saveEditTag} style={{ padding: '2px 6px', background: 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>Save</button>
-                                        <button onClick={() => setEditingTagId(null)} style={{ padding: '2px 6px', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-primary)' }}>Cancel</button>
+                                        <button
+                                            onClick={saveEditTag}
+                                            style={{
+                                                padding: '2px 6px',
+                                                background: 'var(--accent-primary)',
+                                                color: '#fff',
+                                                border: 'none',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                fontSize: '0.75rem',
+                                            }}
+                                        >
+                                            Save
+                                        </button>
+                                        <button
+                                            onClick={() => setEditingTagId(null)}
+                                            style={{
+                                                padding: '2px 6px',
+                                                background: 'transparent',
+                                                border: '1px solid var(--border-color)',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                fontSize: '0.75rem',
+                                                color: 'var(--text-primary)',
+                                            }}
+                                        >
+                                            Cancel
+                                        </button>
                                     </>
                                 ) : (
                                     <>
                                         <span style={{ fontWeight: '500' }}>{tag.name}</span>
                                         <button
                                             onClick={() => startEditTag(tag)}
-                                            style={{ padding: '2px 6px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-secondary)' }}
+                                            style={{
+                                                padding: '2px 6px',
+                                                background: 'transparent',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                fontSize: '0.75rem',
+                                                color: 'var(--text-secondary)',
+                                            }}
                                         >
                                             Edit
                                         </button>
                                         {deletingTagId === tag.id ? (
                                             <>
-                                                <button onClick={() => handleDeleteTag(tag.id)} style={{ padding: '2px 6px', background: 'var(--accent-danger)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>Yes</button>
-                                                <button onClick={() => setDeletingTagId(null)} style={{ padding: '2px 6px', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-primary)' }}>No</button>
+                                                <button
+                                                    onClick={() => handleDeleteTag(tag.id)}
+                                                    style={{
+                                                        padding: '2px 6px',
+                                                        background: 'var(--accent-danger)',
+                                                        color: '#fff',
+                                                        border: 'none',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '0.75rem',
+                                                    }}
+                                                >
+                                                    Yes
+                                                </button>
+                                                <button
+                                                    onClick={() => setDeletingTagId(null)}
+                                                    style={{
+                                                        padding: '2px 6px',
+                                                        background: 'transparent',
+                                                        border: '1px solid var(--border-color)',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '0.75rem',
+                                                        color: 'var(--text-primary)',
+                                                    }}
+                                                >
+                                                    No
+                                                </button>
                                             </>
                                         ) : (
                                             <button
                                                 onClick={() => setDeletingTagId(tag.id)}
-                                                style={{ padding: '2px 6px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--accent-danger)' }}
+                                                style={{
+                                                    padding: '2px 6px',
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    fontSize: '0.75rem',
+                                                    color: 'var(--accent-danger)',
+                                                }}
                                             >
                                                 ×
                                             </button>
@@ -233,8 +324,15 @@ export default function TagsPage() {
                 <h2 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '16px' }}>
                     Special Tags ({specialTags.length})
                 </h2>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-                    Optional markers you can add to any expense. Multiple special tags can be applied to one expense.
+                <p
+                    style={{
+                        fontSize: '0.85rem',
+                        color: 'var(--text-secondary)',
+                        marginBottom: '20px',
+                    }}
+                >
+                    Optional markers you can add to any expense. Multiple special tags can be
+                    applied to one expense.
                 </p>
 
                 {/* Add new special tag */}
@@ -242,9 +340,9 @@ export default function TagsPage() {
                     <input
                         type="text"
                         value={newSpecialTagName}
-                        onChange={e => setNewSpecialTagName(e.target.value)}
+                        onChange={(e) => setNewSpecialTagName(e.target.value)}
                         placeholder="New special tag..."
-                        onKeyDown={e => e.key === 'Enter' && handleCreateSpecialTag()}
+                        onKeyDown={(e) => e.key === 'Enter' && handleCreateSpecialTag()}
                         style={{ flex: 1 }}
                     />
                     <button
@@ -255,7 +353,7 @@ export default function TagsPage() {
                             color: '#fff',
                             border: 'none',
                             borderRadius: '6px',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
                         }}
                     >
                         Add Special Tag
@@ -264,12 +362,18 @@ export default function TagsPage() {
 
                 {/* Special tags list */}
                 {specialTags.length === 0 ? (
-                    <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>
+                    <p
+                        style={{
+                            color: 'var(--text-secondary)',
+                            textAlign: 'center',
+                            padding: '20px',
+                        }}
+                    >
                         No special tags yet. Examples: "Fixed Expense", "Reimbursable", "Emergency"
                     </p>
                 ) : (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                        {specialTags.map(tag => (
+                        {specialTags.map((tag) => (
                             <div
                                 key={tag.id}
                                 style={{
@@ -279,19 +383,52 @@ export default function TagsPage() {
                                     padding: '8px 12px',
                                     background: 'var(--accent-primary)',
                                     color: '#fff',
-                                    borderRadius: '16px'
+                                    borderRadius: '16px',
                                 }}
                             >
                                 <span style={{ fontWeight: '500' }}>{tag.name}</span>
                                 {deletingSpecialTagId === tag.id ? (
                                     <>
-                                        <button onClick={() => handleDeleteSpecialTag(tag.id)} style={{ padding: '2px 6px', background: 'var(--accent-danger)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>Yes</button>
-                                        <button onClick={() => setDeletingSpecialTagId(null)} style={{ padding: '2px 6px', background: 'rgba(255,255,255,0.3)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>No</button>
+                                        <button
+                                            onClick={() => handleDeleteSpecialTag(tag.id)}
+                                            style={{
+                                                padding: '2px 6px',
+                                                background: 'var(--accent-danger)',
+                                                color: '#fff',
+                                                border: 'none',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                fontSize: '0.75rem',
+                                            }}
+                                        >
+                                            Yes
+                                        </button>
+                                        <button
+                                            onClick={() => setDeletingSpecialTagId(null)}
+                                            style={{
+                                                padding: '2px 6px',
+                                                background: 'rgba(255,255,255,0.3)',
+                                                color: '#fff',
+                                                border: 'none',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                fontSize: '0.75rem',
+                                            }}
+                                        >
+                                            No
+                                        </button>
                                     </>
                                 ) : (
                                     <button
                                         onClick={() => setDeletingSpecialTagId(tag.id)}
-                                        style={{ padding: '0 4px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1rem', color: 'rgba(255,255,255,0.8)' }}
+                                        style={{
+                                            padding: '0 4px',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            fontSize: '1rem',
+                                            color: 'rgba(255,255,255,0.8)',
+                                        }}
                                     >
                                         ×
                                     </button>
