@@ -1,9 +1,9 @@
 interface Props {
     stage: number;
-    variant: string;
+    variant?: string; // kept for backwards compat; no longer rendered
 }
 
-export default function Garden({ stage, variant }: Props) {
+export default function Garden({ stage }: Props) {
     const cappedStage = Math.min(Math.max(stage, 0), 30);
     const stemTopY = 134 - cappedStage * 3;
     const stemPath = `M 60 140 C 60 ${135 - cappedStage} 60 ${(140 + stemTopY) / 2} 60 ${stemTopY}`;
@@ -57,10 +57,9 @@ export default function Garden({ stage, variant }: Props) {
             <div style={{
                 fontSize: '0.75rem',
                 color: '#8A7560',
-                textTransform: 'capitalize',
                 letterSpacing: '0.02em',
             }}>
-                {variant} · day {cappedStage}
+                day {cappedStage}
             </div>
         </div>
     );
