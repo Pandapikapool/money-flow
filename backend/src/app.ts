@@ -7,6 +7,7 @@ import specialTagsRoutes from "./modules/special_tags/special_tags.routes";
 import resourcesRoutes from "./modules/resources/resources.routes";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import flowcraftRoutes from "./modules/flowcraft/flowcraft.routes";
+import analyticsRoutes from "./modules/analytics/analytics.routes";
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use("/special-tags", specialTagsRoutes);
 app.use("/resources", resourcesRoutes);
 app.use("/dashboard", dashboardRoutes);
 app.use("/flowcraft", flowcraftRoutes);
+app.use("/analytics", analyticsRoutes);
 
 // Health Check
 app.get("/health", (req, res) => {

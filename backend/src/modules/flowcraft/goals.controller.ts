@@ -67,6 +67,17 @@ export async function create(req: Request, res: Response) {
     }
 }
 
+export async function getSuggestion(req: Request, res: Response) {
+    try {
+        const userId = getUserId();
+        const suggestion = await repo.getGoalSuggestion(userId);
+        res.json(suggestion);
+    } catch (e) {
+        console.error("Goal suggestion error:", e);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+
 export async function cancel(req: Request, res: Response) {
     try {
         const userId = getUserId();

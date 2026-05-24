@@ -334,3 +334,60 @@ export async function syncActiveGoalForUser(userId: string, today: Date = new Da
     if (!goal) return;
     await syncGoalStatus(goal.id, userId, today);
 }
+
+export interface GoalSuggestion {
+    top_categories: { tag_id: number; tag_name: string; last_30d_total: number }[];
+    suggestion: {
+        kind: 'cap-category';
+        target_tag_id: number;
+        target_amount: number;
+        tag_name: string;
+        rationale: string;
+    } | null;
+}
+
+// Surface the user's top spending categories from the last 30 days and a
+// suggested cap-category goal based on the largest one (a soft 25%-lighter
+// weekly cap, rounded to ₹50). Returns null on the suggestion when there's
+// no data.
+export async function getGoalSuggestion(userId: string): Promise<GoalSuggestion> {
+    const r = await pool.query(
+        `SELECT t.id AS tag_id, t.name AS tag_name,
+                ROUND(SUM(e.amount)::numeric, 0) AS total
+         FROM expenses e
+         JOIN tags t ON t.id = e.tag_id
+         WHERE e.user_id = $1
+           AND e.date >= CURRENT_DATE - INTERVAL '30 days'
+         GROUP BY t.id, t.name
+         ORDER BY SUM(e.amount) DESC
+         LIMIT 3`,
+        [userId],
+    );
+
+    const top_categories = r.rows.map((row: any) => ({
+        tag_id: Number(row.tag_id),
+        tag_name: row.tag_name,
+        last_30d_total: Number(row.total),
+    }));
+
+    if (top_categories.length === 0) {
+        return { top_categories: [], suggestion: null };
+    }
+
+    const top = top_categories[0];
+    // Weekly cap ≈ 75% of the implied weekly run-rate (30d total / ~4.3 weeks),
+    // rounded to the nearest ₹50, floor ₹100.
+    const weeklyRunRate = top.last_30d_total / 4.3;
+    const suggestedCap = Math.max(100, Math.round((weeklyRunRate * 0.75) / 50) * 50);
+
+    return {
+        top_categories,
+        suggestion: {
+            kind: 'cap-category',
+            target_tag_id: top.tag_id,
+            target_amount: suggestedCap,
+            tag_name: top.tag_name,
+            rationale: `${top.tag_name} was your largest category over the last 30 days (₹${top.last_30d_total.toLocaleString('en-IN')}). A weekly cap around ₹${suggestedCap.toLocaleString('en-IN')} would be a soft step lighter.`,
+        },
+    };
+}
