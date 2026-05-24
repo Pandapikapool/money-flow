@@ -1,10 +1,21 @@
-import { describe, it, expect } from 'vitest';
-import { mondayOf } from './goals.repo';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-// Pure function — no DB needed. The pg Pool import in goals.repo doesn't
-// open a connection until a query is issued, so it's safe to import here.
+// Mock the pg pool module so evaluateGoal can be exercised without a
+// live database. vi.mock is hoisted above all imports automatically.
+vi.mock('../../core/db', () => ({
+    pool: {
+        query: vi.fn(),
+    },
+}));
+
+import { pool } from '../../core/db';
+import { mondayOf, evaluateGoal, type Goal } from './goals.repo';
+
+const mockedQuery = vi.mocked(pool.query);
 
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
+
+// === mondayOf (pure function, mock not used) ===========================
 
 describe('mondayOf (IST-aware week bucketing)', () => {
     it('returns the Monday of the same week given a midweek input', () => {
@@ -38,5 +49,87 @@ describe('mondayOf (IST-aware week bucketing)', () => {
         // Thu 2026-04-30 12:00 UTC = 17:30 IST -> Monday of that week is Apr 27
         const thu = new Date('2026-04-30T12:00:00Z');
         expect(isoDate(mondayOf(thu))).toBe('2026-04-27');
+    });
+});
+
+// === evaluateGoal (cap-category state transitions, pool mocked) =======
+
+function makeCapGoal(overrides: Partial<Goal> = {}): Goal {
+    return {
+        id: 1,
+        user_id: 'default',
+        kind: 'cap-category',
+        target_tag_id: 5,
+        target_amount: 1500,
+        target_count: null,
+        week_of: '2026-05-18',
+        status: 'active',
+        bonus_applied: false,
+        created_at: '2026-05-18T00:00:00Z',
+        completed_at: null,
+        ...overrides,
+    };
+}
+
+describe('evaluateGoal: cap-category state transitions', () => {
+    beforeEach(() => mockedQuery.mockReset());
+
+    it('mid-week with spend below cap is not held and not missed', async () => {
+        mockedQuery
+            .mockResolvedValueOnce({ rows: [{ name: 'Fuel' }] } as any)
+            .mockResolvedValueOnce({ rows: [{ total: '820' }] } as any);
+
+        const wed = new Date('2026-05-20T12:00:00Z');
+        const p = await evaluateGoal(makeCapGoal(), wed);
+
+        expect(p.held).toBe(false);
+        expect(p.missed).toBe(false);
+        expect(p.numerator).toBe(820);
+        expect(p.denominator).toBe(1500);
+        expect(p.headline).toBe('Fuel under ₹1,500 this week');
+    });
+
+    it('any-time spend above cap is missed (mid-week)', async () => {
+        mockedQuery
+            .mockResolvedValueOnce({ rows: [{ name: 'Fuel' }] } as any)
+            .mockResolvedValueOnce({ rows: [{ total: '1800' }] } as any);
+
+        const wed = new Date('2026-05-20T12:00:00Z');
+        const p = await evaluateGoal(makeCapGoal(), wed);
+
+        expect(p.held).toBe(false);
+        expect(p.missed).toBe(true);
+    });
+
+    it('week-over with spend at-or-below cap transitions to held', async () => {
+        mockedQuery
+            .mockResolvedValueOnce({ rows: [{ name: 'Fuel' }] } as any)
+            .mockResolvedValueOnce({ rows: [{ total: '1200' }] } as any);
+
+        // Following Monday — week_of is May 18, so May 26 is past Sun May 24
+        const nextMon = new Date('2026-05-26T12:00:00Z');
+        const p = await evaluateGoal(makeCapGoal(), nextMon);
+
+        expect(p.held).toBe(true);
+        expect(p.missed).toBe(false);
+    });
+
+    it('null target_tag_id short-circuits with no DB calls', async () => {
+        const p = await evaluateGoal(makeCapGoal({ target_tag_id: null }));
+
+        expect(p.held).toBe(false);
+        expect(p.missed).toBe(false);
+        expect(p.display).toBe('category no longer exists');
+        expect(p.headline).toBe('goal needs a category');
+        expect(mockedQuery).not.toHaveBeenCalled();
+    });
+
+    it('null target_tag_id short-circuits also for skip-category', async () => {
+        const p = await evaluateGoal(
+            makeCapGoal({ kind: 'skip-category', target_tag_id: null, target_amount: null }),
+        );
+
+        expect(p.held).toBe(false);
+        expect(mockedQuery).not.toHaveBeenCalled();
     });
 });
