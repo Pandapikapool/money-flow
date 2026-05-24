@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (2026-05-24 — FlowCraft Goals + Theme Facelift)
+- **Tiny goals** (`flowcraft_goals` table): three calm goal kinds — *skip a category*, *cap a category*, *N quiet days* — one active per week. Holding a goal grants a +3 garden bonus (atomic, idempotent). Missing it closes silently with no shame copy.
+- **Goal endpoints** (`/flowcraft/goals/{active,POST,DELETE :id}`): zod-validated discriminated union; creating a new goal auto-cancels any prior active goal for the same week.
+- **GoalCard + GoalPicker** on `/flow`: empty state shows a "Pick a goal" CTA; active state shows headline + progress bar + display + cancel. Bar tint follows status (ochre active, sage held, dusk-pink missed). Picker is a glass modal with kind-picker → kind-specific form, inline validation in dusk-pink (no alerts).
+- **Overview FlowCraft widget**: collapsible soft tile at the top of `/overview` ("Want a small goal this week?") that links to `/flow`. Auto-hides when an active goal exists; dismissible for 48 h via localStorage.
+- **Three new calm insights**:
+  - *Quietly bigger* — category whose last 30 d ran >25% above prior 30 d (and ≥ ₹200 absolute). Past-tense, "noted, not alarming".
+  - *Heavier weekdays* — heaviest weekday's daily average vs. true overall daily average (>30%). Pure observation, no prescription.
+  - *Goal held* — compassionate celebration when this week's goal is held; notes when the garden bonus was just applied.
+- **Conditional prompts on expense entry**: above ₹100 (non-fuel) the form softly invites mood chips + a note; above ₹250 (non-fuel) or above ₹1,500 (fuel) a note becomes required. Mood chips reuse the seeded `mood:*` special tags, tinted from a small desaturated per-mood palette.
+- **Quick-Add modal**: overlay now scrolls so the Save button stays reachable on short windows / mobile.
+- **Garden**: removed the "sapling / sprouted / leafy / blooming" variant labels — the plant visual carries progression on its own. Display is now just "day N".
+- **`.claude/agents/`**: adds **validator** (haiku, typecheck + smoke-test runner), **investments** (sonnet, read-only observer over SIPs/FDs/RDs/stocks; explicit hard rule against buy/sell/hold advice), and **auditor** (opus, diligent code+design reviewer covering correctness, security, type safety, calm-design adherence, accessibility, performance, tests, docs, migration safety). All read-only.
+- **Backend dep**: adds **zod** for runtime input validation at HTTP trust boundaries (used first by the goals endpoints).
+
+### Changed (2026-05-24 — Tea Ceremony palette)
+- App-wide theme refresh: replaces Slate/indigo with a calm warm palette so the whole app feels like one product (the FlowCraft layer already used these tones; everything else now matches).
+  - Light: warm cream bg (`#FAF7F2`), deep ink text (`#2E2A26`), mushroom secondary (`#7A6F66`).
+  - Dark: warm coffee bg (`#1F1B18`), warm cream text (`#F0EAE0`), warm grey secondary (`#A89E92`).
+  - `--accent-primary` = muted ochre (`#C9A66B`) in both themes.
+  - `--accent-success` = sage; `--accent-warning` = dusk-pink (replaces amber); `--accent-danger` = deep clay (replaces bright red).
+- Token names preserved — every component using `var(--accent-*)` picks up new values automatically. Biggest behavioral shift: red retired across the app (over-budget bars, expired-plan badges, "delete" buttons all render in clay or dusk-pink). Chart colors (Recharts hardcoded hex) are unchanged; revisit if any look mismatched.
+
+### Fixed (2026-05-24 — Auditor pass on goals backend)
+- `evaluateGoal` short-circuits when `target_tag_id` is null (skip/cap kinds). Previously, a deleted tag would null the FK, the SQL match returned 0, and at week-end the goal silently auto-held — granting a free +3 garden bonus.
+- `applyHeldBonus` rewritten as a single CTE statement: the flag flip and garden bump now happen atomically. A process crash mid-flight can no longer leave `bonus_applied = TRUE` without the garden actually growing.
+- `mondayOf` is now IST-aware. Previously, requests between Mon 00:00–05:30 IST bucketed into the previous week because `mondayOf` used UTC while `expenses.date` is server-local IST.
+- `flowcraft.controller.getInsights` wraps each side effect (`waterIfDue`, `syncActiveGoalForUser`) in its own try/catch. Transient pool errors during the side-effect path no longer 500 the insights endpoint.
+- `heavier-weekdays` now computes the true overall daily average from per-day totals (in the same CTE) instead of averaging the 7 weekday means. Removes the bias that over-weighted sparse weekdays.
+
 ### Added (2026-05-21 — FlowCraft Calm Layer)
 - **Brand identity**: Ripple logo (`frontend/public/logo.svg`) and Coin the cat mascot (`mascot.svg`) — soft pastel SVGs replacing the default Vite favicon, scalable across favicon (32 px) → app header → PWA icon size
 - **`/flow` page**: a calm weekly view with a Garden tile (monotonic growth, never wilts, never penalises), Coin in a glass panel with optional weekly observation, and a stream of insight cards in three tones (calm / gentle-attention / compassionate)
