@@ -56,6 +56,18 @@ function parseGoal(row: any): Goal {
     };
 }
 
+// Verify a tag belongs to the given user. Defensive check used before
+// creating goals that reference a tag — prevents pointing a goal at
+// someone else's tag (currently single-user, but the check is cheap and
+// the right place to enforce when auth lands).
+export async function tagBelongsToUser(userId: string, tagId: number): Promise<boolean> {
+    const r = await pool.query(
+        `SELECT 1 FROM tags WHERE id = $1 AND user_id = $2 LIMIT 1`,
+        [tagId, userId],
+    );
+    return r.rows.length > 0;
+}
+
 export async function createGoal(
     userId: string,
     payload: {

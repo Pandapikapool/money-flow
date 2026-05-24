@@ -43,7 +43,17 @@ export async function create(req: Request, res: Response) {
             });
         }
 
+        // Ownership check for goal kinds that reference a tag.
+        if (parsed.data.kind === 'skip-category' || parsed.data.kind === 'cap-category') {
+            const owned = await repo.tagBelongsToUser(userId, parsed.data.target_tag_id);
+            if (!owned) {
+                return res.status(400).json({ error: "Tag does not exist for this user" });
+            }
+        }
+
         // One active goal per week — cancel any existing first.
+        // (A partial unique index on (user_id, week_of) WHERE status='active'
+        // also enforces this at the DB level for concurrent writes.)
         const existing = await repo.getActiveGoal(userId);
         if (existing) {
             await repo.cancelGoal(userId, existing.id);
