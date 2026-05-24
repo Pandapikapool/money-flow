@@ -1,9 +1,9 @@
 export const API_BASE = 'http://localhost:3000';
 
 export interface ExpenseMeta {
-    planned?: boolean;
-    // 1 = low energy, 2 = steady, 3 = high.
-    energy?: 1 | 2 | 3;
+    // What did this do for you? "essential" = had to,
+    // "comfort" = nice-to-have, "treat" = chosen pleasure.
+    kind?: 'essential' | 'comfort' | 'treat';
     [key: string]: unknown;
 }
 

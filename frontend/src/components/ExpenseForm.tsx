@@ -16,15 +16,35 @@ const toTitleCase = (str: string) =>
 
 const FUEL_RE = /\b(fuel|petrol|gas|diesel)\b/i;
 
-// Soft palette per mood — calmer than primary accent, all desaturated
+// Slightly deeper than the previous pastel set so the chips read against
+// glass panels without losing the calm vibe.
 const moodPalette: Record<string, string> = {
-    stress: '#B9B5C9',
-    joy: '#A8B5A0',
-    social: '#C9A66B',
-    convenience: '#D6B894',
-    health: '#8FB39E',
-    impulse: '#E8B4B8',
+    stress: '#9B96B5',      // muted lavender
+    joy: '#8FA086',         // deeper sage
+    social: '#B5944F',      // ochre
+    convenience: '#C19E73', // warm sand
+    health: '#6F9C84',      // deeper teal-sage
+    impulse: '#D78B97',     // dusk-rose
 };
+
+// One human-centered axis, function-first (no "did you need it?" judgment).
+// Essential = had to. Comfort = nice-to-have. Treat = chosen pleasure.
+const KIND_OPTIONS: { label: string; value: 'essential' | 'comfort' | 'treat'; color: string }[] = [
+    { label: 'Essential', value: 'essential', color: '#7D8F6F' }, // grounded sage
+    { label: 'Comfort',   value: 'comfort',   color: '#B5944F' }, // ochre
+    { label: 'Treat',     value: 'treat',     color: '#D78B97' }, // dusk-rose
+];
+
+// Bullet-journal style prompts — short, non-judgmental, rotate each render.
+// Self-compassion frame: function and feeling, not guilt or avoidance.
+const NOTE_PROMPTS = [
+    'What did this do for you?',
+    'How does it land now?',
+    'One word for how it felt.',
+    'What were you carrying when you bought it?',
+    'Would you replay it the same?',
+    'If a friend told you about this, what would you say?',
+];
 
 interface Props {
     onSuccess: () => void;
@@ -43,12 +63,15 @@ export default function ExpenseForm({ onSuccess }: Props) {
 
     const [notes, setNotes] = useState('');
     const [noteWarning, setNoteWarning] = useState(false);
-    // Quantitative dimension: was this spend planned ahead, or in the moment?
-    // null = no answer (default); true = planned; false = impulse.
-    const [planned, setPlanned] = useState<boolean | null>(null);
-    // Wellness dimension: rough energy level at time of spend.
-    // null = no answer; 1 = low, 2 = steady, 3 = high.
-    const [energy, setEnergy] = useState<1 | 2 | 3 | null>(null);
+
+    // Function-of-spend: essential / comfort / treat. null = no answer.
+    const [kind, setKind] = useState<'essential' | 'comfort' | 'treat' | null>(null);
+
+    // Bullet-journal style note prompt — picked once per mount so it stays
+    // stable while the user fills out the form, but varies between adds.
+    const [notePrompt] = useState<string>(
+        () => NOTE_PROMPTS[Math.floor(Math.random() * NOTE_PROMPTS.length)]
+    );
 
     const [loading, setLoading] = useState(false);
 
@@ -58,13 +81,12 @@ export default function ExpenseForm({ onSuccess }: Props) {
     }, []);
 
     // Conditional-prompt thresholds (user policy):
-    //   amount > 100  AND non-fuel  -> ask mood + soft note prompt
+    //   amount > 100  AND non-fuel  -> mood + kind chips + softer note prompt
     //   amount > 250  AND non-fuel  -> note becomes required
-    //   amount > 1500 AND fuel-like -> note becomes required (no mood — fuel is routine)
+    //   amount > 1500 AND fuel-like -> note becomes required (no chips — fuel is routine)
     const amountNum = parseFloat(amount) || 0;
     const isFuelLike = FUEL_RE.test(tagName);
-    const showMood = amountNum > 100 && !isFuelLike;
-    const showPlanned = amountNum > 200 && !isFuelLike;
+    const showChips = amountNum > 100 && !isFuelLike;
     const notesNeeded = (amountNum > 250 && !isFuelLike) || (amountNum > 1500 && isFuelLike);
 
     const moodTags = specialTags.filter((t) => t.name.startsWith('mood:'));
@@ -98,9 +120,8 @@ export default function ExpenseForm({ onSuccess }: Props) {
                 finalTagId = newTag.id;
             }
 
-            const meta: { planned?: boolean; energy?: 1 | 2 | 3 } = {};
-            if (planned !== null) meta.planned = planned;
-            if (energy !== null) meta.energy = energy;
+            const meta: { kind?: 'essential' | 'comfort' | 'treat' } = {};
+            if (kind !== null) meta.kind = kind;
 
             await createExpense({
                 date: new Date(date).toISOString(),
@@ -118,8 +139,7 @@ export default function ExpenseForm({ onSuccess }: Props) {
             setSelectedSpecialTagIds([]);
             setNotes('');
             setNoteWarning(false);
-            setPlanned(null);
-            setEnergy(null);
+            setKind(null);
 
             onSuccess();
         } catch (err) {
@@ -146,20 +166,14 @@ export default function ExpenseForm({ onSuccess }: Props) {
         return bare.charAt(0).toUpperCase() + bare.slice(1);
     };
 
+    // Hex-with-alpha for the tinted unselected background. 1A ≈ 10% alpha.
+    const tintBg = (hex: string) => `${hex}1A`;
+
     return (
         <form onSubmit={handleSubmit} className="glass-panel" style={{ padding: '24px' }}>
             {/* Amount */}
             <div style={{ marginBottom: '16px' }}>
-                <label
-                    style={{
-                        display: 'block',
-                        marginBottom: '6px',
-                        fontSize: '0.85rem',
-                        color: 'var(--text-secondary)',
-                    }}
-                >
-                    Amount
-                </label>
+                <label style={fieldLabel}>Amount</label>
                 <div style={{ position: 'relative' }}>
                     <span
                         style={{
@@ -193,16 +207,7 @@ export default function ExpenseForm({ onSuccess }: Props) {
 
             {/* Statement */}
             <div style={{ marginBottom: '16px' }}>
-                <label
-                    style={{
-                        display: 'block',
-                        marginBottom: '6px',
-                        fontSize: '0.85rem',
-                        color: 'var(--text-secondary)',
-                    }}
-                >
-                    What was it for?
-                </label>
+                <label style={fieldLabel}>What was it for?</label>
                 <input
                     type="text"
                     value={statement}
@@ -213,29 +218,13 @@ export default function ExpenseForm({ onSuccess }: Props) {
 
             {/* Date */}
             <div style={{ marginBottom: '16px' }}>
-                <label
-                    style={{
-                        display: 'block',
-                        marginBottom: '6px',
-                        fontSize: '0.85rem',
-                        color: 'var(--text-secondary)',
-                    }}
-                >
-                    Date
-                </label>
+                <label style={fieldLabel}>Date</label>
                 <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
 
             {/* Tag */}
             <div style={{ marginBottom: '16px' }}>
-                <label
-                    style={{
-                        display: 'block',
-                        marginBottom: '6px',
-                        fontSize: '0.85rem',
-                        color: 'var(--text-secondary)',
-                    }}
-                >
+                <label style={fieldLabel}>
                     Category <span style={{ opacity: 0.6 }}>(type to create new)</span>
                 </label>
                 <input
@@ -251,81 +240,29 @@ export default function ExpenseForm({ onSuccess }: Props) {
                 </datalist>
             </div>
 
-            {/* Mood — appears once amount > 100 on a non-fuel category */}
-            {showMood && moodTags.length > 0 && (
+            {/* Kind — what did this do for you? (amount > 100, non-fuel) */}
+            {showChips && (
                 <div style={{ marginBottom: '16px', animation: 'efFadeIn 0.22s ease-out' }}>
-                    <label
-                        style={{
-                            display: 'block',
-                            marginBottom: '8px',
-                            fontSize: '0.85rem',
-                            color: 'var(--text-secondary)',
-                        }}
-                    >
-                        How did this feel?{' '}
-                        <span style={{ opacity: 0.6 }}>(optional, helps later analysis)</span>
+                    <label style={fieldLabel}>
+                        What was this? <span style={{ opacity: 0.6 }}>(optional)</span>
                     </label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                        {moodTags.map((mt) => {
-                            const isSelected = selectedSpecialTagIds.includes(mt.id);
-                            const bare = mt.name.replace(/^mood:/, '').toLowerCase();
-                            const tint = moodPalette[bare] || '#C9A66B';
-                            return (
-                                <div
-                                    key={mt.id}
-                                    onClick={() => toggleSpecialTag(mt.id)}
-                                    style={{
-                                        padding: '6px 14px',
-                                        borderRadius: '16px',
-                                        cursor: 'pointer',
-                                        fontSize: '0.85rem',
-                                        border: `1px solid ${tint}`,
-                                        background: isSelected ? tint : 'transparent',
-                                        color: isSelected ? '#fff' : tint,
-                                        transition: 'all 0.15s ease',
-                                    }}
-                                >
-                                    {moodLabel(mt.name)}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
-
-            {/* Planned vs impulse — appears once amount > 200 on a non-fuel category */}
-            {showPlanned && (
-                <div style={{ marginBottom: '16px', animation: 'efFadeIn 0.22s ease-out' }}>
-                    <label
-                        style={{
-                            display: 'block',
-                            marginBottom: '8px',
-                            fontSize: '0.85rem',
-                            color: 'var(--text-secondary)',
-                        }}
-                    >
-                        Planned ahead?{' '}
-                        <span style={{ opacity: 0.6 }}>(optional, helps later analysis)</span>
-                    </label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        {[
-                            { label: 'Planned', value: true },
-                            { label: 'In the moment', value: false },
-                        ].map((opt) => {
-                            const isSelected = planned === opt.value;
+                        {KIND_OPTIONS.map((opt) => {
+                            const isSelected = kind === opt.value;
                             return (
                                 <button
                                     type="button"
-                                    key={String(opt.value)}
-                                    onClick={() => setPlanned(isSelected ? null : opt.value)}
+                                    key={opt.value}
+                                    onClick={() => setKind(isSelected ? null : opt.value)}
                                     style={{
-                                        padding: '6px 14px',
+                                        padding: '7px 16px',
                                         borderRadius: '16px',
                                         cursor: 'pointer',
                                         fontSize: '0.85rem',
-                                        border: '1px solid #A8B5A0',
-                                        background: isSelected ? '#A8B5A0' : 'transparent',
-                                        color: isSelected ? '#fff' : '#A8B5A0',
+                                        fontWeight: 500,
+                                        border: `1.5px solid ${opt.color}`,
+                                        background: isSelected ? opt.color : tintBg(opt.color),
+                                        color: isSelected ? '#fff' : opt.color,
                                         transition: 'all 0.15s ease',
                                     }}
                                 >
@@ -337,43 +274,35 @@ export default function ExpenseForm({ onSuccess }: Props) {
                 </div>
             )}
 
-            {/* Energy — appears once amount > 200 on a non-fuel category */}
-            {showPlanned && (
+            {/* Mood — how did this feel? (amount > 100, non-fuel) */}
+            {showChips && moodTags.length > 0 && (
                 <div style={{ marginBottom: '16px', animation: 'efFadeIn 0.22s ease-out' }}>
-                    <label
-                        style={{
-                            display: 'block',
-                            marginBottom: '8px',
-                            fontSize: '0.85rem',
-                            color: 'var(--text-secondary)',
-                        }}
-                    >
-                        Energy then? <span style={{ opacity: 0.6 }}>(optional)</span>
+                    <label style={fieldLabel}>
+                        How did this feel? <span style={{ opacity: 0.6 }}>(optional)</span>
                     </label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        {[
-                            { label: 'Low', value: 1 as const },
-                            { label: 'Steady', value: 2 as const },
-                            { label: 'High', value: 3 as const },
-                        ].map((opt) => {
-                            const isSelected = energy === opt.value;
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {moodTags.map((mt) => {
+                            const isSelected = selectedSpecialTagIds.includes(mt.id);
+                            const bare = mt.name.replace(/^mood:/, '').toLowerCase();
+                            const tint = moodPalette[bare] || '#C9A66B';
                             return (
                                 <button
                                     type="button"
-                                    key={opt.value}
-                                    onClick={() => setEnergy(isSelected ? null : opt.value)}
+                                    key={mt.id}
+                                    onClick={() => toggleSpecialTag(mt.id)}
                                     style={{
-                                        padding: '6px 14px',
+                                        padding: '7px 16px',
                                         borderRadius: '16px',
                                         cursor: 'pointer',
                                         fontSize: '0.85rem',
-                                        border: '1px solid #C9A66B',
-                                        background: isSelected ? '#C9A66B' : 'transparent',
-                                        color: isSelected ? '#fff' : '#C9A66B',
+                                        fontWeight: 500,
+                                        border: `1.5px solid ${tint}`,
+                                        background: isSelected ? tint : tintBg(tint),
+                                        color: isSelected ? '#fff' : tint,
                                         transition: 'all 0.15s ease',
                                     }}
                                 >
-                                    {opt.label}
+                                    {moodLabel(mt.name)}
                                 </button>
                             );
                         })}
@@ -384,14 +313,7 @@ export default function ExpenseForm({ onSuccess }: Props) {
             {/* Other special tags (everything that isn't a mood:* entry) */}
             {otherSpecialTags.length > 0 && (
                 <div style={{ marginBottom: '16px' }}>
-                    <label
-                        style={{
-                            display: 'block',
-                            marginBottom: '8px',
-                            fontSize: '0.85rem',
-                            color: 'var(--text-secondary)',
-                        }}
-                    >
+                    <label style={fieldLabel}>
                         Special Tags <span style={{ opacity: 0.6 }}>(optional)</span>
                     </label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -434,22 +356,15 @@ export default function ExpenseForm({ onSuccess }: Props) {
                 </div>
             )}
 
-            {/* Notes — soft prompt for >100 non-fuel, required for >250 non-fuel or >1500 fuel */}
+            {/* Notes — bullet-journal prompt when amount > 100, required for > 250 / > 1500 fuel */}
             <div style={{ marginBottom: '20px' }}>
-                <label
-                    style={{
-                        display: 'block',
-                        marginBottom: '6px',
-                        fontSize: '0.85rem',
-                        color: 'var(--text-secondary)',
-                    }}
-                >
+                <label style={fieldLabel}>
                     Notes{' '}
                     <span style={{ opacity: 0.6 }}>
                         {notesNeeded
                             ? '(a few words help future-you remember)'
-                            : showMood
-                              ? '(optional — a small note?)'
+                            : showChips
+                              ? '(optional)'
                               : '(optional)'}
                     </span>
                 </label>
@@ -457,7 +372,13 @@ export default function ExpenseForm({ onSuccess }: Props) {
                     type="text"
                     value={notes}
                     onChange={(e) => handleNotesChange(e.target.value)}
-                    placeholder={notesNeeded ? 'a few words…' : 'Any additional details...'}
+                    placeholder={
+                        notesNeeded
+                            ? notePrompt
+                            : showChips
+                              ? notePrompt
+                              : 'Any additional details...'
+                    }
                     style={{
                         borderColor: noteWarning ? '#C9A66B' : undefined,
                     }}
@@ -503,3 +424,10 @@ export default function ExpenseForm({ onSuccess }: Props) {
         </form>
     );
 }
+
+const fieldLabel: React.CSSProperties = {
+    display: 'block',
+    marginBottom: '6px',
+    fontSize: '0.85rem',
+    color: 'var(--text-secondary)',
+};

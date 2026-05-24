@@ -23,15 +23,20 @@ export interface MonthlyBudget {
     notes?: string;
 }
 
-// Optional quantitative dimensions captured alongside an expense.
-// Stored in expenses.meta (JSONB). Keys are open-ended; the form
-// currently captures `planned`, but more (energy, etc.) can be added
-// without a schema migration.
+// Optional human-centered dimensions captured alongside an expense.
+// Stored in expenses.meta (JSONB). Keys are open-ended.
+//
+// `kind` is the one structured dimension we keep on the form: function
+// over judgment — "what did this do for me?" rather than "did I need it?".
+//   essential — had to
+//   comfort   — nice-to-have, made life a little better
+//   treat     — chosen pleasure
+//
+// (Earlier iterations captured `planned` and `energy`. Both have been
+// retired from the form in favour of `kind`. JSONB is open-ended, so
+// older rows with those keys remain valid and are simply ignored.)
 export interface ExpenseMeta {
-    planned?: boolean;
-    // 1 = low energy, 2 = steady, 3 = high. Captured optionally alongside
-    // 'planned' on larger non-fuel spends for later analysis.
-    energy?: 1 | 2 | 3;
+    kind?: "essential" | "comfort" | "treat";
     [key: string]: unknown;
 }
 
