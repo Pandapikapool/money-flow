@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { Request, Response } from "express";
 import { getUserId } from "../../core/userContext";
 import { RuleBasedEngine } from "./rule-based.engine";
@@ -5,6 +6,17 @@ import * as repo from "./flowcraft.repo";
 import * as goalsRepo from "./goals.repo";
 
 const engine = new RuleBasedEngine();
+
+const ConfirmRecurringSchema = z.object({
+    signature: z.string().min(1).max(500),
+    sample: z.string().max(500).optional(),
+    amount: z.number().positive().max(1e8),
+    cadenceDays: z.number().int().positive().max(366),
+});
+
+const DismissRecurringSchema = z.object({
+    signature: z.string().min(1).max(500),
+});
 
 export async function getInsights(req: Request, res: Response) {
     try {
@@ -47,11 +59,15 @@ export async function getState(req: Request, res: Response) {
 export async function confirmRecurring(req: Request, res: Response) {
     try {
         const userId = getUserId();
-        const { signature, sample, amount, cadenceDays } = req.body;
-        if (!signature || typeof amount !== "number") {
-            return res.status(400).json({ error: "Invalid payload" });
+        const parsed = ConfirmRecurringSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({
+                error: "Invalid payload",
+                details: parsed.error.flatten(),
+            });
         }
-        await repo.confirmRecurring(userId, signature, sample || "", amount, cadenceDays || 30);
+        const { signature, sample, amount, cadenceDays } = parsed.data;
+        await repo.confirmRecurring(userId, signature, sample ?? "", amount, cadenceDays);
         res.json({ ok: true });
     } catch (e) {
         console.error("Confirm recurring error:", e);
@@ -62,11 +78,14 @@ export async function confirmRecurring(req: Request, res: Response) {
 export async function dismissRecurring(req: Request, res: Response) {
     try {
         const userId = getUserId();
-        const { signature } = req.body;
-        if (!signature) {
-            return res.status(400).json({ error: "Invalid payload" });
+        const parsed = DismissRecurringSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({
+                error: "Invalid payload",
+                details: parsed.error.flatten(),
+            });
         }
-        await repo.dismissRecurring(userId, signature);
+        await repo.dismissRecurring(userId, parsed.data.signature);
         res.json({ ok: true });
     } catch (e) {
         console.error("Dismiss recurring error:", e);

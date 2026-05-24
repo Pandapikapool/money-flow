@@ -54,8 +54,14 @@ export default function MoneyStoryPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                 <button
                     onClick={() => setWeekOffset(weekOffset + 1)}
-                    style={navBtn}
+                    style={{
+                        ...navBtn,
+                        opacity: weekOffset >= 52 ? 0.4 : 1,
+                        cursor: weekOffset >= 52 ? 'not-allowed' : 'pointer',
+                        borderColor: weekOffset >= 52 ? 'transparent' : 'var(--border-color)',
+                    }}
                     disabled={weekOffset >= 52}
+                    aria-label="Earlier week"
                 >
                     ← earlier week
                 </button>
@@ -65,6 +71,7 @@ export default function MoneyStoryPage() {
                 <button
                     onClick={() => setWeekOffset(Math.max(0, weekOffset - 1))}
                     style={{ ...navBtn, visibility: weekOffset === 0 ? 'hidden' : 'visible' }}
+                    aria-label="Later week"
                 >
                     later week →
                 </button>

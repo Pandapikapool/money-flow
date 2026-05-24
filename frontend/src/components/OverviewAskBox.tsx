@@ -90,6 +90,7 @@ export default function OverviewAskBox() {
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     style={{ flex: '1 1 160px', minWidth: '140px' }}
+                    aria-label="Category"
                 >
                     <option value="all">All categories</option>
                     {tags.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
@@ -98,6 +99,7 @@ export default function OverviewAskBox() {
                     value={period}
                     onChange={(e) => setPeriod(e.target.value)}
                     style={{ flex: '1 1 160px', minWidth: '140px' }}
+                    aria-label="Time period"
                 >
                     {PERIOD_PRESETS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
                 </select>

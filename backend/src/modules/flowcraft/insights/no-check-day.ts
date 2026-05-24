@@ -3,25 +3,14 @@ import type { Insight, InsightContext } from "../engine";
 
 // "No-check day" — once per 7+ days, when weekly totals over the last
 // 4 weeks have low variance (CV < 18%), surface explicit permission to
-// not look at the app today. The whole point of the layer is presence;
-// rewarding *not* checking is the most-calm thing it can do.
-//
-// Records the offer in flowcraft_state.no_check_day_offered_at so it
-// doesn't fire again for a week.
+// not look at the app today. Records the offer in
+// flowcraft_state.no_check_day_offered_at via an atomic claim, so
+// concurrent /insights calls don't both emit the card.
 export async function buildNoCheckDay(ctx: InsightContext): Promise<Insight | null> {
-    const { userId, today } = ctx;
+    const { userId } = ctx;
 
-    const stateR = await pool.query(
-        `SELECT no_check_day_offered_at FROM flowcraft_state WHERE user_id = $1`,
-        [userId],
-    );
-    const lastOffered = stateR.rows[0]?.no_check_day_offered_at;
-    if (lastOffered) {
-        const offered = new Date(lastOffered);
-        const daysSince = (today.getTime() - offered.getTime()) / (86400 * 1000);
-        if (daysSince < 7) return null;
-    }
-
+    // 1) Stability check first — if the week isn't quiet, skip without
+    //    touching the offer slot.
     const weeksR = await pool.query(
         `WITH weeks AS (
             SELECT DATE_TRUNC('week', date) AS w, SUM(amount) AS total
@@ -45,11 +34,19 @@ export async function buildNoCheckDay(ctx: InsightContext): Promise<Insight | nu
     const cv = Math.sqrt(variance) / mean;
     if (cv >= 0.18) return null;
 
-    // Record the offer so it doesn't fire again for 7 days.
-    await pool.query(
-        `UPDATE flowcraft_state SET no_check_day_offered_at = NOW() WHERE user_id = $1`,
+    // 2) Atomic claim: the UPDATE only matches if the offer slot is empty
+    //    or older than 7 days. If we don't win the race, no card.
+    const claim = await pool.query(
+        `UPDATE flowcraft_state
+         SET no_check_day_offered_at = NOW()
+         WHERE user_id = $1
+           AND (no_check_day_offered_at IS NULL
+                OR no_check_day_offered_at < NOW() - INTERVAL '7 days')
+         RETURNING 1`,
         [userId],
     );
+
+    if ((claim.rowCount ?? 0) === 0) return null;
 
     return {
         kind: 'no-check-day',
